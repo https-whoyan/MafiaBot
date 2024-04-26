@@ -7,34 +7,45 @@ import (
 )
 
 type Command interface {
-	Execute(s *discordgo.Session, m *discordgo.MessageCreate)
+	Execute(s *discordgo.Session, i *discordgo.InteractionCreate)
 	GetCmd() *discordgo.ApplicationCommand
 }
 
-var (
-	commands []Command
-)
+func (b *Bot) initCommand(c Command) {
+	commandName := c.GetCmd().Name
+	b.Commands[commandName] = c
+}
 
 func (b *Bot) InitBotCommands() {
-	// Add role channel command
-	addChannelRoleCommand := channel.NewAddChannelRole()
-	commands = append(commands, addChannelRoleCommand)
-	commandName := addChannelRoleCommand.GetCmd().Name
-	b.Commands[commandName] = addChannelRoleCommand
+	b.initCommand(channel.NewAddChannelRole())
 }
 
 func (b *Bot) RegisterHandlers() {
+	log.Print("Register handlers")
 	for _, cmd := range b.Commands {
 		b.Session.AddHandler(cmd.Execute)
 	}
 }
 
+func (b *Bot) RemoveRegisteredCommands() {
+	log.Println("Remove commands")
+	stateId := b.Session.State.User.ID
+	for _, registeredCmd := range b.registeredCommands {
+		err := b.Session.ApplicationCommandDelete(stateId, "", registeredCmd.ID)
+		if err != nil {
+			log.Printf("cannot delete command, err: %v", err)
+		}
+	}
+}
+
 func (b *Bot) RegisterCommands() {
+	log.Println("Register commands")
 	stateId := b.Session.State.User.ID
 	for _, cmd := range b.Commands {
-		_, err := b.Session.ApplicationCommandCreate(stateId, "", cmd.GetCmd())
+		registeredCmd, err := b.Session.ApplicationCommandCreate(stateId, "", cmd.GetCmd())
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
+		b.registeredCommands = append(b.registeredCommands, registeredCmd)
 	}
 }

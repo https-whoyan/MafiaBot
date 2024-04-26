@@ -6,7 +6,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 
 	botPack "github.com/https-whoyan/MafiaBot/src/bot"
@@ -26,12 +25,10 @@ func main() {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
-	defer func(bot *discordgo.Session) {
-		err = bot.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(bot.Session)
+	defer func(b *botPack.Bot) {
+		b.Close()
+		b.RemoveRegisteredCommands()
+	}(bot)
 }
 
 func loadDotEnv() {
