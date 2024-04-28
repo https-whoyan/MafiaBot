@@ -22,6 +22,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	/* If need delete all registered commands, use here:
+	bot.DeleteAllGloballyRegisteredCommands()
+	log.Println("Break program, because below have been delete the globally commands")
+	bot.Close()
+	return
+	*/
+
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc

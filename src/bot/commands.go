@@ -2,50 +2,60 @@ package bot
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/https-whoyan/MafiaBot/pkg/channel"
 	"log"
+	"time"
 )
 
-type Command interface {
-	Execute(s *discordgo.Session, i *discordgo.InteractionCreate)
-	GetCmd() *discordgo.ApplicationCommand
+// YanLohCommand command
+type YanLohCommand struct {
+	cmd  *discordgo.ApplicationCommand
+	name string
 }
 
-func (b *Bot) initCommand(c Command) {
-	commandName := c.GetCmd().Name
-	b.Commands[commandName] = c
-}
-
-func (b *Bot) InitBotCommands() {
-	b.initCommand(channel.NewAddChannelRole())
-}
-
-func (b *Bot) RegisterHandlers() {
-	log.Print("Register handlers")
-	for _, cmd := range b.Commands {
-		b.Session.AddHandler(cmd.Execute)
+func NewYanLohCommand() *YanLohCommand {
+	name := "yan_loh"
+	return &YanLohCommand{
+		cmd: &discordgo.ApplicationCommand{
+			Name:        name,
+			Description: "Call Yan with this command!",
+		},
+		name: name,
 	}
 }
 
-func (b *Bot) RemoveRegisteredCommands() {
-	log.Println("Remove commands")
-	stateId := b.Session.State.User.ID
-	for _, registeredCmd := range b.registeredCommands {
-		err := b.Session.ApplicationCommandDelete(stateId, "", registeredCmd.ID)
+func (c *YanLohCommand) GetCmd() *discordgo.ApplicationCommand {
+	return c.cmd
+}
+
+func (c *YanLohCommand) GetName() string {
+	return c.name
+}
+
+func (c *YanLohCommand) GetExecuteFunc() func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	return c.Execute
+}
+
+func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	messageContent := "Возможно, что ян и лох. И древлян. Но что бы его же ботом его обзывать..."
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: messageContent,
+		},
+	})
+	if err != nil {
+		log.Print(err)
+	}
+	// async kick requester
+	go func(sessId, kickedUserID string) {
+		var kickPing time.Duration = 3
+		time.Sleep(time.Second * kickPing)
+
+		// "Будешь ему в лицо так говорить."
+
+		err = s.GuildMemberMove(sessId, kickedUserID, nil)
 		if err != nil {
-			log.Printf("cannot delete command, err: %v", err)
+			log.Printf("failed kick user, err: %v", err)
 		}
-	}
-}
-
-func (b *Bot) RegisterCommands() {
-	log.Println("Register commands")
-	stateId := b.Session.State.User.ID
-	for _, cmd := range b.Commands {
-		registeredCmd, err := b.Session.ApplicationCommandCreate(stateId, "", cmd.GetCmd())
-		if err != nil {
-			log.Print(err)
-		}
-		b.registeredCommands = append(b.registeredCommands, registeredCmd)
-	}
+	}(s.State.Guilds[0].ID, i.Interaction.Member.User.ID)
 }

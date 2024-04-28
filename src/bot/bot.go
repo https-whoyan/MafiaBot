@@ -1,10 +1,10 @@
 package bot
 
 import (
+	"github.com/bwmarrin/discordgo"
+	"github.com/https-whoyan/MafiaBot/pkg/channel"
 	"log"
 	"os"
-
-	"github.com/bwmarrin/discordgo"
 )
 
 type Bot struct {
@@ -40,16 +40,67 @@ func (b *Bot) Close() {
 
 // DeleteAllGloballyRegisteredCommands Delete all registered to bot functions. Globally Registered
 func (b *Bot) DeleteAllGloballyRegisteredCommands() {
+	log.Println("Start Delete all globally registered commands.")
 	userId := b.Session.State.User.ID
 	globallyRegisteredCommands, err := b.Session.ApplicationCommands(userId, "")
 	if err != nil {
 		log.Fatal(err)
 	}
-	//fmt.Println(globallyRegisteredCommands)
 	for _, command := range globallyRegisteredCommands {
+		log.Printf("Removed command ID: %v", command.ID)
 		err = b.Session.ApplicationCommandDelete(userId, "", command.ID)
 		if err != nil {
 			log.Fatal(err)
+		}
+	}
+	log.Println("All global commands deleted.")
+}
+
+func (b *Bot) initCommand(c Command) {
+	commandName := c.GetName()
+	b.Commands[commandName] = c
+}
+
+func (b *Bot) InitBotCommands() {
+	b.initCommand(NewYanLohCommand())
+	b.initCommand(channel.NewAddChannelRole())
+}
+
+func (b *Bot) RegisterHandlers() {
+	log.Print("Register handlers")
+	for _, cmd := range b.Commands {
+		cmdName := cmd.GetName()
+		newCmd := cmd.GetExecuteFunc()
+		log.Printf("Register handler, command name: %v, func hash: %v", cmdName, newCmd)
+		b.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			if ok := cmdName == i.ApplicationCommandData().Name; ok {
+				log.Printf("Execute %v command.", cmdName)
+				newCmd(s, i)
+			}
+		})
+	}
+}
+
+func (b *Bot) RegisterCommands() {
+	log.Println("Register commands")
+	stateId := b.Session.State.User.ID
+	for _, cmd := range b.Commands {
+		registeredCmd, err := b.Session.ApplicationCommandCreate(stateId, "", cmd.GetCmd())
+		if err != nil {
+			log.Print(err)
+		}
+		log.Printf("Register command, name %v", registeredCmd.Name)
+		b.registeredCommands = append(b.registeredCommands, registeredCmd)
+	}
+}
+
+func (b *Bot) RemoveRegisteredCommands() {
+	log.Println("Remove commands")
+	stateId := b.Session.State.User.ID
+	for _, registeredCmd := range b.registeredCommands {
+		err := b.Session.ApplicationCommandDelete(stateId, "", registeredCmd.ID)
+		if err != nil {
+			log.Printf("cannot delete command, err: %v", err)
 		}
 	}
 }
