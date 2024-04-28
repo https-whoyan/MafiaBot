@@ -3,6 +3,7 @@ package bot
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/https-whoyan/MafiaBot/pkg/channel"
+	"github.com/https-whoyan/MafiaBot/pkg/game"
 	"log"
 	"os"
 )
@@ -30,12 +31,17 @@ func InitBot() *Bot {
 		Commands: make(map[string]Command),
 	}
 }
-
 func (b *Bot) Close() {
 	err := b.Session.Close()
 	if err != nil {
 		log.Printf("err in closing bot, err: %v", err)
 	}
+}
+
+func (b *Bot) HasACommands() bool {
+	userId := b.Session.State.User.ID
+	globallyRegisteredCommands, _ := b.Session.ApplicationCommands(userId, "")
+	return len(globallyRegisteredCommands) == 0
 }
 
 // DeleteAllGloballyRegisteredCommands Delete all registered to bot functions. Globally Registered
@@ -64,6 +70,7 @@ func (b *Bot) initCommand(c Command) {
 func (b *Bot) InitBotCommands() {
 	b.initCommand(NewYanLohCommand())
 	b.initCommand(channel.NewAddChannelRole())
+	b.initCommand(game.NewRegisterGameCommand())
 }
 
 func (b *Bot) RegisterHandlers() {

@@ -1,8 +1,8 @@
 package roles
 
 const (
-	Peaceful = iota
-	Mafia
+	PeacefulTeam = iota
+	MafiaTeam
 )
 
 type Role struct {

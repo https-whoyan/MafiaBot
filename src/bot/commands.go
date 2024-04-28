@@ -51,11 +51,10 @@ func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.InteractionCr
 		var kickPing time.Duration = 3
 		time.Sleep(time.Second * kickPing)
 
-		// "Будешь ему в лицо так говорить."
-
 		err = s.GuildMemberMove(sessId, kickedUserID, nil)
 		if err != nil {
 			log.Printf("failed kick user, err: %v", err)
 		}
 	}(s.State.Guilds[0].ID, i.Interaction.Member.User.ID)
+
 }
