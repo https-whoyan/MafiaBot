@@ -2,7 +2,7 @@ package players
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/https-whoyan/MafiaBot/pkg/roles"
+	"github.com/https-whoyan/MafiaBot/internal/core/roles"
 )
 
 const (
@@ -18,19 +18,20 @@ const (
 )
 
 type Player struct {
-	Num               int
+	ID                int
+	OldNick           string
 	Tag               *discordgo.User
 	Role              *roles.Role
-	lifeStatus        int
-	interactionStatus int
+	LifeStatus        int
+	InteractionStatus int
 }
 
 // test
 func getPlayer() *Player {
 	return &Player{
-		Num:        1,
+		ID:         1,
 		Tag:        nil,
 		Role:       nil,
-		lifeStatus: alive,
+		LifeStatus: alive,
 	}
 }

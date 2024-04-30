@@ -1,7 +1,9 @@
 package bot
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"github.com/https-whoyan/MafiaBot/internal/core/game"
 	"log"
 	"time"
 )
@@ -36,6 +38,7 @@ func (c *YanLohCommand) GetExecuteFunc() func(s *discordgo.Session, i *discordgo
 }
 
 func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	fmt.Println("Yan Loh.")
 	messageContent := "Возможно, что ян и лох. И древлян. Но что бы его же ботом его обзывать..."
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -47,6 +50,7 @@ func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.InteractionCr
 		log.Print(err)
 	}
 	// async kick requester
+	guildID := s.State.Guilds[0].ID
 	go func(sessId, kickedUserID string) {
 		var kickPing time.Duration = 3
 		time.Sleep(time.Second * kickPing)
@@ -55,6 +59,10 @@ func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.InteractionCr
 		if err != nil {
 			log.Printf("failed kick user, err: %v", err)
 		}
-	}(s.State.Guilds[0].ID, i.Interaction.Member.User.ID)
+	}(guildID, i.Interaction.Member.User.ID)
 
+}
+
+func (c *YanLohCommand) GameInteraction(g *game.Game) *game.Game {
+	return g
 }

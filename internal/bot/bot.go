@@ -1,17 +1,24 @@
 package bot
 
 import (
-	"github.com/bwmarrin/discordgo"
-	"github.com/https-whoyan/MafiaBot/pkg/channel"
-	"github.com/https-whoyan/MafiaBot/pkg/game"
+	"fmt"
+	"github.com/https-whoyan/MafiaBot/internal/core/game"
 	"log"
 	"os"
+	"sync"
+
+	"github.com/bwmarrin/discordgo"
+
+	"github.com/https-whoyan/MafiaBot/internal/bot/channel"
+	botGame "github.com/https-whoyan/MafiaBot/internal/bot/game/registration"
 )
 
 type Bot struct {
+	sync.RWMutex
 	token              string
 	Session            *discordgo.Session
 	Commands           map[string]Command
+	Game               *game.Game
 	registeredCommands []*discordgo.ApplicationCommand
 }
 
@@ -29,6 +36,7 @@ func InitBot() *Bot {
 		token:    token,
 		Session:  s,
 		Commands: make(map[string]Command),
+		Game:     game.NewUndefinedGame(),
 	}
 }
 func (b *Bot) Close() {
@@ -63,6 +71,8 @@ func (b *Bot) DeleteAllGloballyRegisteredCommands() {
 }
 
 func (b *Bot) initCommand(c Command) {
+	b.Lock()
+	defer b.Unlock()
 	commandName := c.GetName()
 	b.Commands[commandName] = c
 }
@@ -70,34 +80,45 @@ func (b *Bot) initCommand(c Command) {
 func (b *Bot) InitBotCommands() {
 	b.initCommand(NewYanLohCommand())
 	b.initCommand(channel.NewAddChannelRole())
-	b.initCommand(game.NewRegisterGameCommand())
+	b.initCommand(botGame.NewRegisterGameCommand())
 }
 
 func (b *Bot) RegisterHandlers() {
 	log.Print("Register handlers")
 	for _, cmd := range b.Commands {
-		cmdName := cmd.GetName()
-		newCmd := cmd.GetExecuteFunc()
-		log.Printf("Register handler, command name: %v, func hash: %v", cmdName, newCmd)
+		newCmd := cmd
+		cmdName := newCmd.GetName()
+		log.Printf("Register handler, command name: %v", cmdName)
 		b.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			if ok := cmdName == i.ApplicationCommandData().Name; ok {
+			fmt.Println("я тут")
+			executedCommandName := i.ApplicationCommandData().Name
+			//executedCommandIsInPrivateChat := false
+			if cmdName == executedCommandName {
 				log.Printf("Execute %v command.", cmdName)
-				newCmd(s, i)
+				newCmd.Execute(s, i)
+				b.Game.Lock()
+				log.Printf("Exectute %v game interation podcommand", cmdName)
+				b.Game = newCmd.GameInteraction(b.Game)
+				b.Game.Unlock()
 			}
 		})
 	}
+
 }
 
 func (b *Bot) RegisterCommands() {
 	log.Println("Register commands")
+	b.Lock()
+	defer b.Unlock()
 	stateId := b.Session.State.User.ID
 	for _, cmd := range b.Commands {
-		registeredCmd, err := b.Session.ApplicationCommandCreate(stateId, "", cmd.GetCmd())
+		newCmd := cmd
+		registeredCmd, err := b.Session.ApplicationCommandCreate(stateId, "", newCmd.GetCmd())
 		if err != nil {
 			log.Print(err)
 		}
-		log.Printf("Register command, name %v", registeredCmd.Name)
 		b.registeredCommands = append(b.registeredCommands, registeredCmd)
+		log.Printf("Registered command, name %v", registeredCmd.Name)
 	}
 }
 

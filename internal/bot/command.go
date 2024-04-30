@@ -2,11 +2,12 @@ package bot
 
 import (
 	"github.com/bwmarrin/discordgo"
+	"github.com/https-whoyan/MafiaBot/internal/core/game"
 )
 
 type Command interface {
 	Execute(s *discordgo.Session, i *discordgo.InteractionCreate)
 	GetCmd() *discordgo.ApplicationCommand
 	GetName() string
-	GetExecuteFunc() func(s *discordgo.Session, i *discordgo.InteractionCreate)
+	GameInteraction(b *game.Game) *game.Game
 }

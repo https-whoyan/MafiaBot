@@ -1,19 +1,20 @@
 package main
 
 import (
-	"github.com/https-whoyan/MafiaBot/pkg/game"
+	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/joho/godotenv"
-
-	botPack "github.com/https-whoyan/MafiaBot/src/bot"
+	botPack "github.com/https-whoyan/MafiaBot/internal/bot"
+	"github.com/https-whoyan/MafiaBot/internal/core/game"
 )
 
 func main() {
 	loadDotEnv()
+	log.Println("Discord-go version:", discordgo.VERSION)
 	bot := botPack.InitBot()
 	bot.InitBotCommands()
 	bot.RegisterHandlers()
@@ -29,7 +30,6 @@ func main() {
 	bot.Close()
 	return
 	*/
-	test(bot)
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)

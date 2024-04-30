@@ -2,6 +2,7 @@ package channel
 
 import (
 	"fmt"
+	"github.com/https-whoyan/MafiaBot/internal/core/game"
 	"log"
 
 	"github.com/bwmarrin/discordgo"
@@ -49,6 +50,7 @@ func (c *AddChannelRoleCommand) GetExecuteFunc() func(s *discordgo.Session, i *d
 }
 
 func (c *AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	fmt.Println("AddCommand.")
 	if len(i.ApplicationCommandData().Options) == 0 {
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -94,4 +96,8 @@ func noticeChat(s *discordgo.Session, chatType, chatID string) error {
 	messageContent := fmt.Sprintf("Now this chat for %v role.", chatType)
 	_, err := s.ChannelMessageSend(chatID, messageContent)
 	return err
+}
+
+func (c *AddChannelRoleCommand) GameInteraction(g *game.Game) *game.Game {
+	return g
 }
