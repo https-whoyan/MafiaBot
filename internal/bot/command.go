@@ -6,8 +6,8 @@ import (
 )
 
 type Command interface {
-	Execute(s *discordgo.Session, i *discordgo.InteractionCreate)
+	Execute(s *discordgo.Session, i *discordgo.Interaction)
 	GetCmd() *discordgo.ApplicationCommand
 	GetName() string
-	GameInteraction(b *game.Game) *game.Game
+	GameInteraction(b *game.Game)
 }

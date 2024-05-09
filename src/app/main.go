@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"log"
@@ -10,34 +11,39 @@ import (
 
 	botPack "github.com/https-whoyan/MafiaBot/internal/bot"
 	"github.com/https-whoyan/MafiaBot/internal/core/game"
+	"github.com/https-whoyan/MafiaBot/internal/db"
 )
 
 func main() {
 	loadDotEnv()
-	log.Println("Discord-go version:", discordgo.VERSION)
-	bot := botPack.InitBot()
-	bot.InitBotCommands()
-	bot.RegisterHandlers()
-	err := bot.Session.Open()
-	bot.RegisterCommands()
+	cfg, err := db.LoadMongoDBConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = db.InitMongoDB(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("я тут")
 
-	/* If need delete all registered commands, use here:
-	bot.DeleteAllGloballyRegisteredCommands()
-	log.Println("Break program, because below have been delete the globally commands")
-	bot.Close()
-	return
-	*/
+	currDB, isContains := db.GetCurrDB()
+	fmt.Println(isContains, currDB)
+	log.Println("Discord-go version:", discordgo.VERSION)
+	log.Println("Discord-go API version:", discordgo.APIVersion)
+	bot, err := botPack.InitBot(os.Getenv("BOT_TOKEN"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func(b *botPack.Bot) {
+		b.Close()
+	}(bot)
+
+	// If you need delete all registered commands, use here: bot.DeleteAllGloballyRegisteredCommands()
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
-	defer func(b *botPack.Bot) {
-		b.Close()
-		b.RemoveRegisteredCommands()
-	}(bot)
+
 }
 
 func loadDotEnv() {

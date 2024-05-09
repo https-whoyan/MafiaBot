@@ -22,16 +22,7 @@ type Player struct {
 	OldNick           string
 	Tag               *discordgo.User
 	Role              *roles.Role
+	Vote              int `json:"vote"`
 	LifeStatus        int
 	InteractionStatus int
-}
-
-// test
-func getPlayer() *Player {
-	return &Player{
-		ID:         1,
-		Tag:        nil,
-		Role:       nil,
-		LifeStatus: alive,
-	}
 }

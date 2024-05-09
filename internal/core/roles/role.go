@@ -1,7 +1,7 @@
 package roles
 
 const (
-	PeacefulTeam = iota
+	PeacefulTeam = iota + 1
 	MafiaTeam
 )
 
