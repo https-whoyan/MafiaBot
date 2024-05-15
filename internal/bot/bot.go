@@ -5,9 +5,35 @@ import (
 	"github.com/https-whoyan/MafiaBot/internal/core/game"
 	"log"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"github.com/bwmarrin/discordgo"
+)
+
+// ____
+// cfg
+// ____
+
+type BotConfig struct {
+	token string
+}
+
+func LoadBotConfig() *BotConfig {
+	token := os.Getenv("BOT_TOKEN")
+	return &BotConfig{
+		token: token,
+	}
+}
+
+// ____
+// Bot
+// ____
+
+var (
+	botOnce     sync.Once
+	botInstance *Bot
 )
 
 type Bot struct {
@@ -22,27 +48,50 @@ type Bot struct {
 	registeredCommands []*discordgo.ApplicationCommand
 }
 
-func InitBot(token string) (*Bot, error) {
-	botStr := "Bot " + token
-	s, err := discordgo.New(botStr)
+func InitBot(cnf *BotConfig) {
+	botOnce.Do(func() {
+		token := cnf.token
+		botStr := "Bot " + token
+		s, err := discordgo.New(botStr)
+		if err != nil {
+			log.Fatal(err)
+		}
+		bot := &Bot{
+			token:    token,
+			Session:  s,
+			Commands: make(map[string]Command),
+			Games:    make(map[string]*game.Game),
+		}
+		bot.initBotCommands()
+		bot.registerHandlers()
+		botInstance = bot
+	})
+}
+
+func Run() {
+	if botInstance == nil {
+		log.Fatal("Bot isn't instance!")
+	}
+	err := botInstance.Open()
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
-	bot := &Bot{
-		token:    token,
-		Session:  s,
-		Commands: make(map[string]Command),
-		Games:    make(map[string]*game.Game),
+	botInstance.loginAs()
+	botInstance.registerCommands()
+
+	// If you need delete all registered commands, use here: bot.DeleteAllGloballyRegisteredCommands()
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	<-sc
+}
+
+func DisconnectBot() error {
+	if botInstance == nil {
+		return errors.New("bot isn't initialzed")
 	}
-	bot.initBotCommands()
-	bot.registerHandlers()
-	err = bot.Open()
-	if err != nil {
-		return nil, err
-	}
-	bot.loginAs()
-	bot.registerCommands()
-	return bot, nil
+	return botInstance.Close()
+
 }
 
 func (b *Bot) loginAs() {
@@ -60,14 +109,16 @@ func (b *Bot) Open() error {
 	return nil
 }
 
-func (b *Bot) Close() {
+func (b *Bot) Close() error {
+	b.Lock()
 	b.DeleteHandlers()
 	err := b.Session.Close()
 	if err != nil {
-		log.Printf("Error clothing bot, err: %v", err)
+		return err
 	}
 	b.removeRegisteredCommands()
-
+	b.Unlock()
+	return nil
 }
 
 func (b *Bot) initCommand(c Command) {
@@ -79,7 +130,10 @@ func (b *Bot) initCommand(c Command) {
 
 func (b *Bot) initBotCommands() {
 	b.initCommand(NewYanLohCommand())
-	b.initCommand(NewAddChannelRole())
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! (Need fix!)
+	//b.initCommand(NewAddChannelRole())
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! (Need fix!)
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! (Need fix!)
 	b.initCommand(NewRegisterGameCommand())
 }
 
@@ -94,7 +148,7 @@ func (b *Bot) registerHandlers() {
 			executedCommandIsInPrivateChat := i.GuildID == ""
 			if executedCommandIsInPrivateChat && executedCommandName == cmdName {
 				content := "All commands are used on the server. If you have difficulties in using the bot, " +
-					"please refer to the repository documentation: https://github.com/https-whoyan/MafiaBot."
+					"please refer to the repository documentation: https://github.com/https-whoyan/MafiaBot"
 				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
@@ -181,8 +235,6 @@ func (b *Bot) DeleteAllGloballyRegisteredCommands() {
 		}
 	}
 	log.Println("All global commands deleted.")
-	log.Printf("Break program.")
-	os.Exit(0)
 }
 
 func (b *Bot) DeleteHandlers() {

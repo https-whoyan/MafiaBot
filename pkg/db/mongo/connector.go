@@ -1,4 +1,4 @@
-package db
+package mongo
 
 import (
 	"context"
@@ -12,6 +12,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+// ____________
+// MongoDB
+// ____________
 
 type MongoDBConfig struct {
 	Host string
@@ -35,51 +39,58 @@ type MongoDB struct {
 	db *mongo.Client
 }
 
-var currDB *MongoDB
+var (
+	mongoOnce   sync.Once
+	currMongoDB *MongoDB
+)
 
 func InitMongoDB(cfg *MongoDBConfig) error {
 	// Check is containing
-	if currDB != nil {
+	if currMongoDB != nil {
 		return errors.New("MongoDB already exists!")
 	}
 
 	// Create connection
 	ctx := context.TODO()
-	connectionStr := fmt.Sprintf("mongodb://%v:%v", cfg.Port, strconv.Itoa(cfg.Port))
+	connectionStr := fmt.Sprintf("mongodb://%v:%v", cfg.Host, cfg.Port)
 	log.Printf("Run mongodb server at %v", connectionStr)
 	clientOptions := options.Client().ApplyURI(connectionStr)
 	client, err := mongo.Connect(ctx, clientOptions)
-	fmt.Println(client)
 	if err != nil {
 		return err
 	}
 
 	// Check is ok
 	err = client.Ping(ctx, nil)
-	fmt.Println("я тут 3")
 	if err != nil {
 		return err
 	}
 
 	// Initial currDB singleton var
-	currDB = &MongoDB{
-		db: client,
-	}
-
-	// disconnect function
-	defer func(db *MongoDB) {
-		err = currDB.db.Disconnect(ctx)
-		if err != nil {
-			log.Println(err)
+	mongoOnce.Do(func() {
+		currMongoDB = &MongoDB{
+			db: client,
 		}
-	}(currDB)
+	})
+
 	return err
 }
 
-// GetCurrDB get connection
-func GetCurrDB() (*MongoDB, bool) {
-	if currDB == nil {
+// GetCurrMongoDB get connection
+func GetCurrMongoDB() (*MongoDB, bool) {
+	if currMongoDB == nil {
 		return nil, false
 	}
-	return currDB, true
+	return currMongoDB, true
+}
+
+func DisconnectMongoDB() error {
+	if currMongoDB == nil {
+		return errors.New("mongoDB is not initialzed")
+	}
+	currMongoDB.Lock()
+	err := currMongoDB.db.Disconnect(context.TODO())
+	currMongoDB.Unlock()
+	log.Println("Disconnect MongoDB")
+	return err
 }

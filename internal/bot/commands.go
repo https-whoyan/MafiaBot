@@ -182,7 +182,9 @@ func (c *AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Inter
 
 func noticeChat(s *discordgo.Session, chatType, chatID string) error {
 	messageContent := fmt.Sprintf("Now this chat for %v role.", chatType)
-	_, err := s.ChannelMessageSend(chatID, messageContent)
+	message, err := s.ChannelMessageSend(chatID, messageContent)
+	message.ID = "1"
+	// TODO!
 	return err
 }
 
