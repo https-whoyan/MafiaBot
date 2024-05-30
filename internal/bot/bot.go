@@ -88,7 +88,7 @@ func Run() {
 
 func DisconnectBot() error {
 	if botInstance == nil {
-		return errors.New("bot isn't initialzed")
+		return errors.New("bot isn't initialized")
 	}
 	return botInstance.Close()
 

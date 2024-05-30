@@ -5,24 +5,28 @@ import (
 	"github.com/https-whoyan/MafiaBot/internal/core/roles"
 )
 
-const (
-	alive = iota + 1
-	dead
-	spectating
-)
+type AliveStatus int
 
 const (
-	chooses = iota + 1
-	passed
-	muted
+	Alive = iota + 1
+	Dead
+	Spectating
+)
+
+type VoteStatus int
+
+const (
+	Chooses = iota + 1
+	Passed
+	Muted
 )
 
 type Player struct {
-	ID                int
-	OldNick           string
-	Tag               *discordgo.User
-	Role              *roles.Role
-	Vote              int `json:"vote"`
-	LifeStatus        int
-	InteractionStatus int
+	ID                int             `json:"ID"`
+	OldNick           string          `json:"oldNick"`
+	Tag               *discordgo.User `json:"tag"`
+	Role              *roles.Role     `json:"role"`
+	Vote              int             `json:"vote"`
+	LifeStatus        AliveStatus     `json:"lifeStatus"`
+	InteractionStatus VoteStatus      `json:"interactionStatus"`
 }

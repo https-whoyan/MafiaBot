@@ -7,7 +7,7 @@ var (
 	Doctor = &roles.Role{
 		Name:           "Doctor",
 		Team:           roles.PeacefulTeam,
-		NightVoteOrder: 5,
+		NightVoteOrder: 7,
 		Description: `
 			The Doctor has the ability to heal the people of the town. 
 			Each night, the Doctor tries to guess who was shot by the mafia and points

@@ -1,7 +1,9 @@
 package game
 
 import (
+	"github.com/https-whoyan/MafiaBot/internal/core/config"
 	"github.com/https-whoyan/MafiaBot/internal/core/players"
+	"github.com/https-whoyan/MafiaBot/internal/core/roles"
 	"sync"
 )
 
@@ -13,18 +15,20 @@ const (
 	NightState
 	DayState
 	VotingState
-	FinishState
 	PausedState
+	FinishState
 	NonDefinedState
 )
 
 type Game struct {
 	sync.Mutex
-	StartPlayers []*players.Player
-	Dead         []*players.Player
-	Active       []*players.Player
-	Spectators   []*players.Player
-	State        State
+	RolesConfig  *config.RolesConfig `json:"rolesConfig"`
+	StartPlayers []*players.Player   `json:"startPlayers"`
+	Dead         []*players.Player   `json:"dead"`
+	Active       []*players.Player   `json:"active"`
+	Spectators   []*players.Player   `json:"spectators"`
+	NightVoting  *roles.Role         `json:"nightVoting"`
+	State        State               `json:"state"`
 }
 
 func NewGame(playersCount int) *Game {

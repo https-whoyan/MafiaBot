@@ -7,7 +7,7 @@ var (
 	Don = &roles.Role{
 		Name:           "Don",
 		Team:           roles.MafiaTeam,
-		NightVoteOrder: 2,
+		NightVoteOrder: 4,
 		Description: `
 			The mafia don is the main mafioso, playing against honest citizens. 
 			The don's role is almost identical to the mafia role, except that the don

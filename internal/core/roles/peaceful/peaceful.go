@@ -14,7 +14,3 @@ var (
 			They don't go at night. They win when they eliminate all players not on their team.`,
 	}
 )
-
-func getPeaceful() *roles.Role {
-	return Peaceful
-}

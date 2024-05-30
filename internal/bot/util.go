@@ -51,5 +51,3 @@ func noticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Println(err)
 	}
 }
-
-func rename
