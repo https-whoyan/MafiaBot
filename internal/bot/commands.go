@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/https-whoyan/MafiaBot/internal/core/game"
+	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
 	"log"
 	"time"
 )
@@ -87,6 +88,15 @@ func (c *RegisterGameCommand) GetName() string {
 }
 
 func (c *RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction) {
+	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "Ok. Message below.",
+		},
+	})
+	if err != nil {
+		log.Print(err)
+	}
 	responseMessageText := "Registration has begun. \n" +
 		"Post any reactions below. And if you want to be a spectator, put the reaction :smiling_imp:"
 	channelID := i.ChannelID
@@ -155,7 +165,8 @@ func (c *AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Inter
 	roleName := i.ApplicationCommandData().Options[0].Name
 	requestedChatID := i.ApplicationCommandData().Options[0].Value.(string)
 
-	if ok := noticeChat(s, roleName, requestedChatID); ok != nil {
+	noticeChatContent := fmt.Sprintf("Now chat is used for %v role.", roleName)
+	if _, ok := noticeChat(s, requestedChatID, noticeChatContent); ok != nil {
 		err := s.InteractionRespond(i, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
@@ -178,14 +189,19 @@ func (c *AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Inter
 	if err != nil {
 		log.Print(err)
 	}
-}
 
-func noticeChat(s *discordgo.Session, chatType, chatID string) error {
-	messageContent := fmt.Sprintf("Now this chat for %v role.", chatType)
-	message, err := s.ChannelMessageSend(chatID, messageContent)
-	message.ID = "1"
-	// TODO!
-	return err
+	currDB, containsDB := mongo.GetCurrMongoDB()
+	if !containsDB {
+		log.Println("empty database")
+		return
+	}
+	currDB.Lock()
+	currDB.Unlock()
+	err = currDB.SetRoleChannel(i.ChannelID, requestedChatID, roleName)
+	if err != nil {
+		log.Println(err)
+	}
+	return
 }
 
 func (c *AddChannelRoleCommand) GameInteraction(g *game.Game) {

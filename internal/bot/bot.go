@@ -111,13 +111,13 @@ func (b *Bot) Open() error {
 
 func (b *Bot) Close() error {
 	b.Lock()
+	defer b.Unlock()
 	b.DeleteHandlers()
 	err := b.Session.Close()
 	if err != nil {
 		return err
 	}
 	b.removeRegisteredCommands()
-	b.Unlock()
 	return nil
 }
 
@@ -130,10 +130,7 @@ func (b *Bot) initCommand(c Command) {
 
 func (b *Bot) initBotCommands() {
 	b.initCommand(NewYanLohCommand())
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! (Need fix!)
-	//b.initCommand(NewAddChannelRole())
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! (Need fix!)
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! (Need fix!)
+	b.initCommand(NewAddChannelRole())
 	b.initCommand(NewRegisterGameCommand())
 }
 
@@ -145,54 +142,35 @@ func (b *Bot) registerHandlers() {
 		log.Printf("Register handler, command name: %v", cmdName)
 		b.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			executedCommandName := i.ApplicationCommandData().Name
-			executedCommandIsInPrivateChat := i.GuildID == ""
-			if executedCommandIsInPrivateChat && executedCommandName == cmdName {
-				content := "All commands are used on the server. If you have difficulties in using the bot, " +
-					"please refer to the repository documentation: https://github.com/https-whoyan/MafiaBot"
-				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: content,
-					},
-				})
-				if err != nil {
-					log.Println(errors.Join(
-						errors.New("there was an error when sending a private message, err: "), err),
-					)
-				}
+
+			if executedCommandName != cmdName {
+				return
+			}
+
+			if isPrivateMessage(i) {
+				noticePrivateChat(s, i)
 				return
 			}
 
 			executedGuildID := i.GuildID
 			currGame, containsGame := b.Games[executedGuildID]
 
-			if cmdName == executedCommandName {
-				log.Printf("Execute %v command.", cmdName)
-				newCmd.Execute(s, i.Interaction)
+			log.Printf("Execute %v command.", cmdName)
+			newCmd.Execute(s, i.Interaction)
 
-				if containsGame {
-					log.Printf("Execute %v game interation podcommand", cmdName)
-					currGame.Lock()
-					newCmd.GameInteraction(currGame)
-					currGame.Unlock()
-				} else {
-					if executedCommandName == "register_game" {
-						currGame = &game.Game{}
-						newCmd.GameInteraction(currGame)
-					} else {
-						err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-							Type: discordgo.InteractionResponseChannelMessageWithSource,
-							Data: &discordgo.InteractionResponseData{
-								Content: "You can't interact with the game because you haven't started" +
-									" it. Write the /register_game command to start the game.",
-							},
-						})
-						if err != nil {
-							log.Println(err)
-						}
-					}
-				}
+			if containsGame {
+				log.Printf("Execute %v game interation podcommand", cmdName)
+				currGame.Lock()
+				newCmd.GameInteraction(currGame)
+				currGame.Unlock()
+				return
 			}
+			if executedCommandName != "register_game" {
+				noticeIsEmptyGame(s, i)
+				return
+			}
+			currGame = &game.Game{}
+			newCmd.GameInteraction(currGame)
 			return
 		})
 	}

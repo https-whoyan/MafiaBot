@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"sync"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,25 +13,26 @@ import (
 )
 
 // ____________
-// MongoDB
+// Config
 // ____________
 
 type MongoDBConfig struct {
 	Host string
-	Port int
+	Port string
 }
 
 func LoadMongoDBConfig() (*MongoDBConfig, error) {
 	host := os.Getenv("MONGODB_NAME")
-	port, err := strconv.Atoi(os.Getenv("MONGODB_PORT"))
-	if err != nil {
-		return nil, errors.New("error: DB_PORT is not int")
-	}
+	port := os.Getenv("MONGODB_PORT")
 	return &MongoDBConfig{
 		Host: host,
 		Port: port,
 	}, nil
 }
+
+// ____________
+// MongoDB
+// ____________
 
 type MongoDB struct {
 	sync.Mutex
@@ -47,13 +47,12 @@ var (
 func InitMongoDB(cfg *MongoDBConfig) error {
 	// Check is containing
 	if currMongoDB != nil {
-		return errors.New("MongoDB already exists!")
+		return errors.New("mongoDB already exists")
 	}
 
 	// Create connection
 	ctx := context.TODO()
 	connectionStr := fmt.Sprintf("mongodb://%v:%v", cfg.Host, cfg.Port)
-	log.Printf("Run mongodb server at %v", connectionStr)
 	clientOptions := options.Client().ApplyURI(connectionStr)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
@@ -72,6 +71,7 @@ func InitMongoDB(cfg *MongoDBConfig) error {
 			db: client,
 		}
 	})
+	log.Printf("Run mongodb server at %v", connectionStr)
 
 	return err
 }
