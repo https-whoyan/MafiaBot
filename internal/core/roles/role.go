@@ -1,17 +1,11 @@
 package roles
 
-import (
-	"github.com/https-whoyan/MafiaBot/internal/core/roles/mafia"
-	"github.com/https-whoyan/MafiaBot/internal/core/roles/maniac"
-	"github.com/https-whoyan/MafiaBot/internal/core/roles/peaceful"
-)
-
 type Team int
 
 const (
-	PeacefulTeam = iota + 1
-	MafiaTeam
-	ManiacTeam
+	PeacefulTeam Team = 1
+	MafiaTeam    Team = 2
+	ManiacTeam   Team = 3
 )
 
 type Role struct {
@@ -22,13 +16,17 @@ type Role struct {
 }
 
 var MappedRoles = map[string]*Role{
-	"Peaceful":  peaceful.Peaceful,
-	"Mafia":     mafia.Mafia,
-	"Doctor":    peaceful.Doctor,
-	"Whore":     peaceful.Whore,
-	"Detective": peaceful.Detective,
-	"Don":       mafia.Don,
-	"Maniac":    maniac.Maniac,
-	"Citizen":   peaceful.Citizen,
-	"Fool":      peaceful.Fool,
+	"Citizen":   Citizen,
+	"Detective": Detective,
+	"Doctor":    Doctor,
+	"Don":       Don,
+	"Fool":      Fool,
+	"Mafia":     Mafia,
+	"Maniac":    Maniac,
+	"Peaceful":  Peaceful,
+}
+
+func GetRoleByName(roleName string) (*Role, bool) {
+	role, ok := MappedRoles[roleName]
+	return role, ok
 }

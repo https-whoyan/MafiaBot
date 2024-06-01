@@ -2,9 +2,6 @@ package config
 
 import (
 	"github.com/https-whoyan/MafiaBot/internal/core/roles"
-	"github.com/https-whoyan/MafiaBot/internal/core/roles/mafia"
-	"github.com/https-whoyan/MafiaBot/internal/core/roles/maniac"
-	"github.com/https-whoyan/MafiaBot/internal/core/roles/peaceful"
 )
 
 type RoleConfig struct {
@@ -26,15 +23,15 @@ var (
 			PlayersCount: 5,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 3,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 			},
@@ -43,11 +40,11 @@ var (
 			PlayersCount: 5,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 			},
@@ -60,15 +57,15 @@ var (
 			PlayersCount: 6,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 			},
@@ -77,15 +74,15 @@ var (
 			PlayersCount: 6,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 			},
@@ -94,15 +91,15 @@ var (
 			PlayersCount: 6,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Whore": {
-					Role:  peaceful.Whore,
+					Role:  roles.Whore,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 			},
@@ -116,19 +113,19 @@ var (
 			PlayersCount: 7,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -137,19 +134,19 @@ var (
 			PlayersCount: 7,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -159,23 +156,23 @@ var (
 			PlayersCount: 7,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 3,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -184,23 +181,23 @@ var (
 			PlayersCount: 7,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 3,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Whore": {
-					Role:  peaceful.Whore,
+					Role:  roles.Whore,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -209,23 +206,23 @@ var (
 			PlayersCount: 7,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 3,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Whore": {
-					Role:  peaceful.Whore,
+					Role:  roles.Whore,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -239,23 +236,23 @@ var (
 			PlayersCount: 8,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Whore": {
-					Role:  peaceful.Whore,
+					Role:  roles.Whore,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -264,23 +261,23 @@ var (
 			PlayersCount: 8,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -289,23 +286,23 @@ var (
 			PlayersCount: 8,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Whore": {
-					Role:  peaceful.Whore,
+					Role:  roles.Whore,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -316,27 +313,27 @@ var (
 			PlayersCount: 8,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 3,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Whore": {
-					Role:  peaceful.Whore,
+					Role:  roles.Whore,
 					Count: 1,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -349,27 +346,27 @@ var (
 			PlayersCount: 9,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Whore": {
-					Role:  peaceful.Whore,
+					Role:  roles.Whore,
 					Count: 1,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -383,27 +380,27 @@ var (
 			PlayersCount: 10,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Whore": {
-					Role:  peaceful.Whore,
+					Role:  roles.Whore,
 					Count: 1,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 2,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 			},
@@ -412,23 +409,23 @@ var (
 			PlayersCount: 10,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Whore": {
-					Role:  peaceful.Whore,
+					Role:  roles.Whore,
 					Count: 1,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 3,
 				},
 			},
@@ -438,31 +435,31 @@ var (
 			PlayersCount: 10,
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
-					Role:  peaceful.Peaceful,
+					Role:  roles.Peaceful,
 					Count: 4,
 				},
 				"Doctor": {
-					Role:  peaceful.Doctor,
+					Role:  roles.Doctor,
 					Count: 1,
 				},
 				"Whore": {
-					Role:  peaceful.Whore,
+					Role:  roles.Whore,
 					Count: 1,
 				},
 				"Detective": {
-					Role:  peaceful.Detective,
+					Role:  roles.Detective,
 					Count: 1,
 				},
 				"Mafia": {
-					Role:  mafia.Mafia,
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 				"Don": {
-					Role:  mafia.Don,
+					Role:  roles.Don,
 					Count: 1,
 				},
 				"Maniac": {
-					Role:  maniac.Maniac,
+					Role:  roles.Maniac,
 					Count: 1,
 				},
 			},

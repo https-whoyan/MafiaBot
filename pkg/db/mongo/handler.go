@@ -66,9 +66,6 @@ func (db *MongoDB) SetRoleChannel(guildID string, channelIID string, role string
 		ChannelIID: channelIID,
 		Role:       role,
 	}
-	if err != nil {
-		return err
-	}
 	_, err = coll.InsertOne(ctx, insertedRow)
 	if err != nil {
 		return err

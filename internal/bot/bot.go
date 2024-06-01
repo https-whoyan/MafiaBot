@@ -132,6 +132,7 @@ func (b *Bot) initBotCommands() {
 	b.initCommand(NewYanLohCommand())
 	b.initCommand(NewAddChannelRole())
 	b.initCommand(NewRegisterGameCommand())
+	b.initCommand(NewStartGameCommand())
 }
 
 func (b *Bot) registerHandlers() {

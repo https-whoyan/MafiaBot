@@ -1,6 +1,7 @@
 package game
 
 import (
+	"github.com/https-whoyan/MafiaBot/internal/bot/channel"
 	"github.com/https-whoyan/MafiaBot/internal/core/config"
 	"github.com/https-whoyan/MafiaBot/internal/core/players"
 	"github.com/https-whoyan/MafiaBot/internal/core/roles"
@@ -10,14 +11,14 @@ import (
 type State int
 
 const (
-	RegisterState = iota + 1
-	StartingState
-	NightState
-	DayState
-	VotingState
-	PausedState
-	FinishState
-	NonDefinedState
+	RegisterState   State = 1
+	StartingState   State = 2
+	NightState      State = 3
+	DayState        State = 4
+	VotingState     State = 5
+	PausedState     State = 6
+	FinishState     State = 7
+	NonDefinedState State = 8
 )
 
 type Game struct {
@@ -27,8 +28,13 @@ type Game struct {
 	Dead         []*players.Player   `json:"dead"`
 	Active       []*players.Player   `json:"active"`
 	Spectators   []*players.Player   `json:"spectators"`
-	NightVoting  *roles.Role         `json:"nightVoting"`
-	State        State               `json:"state"`
+	// keeps what role is voting right now.
+	NightVoting         *roles.Role                     `json:"nightVoting"`
+	InteractionChannels map[string]*channel.RoleChannel `json:"interactionChannels"`
+	// presents to the bot which discord chat is used for which role.
+	// key: str - role name
+	// It is necessary, that would not load mongoDB too much, and that would quickly validate the vote team
+	State State `json:"state"`
 }
 
 func NewGame(playersCount int) *Game {

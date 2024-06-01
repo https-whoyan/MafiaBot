@@ -86,7 +86,7 @@ func GetCurrMongoDB() (*MongoDB, bool) {
 
 func DisconnectMongoDB() error {
 	if currMongoDB == nil {
-		return errors.New("mongoDB is not initialzed")
+		return errors.New("mongoDB is not initialized")
 	}
 	currMongoDB.Lock()
 	err := currMongoDB.db.Disconnect(context.TODO())

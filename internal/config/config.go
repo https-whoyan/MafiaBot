@@ -65,14 +65,11 @@ func (c *Config) Run() {
 
 	logAboutDiscordGo()
 	bot.InitBot(c.botConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	bot.Run()
 
 	defer func() {
-		err = bot.DisconnectBot()
+		err = redis.Disconnect()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -80,7 +77,7 @@ func (c *Config) Run() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = redis.Disconnect()
+		err = bot.DisconnectBot()
 		if err != nil {
 			log.Fatal(err)
 		}

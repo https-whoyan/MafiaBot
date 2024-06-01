@@ -51,3 +51,15 @@ func noticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		log.Println(err)
 	}
 }
+
+func Bold(s string) string {
+	return "**" + s + "**"
+}
+
+func Italic(s string) string {
+	return "_" + s + "_"
+}
+
+func Emphasized(s string) string {
+	return "__" + s + "__"
+}

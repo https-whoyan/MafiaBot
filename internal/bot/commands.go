@@ -4,9 +4,18 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/https-whoyan/MafiaBot/internal/core/game"
+	time2 "github.com/https-whoyan/MafiaBot/internal/time"
 	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
+	"github.com/https-whoyan/MafiaBot/pkg/db/redis"
 	"log"
+	"strconv"
 	"time"
+)
+
+// Registration variables
+var (
+	RegistrationPlayerSticker    = ":grin:"
+	RegistrationSpectatorSticker = ":smiling_imp:"
 )
 
 // YanLohCommand command
@@ -97,14 +106,27 @@ func (c *RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interac
 	if err != nil {
 		log.Print(err)
 	}
+	deadlineStr := strconv.Itoa(time2.RegistrationDeadlineMinutes)
 	responseMessageText := "Registration has begun. \n" +
-		"Post any reactions below. And if you want to be a spectator, put the reaction :smiling_imp:"
+		Bold("Post"+RegistrationPlayerSticker+" reactions below.") + Italic("If you want to be a spectator, "+
+		"put the reaction "+RegistrationSpectatorSticker+".") + "\n\n" + Bold(
+		Emphasized("Deadline: "+deadlineStr+"minutes</u>"))
+
 	channelID := i.ChannelID
 	message, err := s.ChannelMessageSend(channelID, responseMessageText)
 	if err != nil {
 		log.Print(err)
 	}
-	log.Println("MessageID: ", message.ID)
+	messageID := message.ID
+	currDB, isContains := redis.GetCurrRedisDB()
+	if !isContains {
+		log.Print("DB isn't initialed, couldn't get currDB")
+		return
+	}
+	err = currDB.SetInitialGameMessageID(i.GuildID, messageID)
+	if err != nil {
+		log.Print(err)
+	}
 }
 
 func (c *RegisterGameCommand) GameInteraction(g *game.Game) {
@@ -205,5 +227,38 @@ func (c *AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Inter
 }
 
 func (c *AddChannelRoleCommand) GameInteraction(g *game.Game) {
+	//..
+}
+
+// StartGameCommand command logic
+type StartGameCommand struct {
+	cmd  *discordgo.ApplicationCommand
+	name string
+}
+
+func NewStartGameCommand() *RegisterGameCommand {
+	name := "start_game"
+	return &RegisterGameCommand{
+		cmd: &discordgo.ApplicationCommand{
+			Name:        name,
+			Description: "Start a new game. This output a list of game configs for voting",
+		},
+		name: name,
+	}
+}
+
+func (c *StartGameCommand) GetCmd() *discordgo.ApplicationCommand {
+	return c.cmd
+}
+
+func (c *StartGameCommand) GetName() string {
+	return c.name
+}
+
+func (c *StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction) {
+
+}
+
+func (c *StartGameCommand) GameInteraction(g *game.Game) {
 	//..
 }

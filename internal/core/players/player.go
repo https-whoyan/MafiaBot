@@ -8,17 +8,17 @@ import (
 type AliveStatus int
 
 const (
-	Alive = iota + 1
-	Dead
-	Spectating
+	Alive      AliveStatus = 1
+	Dead       AliveStatus = 2
+	Spectating AliveStatus = 3
 )
 
 type VoteStatus int
 
 const (
-	Chooses = iota + 1
-	Passed
-	Muted
+	Chooses VoteStatus = 1
+	Passed  VoteStatus = 2
+	Muted   VoteStatus = 3
 )
 
 type Player struct {

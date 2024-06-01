@@ -1,12 +1,10 @@
-package peaceful
-
-import "github.com/https-whoyan/MafiaBot/internal/core/roles"
+package roles
 
 // Whore description from Google.com
 var (
-	Whore = &roles.Role{
+	Whore = &Role{
 		Name:           "Whore",
-		Team:           roles.PeacefulTeam,
+		Team:           PeacefulTeam,
 		NightVoteOrder: 1,
 		Description: `
 			The role of the Prostitute is to choose one of the players to spend 
