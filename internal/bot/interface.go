@@ -10,4 +10,5 @@ type Command interface {
 	GetCmd() *discordgo.ApplicationCommand
 	GetName() string
 	GameInteraction(b *game.Game)
+	IsUsedForGame() bool
 }

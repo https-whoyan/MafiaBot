@@ -47,8 +47,6 @@ func NewGame(playersCount int) *Game {
 	}
 }
 
-func NewUndefinedGame() *Game {
-	return &Game{
-		State: NonDefinedState,
-	}
+func (g *Game) SetNonDefinedState() {
+	g.State = NonDefinedState
 }

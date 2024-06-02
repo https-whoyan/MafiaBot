@@ -4,24 +4,28 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/https-whoyan/MafiaBot/internal/core/game"
+	"github.com/https-whoyan/MafiaBot/internal/core/roles"
 	time2 "github.com/https-whoyan/MafiaBot/internal/time"
 	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
 	"github.com/https-whoyan/MafiaBot/pkg/db/redis"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 )
 
-// Registration variables
+// Stickers
 var (
 	RegistrationPlayerSticker    = ":grin:"
 	RegistrationSpectatorSticker = ":smiling_imp:"
+	LuckySticker                 = ":four_leaf_clover:"
 )
 
 // YanLohCommand command
 type YanLohCommand struct {
-	cmd  *discordgo.ApplicationCommand
-	name string
+	cmd           *discordgo.ApplicationCommand
+	isUsedForGame bool
+	name          string
 }
 
 func NewYanLohCommand() *YanLohCommand {
@@ -31,7 +35,8 @@ func NewYanLohCommand() *YanLohCommand {
 			Name:        name,
 			Description: "Call Yan with this command!",
 		},
-		name: name,
+		isUsedForGame: false,
+		name:          name,
 	}
 }
 
@@ -67,14 +72,17 @@ func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction) 
 	}(guildID, i.Member.User.ID)
 }
 
-func (c *YanLohCommand) GameInteraction(g *game.Game) {
-	//...
+func (c *YanLohCommand) GameInteraction(_ *game.Game) {}
+
+func (c *YanLohCommand) IsUsedForGame() bool {
+	return c.isUsedForGame
 }
 
 // RegisterGameCommand command
 type RegisterGameCommand struct {
-	cmd  *discordgo.ApplicationCommand
-	name string
+	cmd           *discordgo.ApplicationCommand
+	isUsedForGame bool
+	name          string
 }
 
 func NewRegisterGameCommand() *RegisterGameCommand {
@@ -84,7 +92,8 @@ func NewRegisterGameCommand() *RegisterGameCommand {
 			Name:        name,
 			Description: "Register new Game",
 		},
-		name: name,
+		isUsedForGame: true,
+		name:          name,
 	}
 }
 
@@ -108,9 +117,9 @@ func (c *RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interac
 	}
 	deadlineStr := strconv.Itoa(time2.RegistrationDeadlineMinutes)
 	responseMessageText := "Registration has begun. \n" +
-		Bold("Post"+RegistrationPlayerSticker+" reactions below.") + Italic("If you want to be a spectator, "+
+		Bold("Post "+RegistrationPlayerSticker+" reaction below.") + Italic(" If you want to be a spectator, "+
 		"put the reaction "+RegistrationSpectatorSticker+".") + "\n\n" + Bold(
-		Emphasized("Deadline: "+deadlineStr+"minutes</u>"))
+		Emphasized("Deadline: "+deadlineStr+" minutes"))
 
 	channelID := i.ChannelID
 	message, err := s.ChannelMessageSend(channelID, responseMessageText)
@@ -130,35 +139,51 @@ func (c *RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interac
 }
 
 func (c *RegisterGameCommand) GameInteraction(g *game.Game) {
-	g = game.NewUndefinedGame()
+	g.SetNonDefinedState()
+}
+
+func (c *RegisterGameCommand) IsUsedForGame() bool {
+	return c.isUsedForGame
 }
 
 // AddChannelRoleCommand command logic
 type AddChannelRoleCommand struct {
-	cmd  *discordgo.ApplicationCommand
-	name string
+	cmd           *discordgo.ApplicationCommand
+	isUsedForGame bool
+	name          string
 }
 
 func NewAddChannelRole() *AddChannelRoleCommand {
 	name := "add_channel_role"
+
+	generateOption := func(roleName string) *discordgo.ApplicationCommandOption {
+		return &discordgo.ApplicationCommandOption{
+			Name:        roleName,
+			Description: "Add " + roleName + " interaction chat",
+			Type:        discordgo.ApplicationCommandOptionString,
+		}
+	}
+
+	generateOptions := func() []*discordgo.ApplicationCommandOption {
+		allNamesOfRoles := roles.GetAllNightInteractionRolesNames()
+		var options []*discordgo.ApplicationCommandOption
+		for _, roleName := range allNamesOfRoles {
+			// For done using mafia chat
+			if roleName != "Don" {
+				options = append(options, generateOption(strings.ToLower(roleName)))
+			}
+		}
+		return options
+	}
+
 	return &AddChannelRoleCommand{
 		cmd: &discordgo.ApplicationCommand{
 			Name:        name,
 			Description: "Define a chat room where the interaction between the bot and the role will take place.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "mafia",
-					Description: "Add Mafia interaction chat",
-					Type:        discordgo.ApplicationCommandOptionString,
-				},
-				{
-					Name:        "doctor",
-					Description: "Add Doctor interaction chat",
-					Type:        discordgo.ApplicationCommandOptionString,
-				},
-			},
+			Options:     generateOptions(),
 		},
-		name: name,
+		isUsedForGame: false,
+		name:          name,
 	}
 }
 
@@ -226,39 +251,161 @@ func (c *AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Inter
 	return
 }
 
-func (c *AddChannelRoleCommand) GameInteraction(g *game.Game) {
-	//..
+func (c *AddChannelRoleCommand) GameInteraction(_ *game.Game) {}
+
+func (c *AddChannelRoleCommand) IsUsedForGame() bool {
+	return c.isUsedForGame
 }
 
-// StartGameCommand command logic
-type StartGameCommand struct {
-	cmd  *discordgo.ApplicationCommand
-	name string
+// ChoiceGameConfig command logic
+type ChoiceGameConfig struct {
+	cmd           *discordgo.ApplicationCommand
+	isUsedForGame bool
+	name          string
 }
 
-func NewStartGameCommand() *RegisterGameCommand {
+func NewChoiceGameConfig() *ChoiceGameConfig {
 	name := "start_game"
-	return &RegisterGameCommand{
+	return &ChoiceGameConfig{
 		cmd: &discordgo.ApplicationCommand{
 			Name:        name,
 			Description: "Start a new game. This output a list of game configs for voting",
 		},
-		name: name,
+		isUsedForGame: true,
+		name:          name,
 	}
 }
 
-func (c *StartGameCommand) GetCmd() *discordgo.ApplicationCommand {
+func (c *ChoiceGameConfig) GetCmd() *discordgo.ApplicationCommand {
 	return c.cmd
 }
 
-func (c *StartGameCommand) GetName() string {
+func (c *ChoiceGameConfig) GetName() string {
 	return c.name
 }
 
-func (c *StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction) {
-
+func (c *ChoiceGameConfig) IsUsedForGame() bool {
+	return c.isUsedForGame
 }
 
-func (c *StartGameCommand) GameInteraction(g *game.Game) {
+func (c *ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interaction) {
+	currRedisDB, isContains := redis.GetCurrRedisDB()
+	if !isContains {
+		log.Println("redis is not exists, command: startGameCommand")
+		err := s.InteractionRespond(i, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Internal Server Error!",
+			},
+		})
+		if err != nil {
+			log.Print(err)
+		}
+	}
+	registrationMessageID, err := currRedisDB.GetInitialGameMessageID(i.GuildID)
+	if err != nil || registrationMessageID == "" {
+		messageContent := Emphasized("Registration Deadline passed!") + "\n" + "Please, " +
+			Bold("use the /register_game command") + " to register a new game."
+
+		err = s.InteractionRespond(i, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: messageContent,
+			},
+		})
+		if err != nil {
+			log.Print(err)
+		}
+		return
+	}
+
+	err = s.InteractionRespond(i, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "",
+		},
+	})
+	if err != nil {
+		log.Print(err)
+	}
+}
+
+func (c *ChoiceGameConfig) GameInteraction(g *game.Game) {
 	//..
 }
+
+// AboutRolesCommand command logic
+type AboutRolesCommand struct {
+	cmd           *discordgo.ApplicationCommand
+	isUsedForGame bool
+	name          string
+}
+
+func (c *AboutRolesCommand) IsUsedForGame() bool {
+	return c.isUsedForGame
+}
+
+func NewAboutRolesCommand() *AboutRolesCommand {
+	name := "about_roles"
+	return &AboutRolesCommand{
+		cmd: &discordgo.ApplicationCommand{
+			Name:        name,
+			Description: "Send description about roles",
+		},
+		isUsedForGame: false,
+		name:          name,
+	}
+}
+
+func (c *AboutRolesCommand) GetCmd() *discordgo.ApplicationCommand {
+	return c.cmd
+}
+
+func (c *AboutRolesCommand) GetName() string {
+	return c.name
+}
+
+func (c *AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interaction) {
+	messageContent := Bold("Below information about all roles:\n")
+	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: messageContent,
+		},
+	})
+	if err != nil {
+		log.Print(err)
+	}
+	messageContent = ""
+
+	sendMessage := func(s *discordgo.Session, i *discordgo.Interaction, message string) {
+		_, err = s.ChannelMessageSend(i.ChannelID, messageContent)
+		if err != nil {
+			log.Print(err)
+		}
+	}
+
+	fixDescription := func(s string) string {
+		words := strings.Split(s, " ")
+		return strings.Join(words, " ")
+	}
+
+	allSortedRoles := roles.GetAllSortedRoles()
+	for _, role := range allSortedRoles {
+		messageContent += "================================\n"
+		name := Bold(Emphasized(role.Name)) + "\n"
+		team := Bold("Team: ") + roles.GetStringTeam(role.Team)
+		description := fixDescription(role.Description)
+		rowBlock := name + "\n" + team + "\n" + description
+
+		messageContent += rowBlock
+		// To erase 2000 max length error
+		if len(messageContent) <= 1500 {
+			sendMessage(s, i, messageContent)
+			messageContent = ""
+		}
+	}
+
+}
+
+func (c *AboutRolesCommand) GameInteraction(_ *game.Game) {}

@@ -116,6 +116,9 @@ func (db *MongoDB) GetChannelIIDByRole(guildID string, role string) (string, err
 	if err != nil {
 		return "", err
 	}
+	if result == nil {
+		return "", errors.New("role not found")
+	}
 
 	return result.Role, nil
 }

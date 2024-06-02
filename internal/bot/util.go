@@ -3,8 +3,25 @@ package bot
 import (
 	"errors"
 	"github.com/bwmarrin/discordgo"
+	"github.com/https-whoyan/MafiaBot/internal/core/config"
 	"log"
 )
+
+func Bold(s string) string {
+	return "**" + s + "**"
+}
+
+func Italic(s string) string {
+	return "_" + s + "_"
+}
+
+func Emphasized(s string) string {
+	return "__" + s + "__"
+}
+
+func CodeBlock(language, text string) string {
+	return "```" + language + text + "```"
+}
 
 func noticeChat(s *discordgo.Session, chatID string, content ...string) (map[string]*discordgo.Message, error) {
 	// Represent Message by their content.
@@ -24,7 +41,7 @@ func isPrivateMessage(i *discordgo.InteractionCreate) bool {
 }
 
 func noticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	content := "All commands are used on the server. If you have difficulties in using the bot, " +
+	content := Bold("All commands are used on the server.\n") + "If you have difficulties in using the bot, " +
 		"please refer to the repository documentation: https://github.com/https-whoyan/MafiaBot"
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -43,8 +60,8 @@ func noticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "You can't interact with the game because you haven't started" +
-				" it. Write the /register_game command to start the game.",
+			Content: "You can't interact with the game because you haven't registered it\n" +
+				Bold("Write the "+Emphasized("/register_game")+" command") + " to start the game.",
 		},
 	})
 	if err != nil {
@@ -52,14 +69,6 @@ func noticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-func Bold(s string) string {
-	return "**" + s + "**"
-}
-
-func Italic(s string) string {
-	return "_" + s + "_"
-}
-
-func Emphasized(s string) string {
-	return "__" + s + "__"
+func CreateConfigMessage(cfg *config.RolesConfig) string {
+	return ""
 }

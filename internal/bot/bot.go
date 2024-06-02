@@ -95,9 +95,11 @@ func DisconnectBot() error {
 }
 
 func (b *Bot) loginAs() {
+	b.Lock()
 	b.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
 	})
+	b.Unlock()
 }
 
 func (b *Bot) Open() error {
@@ -132,50 +134,92 @@ func (b *Bot) initBotCommands() {
 	b.initCommand(NewYanLohCommand())
 	b.initCommand(NewAddChannelRole())
 	b.initCommand(NewRegisterGameCommand())
-	b.initCommand(NewStartGameCommand())
+	b.initCommand(NewChoiceGameConfig())
+	b.initCommand(NewAboutRolesCommand())
 }
 
 func (b *Bot) registerHandlers() {
 	log.Print("Register handlers")
 	for _, cmd := range b.Commands {
+		b.Lock()
+		// To avoid closing the loop
 		newCmd := cmd
 		cmdName := newCmd.GetName()
 		log.Printf("Register handler, command name: %v", cmdName)
-		b.Session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			executedCommandName := i.ApplicationCommandData().Name
-
-			if executedCommandName != cmdName {
-				return
-			}
-
-			if isPrivateMessage(i) {
-				noticePrivateChat(s, i)
-				return
-			}
-
-			executedGuildID := i.GuildID
-			currGame, containsGame := b.Games[executedGuildID]
-
-			log.Printf("Execute %v command.", cmdName)
-			newCmd.Execute(s, i.Interaction)
-
-			if containsGame {
-				log.Printf("Execute %v game interation podcommand", cmdName)
-				currGame.Lock()
-				newCmd.GameInteraction(currGame)
-				currGame.Unlock()
-				return
-			}
-			if executedCommandName != "register_game" {
-				noticeIsEmptyGame(s, i)
-				return
-			}
-			currGame = &game.Game{}
-			newCmd.GameInteraction(currGame)
-			return
-		})
+		// Lock
+		newHandler := b.getSIHandler(newCmd, cmdName)
+		b.Session.AddHandler(newHandler)
+		b.Unlock()
 	}
+}
 
+func (b *Bot) getSIHandler(cmd Command, cmdName string) func(
+	s *discordgo.Session, i *discordgo.InteractionCreate) {
+	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		// I recognize the name of the team
+		executedCommandName := i.ApplicationCommandData().Name
+
+		// If it not equals as iterable cmd.Name
+		if executedCommandName != cmdName {
+			return
+		}
+
+		// If it executed in private chat
+		if isPrivateMessage(i) {
+			// Reply "it is a private chat"
+			noticePrivateChat(s, i)
+			return
+		}
+
+		// If command use not use for game interaction
+		if !cmd.IsUsedForGame() {
+			// Just execute a Execute()
+			log.Printf("Execute %v command.", cmdName)
+			cmd.Execute(s, i.Interaction)
+			return
+		}
+
+		// I know the guildID
+		executedGuildID := i.GuildID
+		log.Printf("Executed guild ID: %v", executedGuildID)
+		// And is there a game on this server
+		_, containsGame := b.Games[executedGuildID]
+
+		// If yes
+		if containsGame {
+			log.Printf("Execute %v command.", cmdName)
+			// I call the Execute method of the command
+			cmd.Execute(s, i.Interaction)
+
+			// And call game interaction function
+			currGame := b.Games[executedGuildID]
+			currGame.Lock()
+			defer currGame.Unlock()
+			cmd.GameInteraction(currGame)
+			log.Printf("Execute %v game interation podcommand", cmdName)
+			return
+		}
+
+		// Otherwise I know the game isn't registered.
+		//I check to see if the command name is register_game. If not, it means that the
+		// person uses the game command without registering it.
+		if executedCommandName != "register_game" {
+			noticeIsEmptyGame(s, i)
+			return
+		}
+
+		// I use the register_game command
+		log.Printf("Must be register_game: Execute %v command.", cmdName)
+		cmd.Execute(s, i.Interaction)
+		log.Printf("Must be register_game: Execute %v game interation podcommand", cmdName)
+		b.Games[executedGuildID] = &game.Game{}
+		currGame := b.Games[executedGuildID]
+		currGame.Lock()
+		defer currGame.Unlock()
+		cmd.GameInteraction(currGame)
+
+		return
+	}
 }
 
 func (b *Bot) registerCommands() {
