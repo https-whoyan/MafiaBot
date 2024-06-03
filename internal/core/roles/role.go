@@ -29,6 +29,7 @@ var MappedRoles = map[string]*Role{
 	"Mafia":     Mafia,
 	"Maniac":    Maniac,
 	"Peaceful":  Peaceful,
+	"Whose":     Whore,
 }
 
 var MappedEmoji = map[string]string{
@@ -40,6 +41,7 @@ var MappedEmoji = map[string]string{
 	"Mafia":     "",
 	"Maniac":    "",
 	"Peaceful":  "",
+	"Whose":     "",
 }
 
 var StringTeam = map[Team]string{

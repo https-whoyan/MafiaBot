@@ -2,7 +2,6 @@ package bot
 
 import (
 	"errors"
-	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/https-whoyan/MafiaBot/internal/bot/channel"
 	"github.com/https-whoyan/MafiaBot/internal/core/config"
@@ -10,6 +9,7 @@ import (
 	"github.com/https-whoyan/MafiaBot/internal/core/roles"
 	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
 	"log"
+	"strings"
 )
 
 // _____________
@@ -101,6 +101,9 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 	// mappedRoles: save contains channels roles
 	mappedRoles := make(map[string]*channel.RoleChannel)
 	for _, roleName := range allRolesNames {
+		if strings.ToLower(roleName) == "don" {
+			continue
+		}
 		channelIID, err := currDB.GetChannelIIDByRole(guildID, roleName)
 		if channelIID == "" {
 			emptyRolesMp[roleName] = true
@@ -119,7 +122,6 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 		defer g.Unlock()
 	}
 
-	fmt.Println(emptyRolesMp)
 	// If a have all roles
 	if len(emptyRolesMp) == 0 {
 		// Save it to g.InteractionChannels

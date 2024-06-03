@@ -349,7 +349,7 @@ func (c *ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interactio
 	err = s.InteractionRespond(i, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "",
+			Content: "Empty for now...",
 		},
 	})
 	if err != nil {

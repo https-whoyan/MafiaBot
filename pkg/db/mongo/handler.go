@@ -3,10 +3,10 @@ package mongo
 import (
 	"context"
 	"errors"
-	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
+	"strings"
 )
 
 const (
@@ -117,7 +117,6 @@ func (db *MongoDB) GetChannelIIDByRole(guildID string, role string) (string, err
 		return "", err
 	}
 
-	fmt.Print(guildID, role)
 	ctx := context.Background()
 	result := ChannelRoleStruct{}
 	filter := bson.D{
@@ -125,11 +124,10 @@ func (db *MongoDB) GetChannelIIDByRole(guildID string, role string) (string, err
 			"guild_id", guildID,
 		},
 		{
-			"role", role,
+			"role", strings.ToLower(role),
 		},
 	}
 	err = coll.FindOne(ctx, filter).Decode(&result)
-	fmt.Println(result, err)
 	if err != nil {
 		return "", err
 	}
