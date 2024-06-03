@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
@@ -29,12 +30,15 @@ func (db *MongoDB) getColl(dbName, collection string) (*mongo.Collection, error)
 // ________________
 
 type ChannelRoleStruct struct {
-	GuildID    string `bson:"guild_id"`
-	ChannelIID string `bson:"channel_iid"`
-	Role       string `bson:"role"`
+	GuildID    string `bson:"guild_id" json:"guild_id"`
+	ChannelIID string `bson:"channel_iid" json:"channel_iid"`
+	Role       string `bson:"role" json:"role"`
 }
 
 func (db *MongoDB) DeleteRoleChannel(guildID string, role string) error {
+	if db.TryLock() {
+		defer db.Unlock()
+	}
 	coll, err := db.getColl(DbName, RolesChannelCollection)
 	if err != nil {
 		return err
@@ -54,6 +58,9 @@ func (db *MongoDB) DeleteRoleChannel(guildID string, role string) error {
 
 func (db *MongoDB) SetRoleChannel(guildID string, channelIID string, role string) error {
 	// Delete if contains
+	if db.TryLock() {
+		defer db.Unlock()
+	}
 	err := db.DeleteRoleChannel(guildID, role)
 	coll, err := db.getColl(DbName, RolesChannelCollection)
 	if err != nil {
@@ -75,21 +82,25 @@ func (db *MongoDB) SetRoleChannel(guildID string, channelIID string, role string
 }
 
 func (db *MongoDB) GetRoleByChannelIID(guildID string, channelIID string) (string, error) {
+	if db.TryLock() {
+		defer db.Unlock()
+	}
 	coll, err := db.getColl(DbName, RolesChannelCollection)
 	if err != nil {
 		return "", err
 	}
 
 	ctx := context.Background()
-	var result *ChannelRoleStruct
-	err = coll.FindOne(ctx, bson.D{
+	result := ChannelRoleStruct{}
+	filter := bson.D{
 		{
 			"guild_id", guildID,
 		},
 		{
 			"channel_iid", channelIID,
 		},
-	}).Decode(result)
+	}
+	err = coll.FindOne(ctx, filter).Decode(&result)
 	if err != nil {
 		return "", err
 	}
@@ -98,27 +109,30 @@ func (db *MongoDB) GetRoleByChannelIID(guildID string, channelIID string) (strin
 }
 
 func (db *MongoDB) GetChannelIIDByRole(guildID string, role string) (string, error) {
+	if db.TryLock() {
+		defer db.Unlock()
+	}
 	coll, err := db.getColl(DbName, RolesChannelCollection)
 	if err != nil {
 		return "", err
 	}
 
+	fmt.Print(guildID, role)
 	ctx := context.Background()
-	var result *ChannelRoleStruct
-	err = coll.FindOne(ctx, bson.D{
+	result := ChannelRoleStruct{}
+	filter := bson.D{
 		{
 			"guild_id", guildID,
 		},
 		{
 			"role", role,
 		},
-	}).Decode(result)
+	}
+	err = coll.FindOne(ctx, filter).Decode(&result)
+	fmt.Println(result, err)
 	if err != nil {
 		return "", err
 	}
-	if result == nil {
-		return "", errors.New("role not found")
-	}
 
-	return result.Role, nil
+	return result.ChannelIID, nil
 }

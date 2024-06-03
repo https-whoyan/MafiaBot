@@ -1,6 +1,9 @@
 package roles
 
-import "sort"
+import (
+	"sort"
+	"strings"
+)
 
 type Team int
 
@@ -40,8 +43,8 @@ var MappedEmoji = map[string]string{
 }
 
 var StringTeam = map[Team]string{
-	PeacefulTeam: ":black_heart: Peaceful",
-	MafiaTeam:    ":heart: Mafia Team",
+	PeacefulTeam: ":heart: Peaceful",
+	MafiaTeam:    ":black_heart: Mafia Team",
 	ManiacTeam:   ":grey_heart: Maniac Team",
 }
 
@@ -60,11 +63,13 @@ func GetAllNightInteractionRolesNames() []string {
 }
 
 func GetAllRolesNames() []string {
-	var roles []string
-	for name := range MappedRoles {
-		roles = append(roles, name)
+	allRoles := GetAllSortedRoles()
+	var roleNames []string
+	for _, role := range allRoles {
+		roleNames = append(roleNames, role.Name)
 	}
-	return roles
+
+	return roleNames
 }
 
 func GetRoleByName(roleName string) (*Role, bool) {
@@ -85,6 +90,15 @@ func GetAllSortedRoles() []*Role {
 	return allRoles
 }
 
-func GetStringTeam(team Team) string {
-	return StringTeam[team]
+func GetDefinitionOfRole(roleName string) string {
+	fixDescription := func(s string) string {
+		words := strings.Split(s, " ")
+		return strings.Join(words, " ")
+	}
+
+	role := MappedRoles[roleName]
+	name := "**__" + role.Name + "__**" + "\n"
+	team := "**" + "Team: " + "**" + StringTeam[role.Team]
+	description := fixDescription(role.Description)
+	return name + "\n" + team + "\n" + description + "\n"
 }

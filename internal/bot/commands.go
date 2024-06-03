@@ -2,16 +2,18 @@ package bot
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
+	"log"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/https-whoyan/MafiaBot/internal/core/game"
 	"github.com/https-whoyan/MafiaBot/internal/core/roles"
 	time2 "github.com/https-whoyan/MafiaBot/internal/time"
 	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
 	"github.com/https-whoyan/MafiaBot/pkg/db/redis"
-	"log"
-	"strconv"
-	"strings"
-	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 // Stickers
@@ -48,7 +50,7 @@ func (c *YanLohCommand) GetName() string {
 	return c.name
 }
 
-func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction) {
+func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game) {
 	messageContent := "Возможно, что ян и лох. И древлян. Но что бы его же ботом его обзывать..."
 	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -71,8 +73,6 @@ func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction) 
 		}
 	}(guildID, i.Member.User.ID)
 }
-
-func (c *YanLohCommand) GameInteraction(_ *game.Game) {}
 
 func (c *YanLohCommand) IsUsedForGame() bool {
 	return c.isUsedForGame
@@ -105,8 +105,40 @@ func (c *RegisterGameCommand) GetName() string {
 	return c.name
 }
 
-func (c *RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction) {
-	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
+func (c *RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, g *game.Game) {
+	// Load all RoleChannels
+	emptyRoles, err := setRolesChannels(s, i.GuildID, g)
+	if err != nil {
+		err = s.InteractionRespond(i, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "Internal Server Error",
+			},
+		})
+		if err != nil {
+			log.Print(err)
+		}
+		return
+	}
+	// Set it to NonDefinedState
+	g.SetState(game.NonDefinedState)
+	if len(emptyRoles) != 0 {
+		content := Bold("You don't configure all channels for bot interaction. ") +
+			"Please, use " + Emphasized("/add_channel_role") + " to fix " + strings.Join(emptyRoles, ", ") +
+			" roles."
+		err = s.InteractionRespond(i, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: content,
+			},
+		})
+		if err != nil {
+			log.Print(err)
+		}
+		return
+	}
+	// Send message.
+	err = s.InteractionRespond(i, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: "Ok. Message below.",
@@ -127,6 +159,7 @@ func (c *RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interac
 		log.Print(err)
 	}
 	messageID := message.ID
+	// Safe messageID to redis
 	currDB, isContains := redis.GetCurrRedisDB()
 	if !isContains {
 		log.Print("DB isn't initialed, couldn't get currDB")
@@ -136,10 +169,6 @@ func (c *RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interac
 	if err != nil {
 		log.Print(err)
 	}
-}
-
-func (c *RegisterGameCommand) GameInteraction(g *game.Game) {
-	g.SetNonDefinedState()
 }
 
 func (c *RegisterGameCommand) IsUsedForGame() bool {
@@ -195,7 +224,7 @@ func (c *AddChannelRoleCommand) GetName() string {
 	return c.name
 }
 
-func (c *AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Interaction) {
+func (c *AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game) {
 	if len(i.ApplicationCommandData().Options) == 0 {
 		err := s.InteractionRespond(i, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -244,14 +273,12 @@ func (c *AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Inter
 	}
 	currDB.Lock()
 	currDB.Unlock()
-	err = currDB.SetRoleChannel(i.ChannelID, requestedChatID, roleName)
+	err = currDB.SetRoleChannel(i.GuildID, requestedChatID, roleName)
 	if err != nil {
 		log.Println(err)
 	}
 	return
 }
-
-func (c *AddChannelRoleCommand) GameInteraction(_ *game.Game) {}
 
 func (c *AddChannelRoleCommand) IsUsedForGame() bool {
 	return c.isUsedForGame
@@ -288,7 +315,7 @@ func (c *ChoiceGameConfig) IsUsedForGame() bool {
 	return c.isUsedForGame
 }
 
-func (c *ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interaction) {
+func (c *ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interaction, g *game.Game) {
 	currRedisDB, isContains := redis.GetCurrRedisDB()
 	if !isContains {
 		log.Println("redis is not exists, command: startGameCommand")
@@ -303,7 +330,7 @@ func (c *ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interactio
 		}
 	}
 	registrationMessageID, err := currRedisDB.GetInitialGameMessageID(i.GuildID)
-	if err != nil || registrationMessageID == "" {
+	if (err != nil || registrationMessageID == "") && g.State == game.NonDefinedState {
 		messageContent := Emphasized("Registration Deadline passed!") + "\n" + "Please, " +
 			Bold("use the /register_game command") + " to register a new game."
 
@@ -328,10 +355,6 @@ func (c *ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interactio
 	if err != nil {
 		log.Print(err)
 	}
-}
-
-func (c *ChoiceGameConfig) GameInteraction(g *game.Game) {
-	//..
 }
 
 // AboutRolesCommand command logic
@@ -365,7 +388,7 @@ func (c *AboutRolesCommand) GetName() string {
 	return c.name
 }
 
-func (c *AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interaction) {
+func (c *AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game) {
 	messageContent := Bold("Below information about all roles:\n")
 	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -385,27 +408,16 @@ func (c *AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 		}
 	}
 
-	fixDescription := func(s string) string {
-		words := strings.Split(s, " ")
-		return strings.Join(words, " ")
-	}
-
-	allSortedRoles := roles.GetAllSortedRoles()
-	for _, role := range allSortedRoles {
+	allSortedRoles := roles.GetAllRolesNames()
+	for _, roleName := range allSortedRoles {
 		messageContent += "================================\n"
-		name := Bold(Emphasized(role.Name)) + "\n"
-		team := Bold("Team: ") + roles.GetStringTeam(role.Team)
-		description := fixDescription(role.Description)
-		rowBlock := name + "\n" + team + "\n" + description
+		messageContent += roles.GetDefinitionOfRole(roleName)
 
-		messageContent += rowBlock
 		// To erase 2000 max length error
-		if len(messageContent) <= 1500 {
+		if len(messageContent) >= 1500 {
 			sendMessage(s, i, messageContent)
 			messageContent = ""
 		}
 	}
-
+	sendMessage(s, i, messageContent)
 }
-
-func (c *AboutRolesCommand) GameInteraction(_ *game.Game) {}

@@ -175,7 +175,7 @@ func (b *Bot) getSIHandler(cmd Command, cmdName string) func(
 		if !cmd.IsUsedForGame() {
 			// Just execute a Execute()
 			log.Printf("Execute %v command.", cmdName)
-			cmd.Execute(s, i.Interaction)
+			cmd.Execute(s, i.Interaction, nil)
 			return
 		}
 
@@ -188,15 +188,11 @@ func (b *Bot) getSIHandler(cmd Command, cmdName string) func(
 		// If yes
 		if containsGame {
 			log.Printf("Execute %v command.", cmdName)
-			// I call the Execute method of the command
-			cmd.Execute(s, i.Interaction)
-
-			// And call game interaction function
 			currGame := b.Games[executedGuildID]
 			currGame.Lock()
 			defer currGame.Unlock()
-			cmd.GameInteraction(currGame)
-			log.Printf("Execute %v game interation podcommand", cmdName)
+			// I call the Execute method of the command
+			cmd.Execute(s, i.Interaction, currGame)
 			return
 		}
 
@@ -210,13 +206,11 @@ func (b *Bot) getSIHandler(cmd Command, cmdName string) func(
 
 		// I use the register_game command
 		log.Printf("Must be register_game: Execute %v command.", cmdName)
-		cmd.Execute(s, i.Interaction)
-		log.Printf("Must be register_game: Execute %v game interation podcommand", cmdName)
 		b.Games[executedGuildID] = &game.Game{}
 		currGame := b.Games[executedGuildID]
 		currGame.Lock()
 		defer currGame.Unlock()
-		cmd.GameInteraction(currGame)
+		cmd.Execute(s, i.Interaction, currGame)
 
 		return
 	}
