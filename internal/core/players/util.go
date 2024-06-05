@@ -62,3 +62,21 @@ func GeneratePlayers(users []*discordgo.User, cfg *config.RolesConfig) ([]*Playe
 
 	return players, nil
 }
+
+func GenerateEmptyPlayers(users []*discordgo.User) []*Player {
+	players := make([]*Player, 0)
+	for _, user := range users {
+		players = append(players, &Player{
+			Tag: user,
+		})
+	}
+	return players
+}
+
+func GetTagsByPlayers(players []*Player) []*discordgo.User {
+	var tags []*discordgo.User
+	for _, player := range players {
+		tags = append(tags, player.Tag)
+	}
+	return tags
+}

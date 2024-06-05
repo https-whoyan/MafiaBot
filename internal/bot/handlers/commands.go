@@ -2,81 +2,21 @@ package bot
 
 import (
 	"fmt"
+	message2 "github.com/https-whoyan/MafiaBot/internal/bot/message"
+	"github.com/https-whoyan/MafiaBot/internal/core/config"
+	"github.com/https-whoyan/MafiaBot/internal/core/game"
+	"github.com/https-whoyan/MafiaBot/internal/core/players"
+	"github.com/https-whoyan/MafiaBot/internal/core/roles"
+	time2 "github.com/https-whoyan/MafiaBot/internal/time"
+	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
+	"github.com/https-whoyan/MafiaBot/pkg/db/redis"
 	"log"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/https-whoyan/MafiaBot/internal/core/game"
-	"github.com/https-whoyan/MafiaBot/internal/core/roles"
-	time2 "github.com/https-whoyan/MafiaBot/internal/time"
-	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
-	"github.com/https-whoyan/MafiaBot/pkg/db/redis"
-
 	"github.com/bwmarrin/discordgo"
 )
-
-// Stickers
-var (
-	RegistrationPlayerSticker    = ":grin:"
-	RegistrationSpectatorSticker = ":smiling_imp:"
-	LuckySticker                 = ":four_leaf_clover:"
-)
-
-// YanLohCommand command
-type YanLohCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
-}
-
-func NewYanLohCommand() *YanLohCommand {
-	name := "yan_loh"
-	return &YanLohCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        name,
-			Description: "Call Yan with this command!",
-		},
-		isUsedForGame: false,
-		name:          name,
-	}
-}
-
-func (c *YanLohCommand) GetCmd() *discordgo.ApplicationCommand {
-	return c.cmd
-}
-
-func (c *YanLohCommand) GetName() string {
-	return c.name
-}
-
-func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game) {
-	messageContent := "Возможно, что ян и лох. И древлян. Но что бы его же ботом его обзывать..."
-	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: messageContent,
-		},
-	})
-	if err != nil {
-		log.Print(err)
-	}
-	// async kick requester
-	guildID := i.GuildID
-	go func(sessId, kickedUserID string) {
-		var kickPing time.Duration = 3
-		time.Sleep(time.Second * kickPing)
-
-		err = s.GuildMemberMove(sessId, kickedUserID, nil)
-		if err != nil {
-			log.Printf("failed kick user, err: %v", err)
-		}
-	}(guildID, i.Member.User.ID)
-}
-
-func (c *YanLohCommand) IsUsedForGame() bool {
-	return c.isUsedForGame
-}
 
 // RegisterGameCommand command
 type RegisterGameCommand struct {
@@ -109,44 +49,23 @@ func (c *RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interac
 	// Load all RoleChannels
 	emptyRoles, err := setRolesChannels(s, i.GuildID, g)
 	if err != nil {
-		err = s.InteractionRespond(i, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Internal Server Error",
-			},
-		})
-		if err != nil {
-			log.Print(err)
-		}
+		content := "Internal Server Error"
+		Response(s, i, content)
 		return
 	}
-	// Set it to NonDefinedState
-	g.SetState(game.NonDefinedState)
 	if len(emptyRoles) != 0 {
 		content := Bold("You don't configure all channels for bot interaction. ") +
 			"Please, use " + Emphasized("/add_channel_role") + " to fix " + strings.Join(emptyRoles, ", ") +
 			" roles."
-		err = s.InteractionRespond(i, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: content,
-			},
-		})
-		if err != nil {
-			log.Print(err)
-		}
+		Response(s, i, content)
 		return
 	}
+	// If ok, set game to NonDefinedState
+	g.SetState(game.NonDefinedState)
 	// Send message.
-	err = s.InteractionRespond(i, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "Ok. Message below.",
-		},
-	})
-	if err != nil {
-		log.Print(err)
-	}
+	Response(s, i, "Ok. Message below.")
+
+	// Send additional message and save it ID
 	deadlineStr := strconv.Itoa(time2.RegistrationDeadlineMinutes)
 	responseMessageText := "Registration has begun. \n" +
 		Bold("Post "+RegistrationPlayerSticker+" reaction below.") + Italic(" If you want to be a spectator, "+
@@ -226,58 +145,39 @@ func (c *AddChannelRoleCommand) GetName() string {
 
 func (c *AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game) {
 	if len(i.ApplicationCommandData().Options) == 0 {
-		err := s.InteractionRespond(i, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Must be option!",
-			},
-		})
-		if err != nil {
-			log.Print(err)
-		}
+		content := "Must be option!"
+		Response(s, i, content)
 		return
 	}
 
+	// Get variables by options
 	roleName := i.ApplicationCommandData().Options[0].Name
 	requestedChatID := i.ApplicationCommandData().Options[0].Value.(string)
 
-	noticeChatContent := fmt.Sprintf("Now chat is used for %v role.", roleName)
-	if _, ok := noticeChat(s, requestedChatID, noticeChatContent); ok != nil {
-		err := s.InteractionRespond(i, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Invalid Chat ID!",
-			},
-		})
-		if err != nil {
-			log.Print(err)
-		}
-		return
-	}
-
-	messageContent := fmt.Sprintf("Done, now is %v chat is %v chat.", requestedChatID, roleName)
-	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: messageContent,
-		},
-	})
-	if err != nil {
-		log.Print(err)
-	}
-
 	currDB, containsDB := mongo.GetCurrMongoDB()
 	if !containsDB {
-		log.Println("empty database")
+		content := "Internal Server Error!"
+		Response(s, i, content)
 		return
 	}
 	currDB.Lock()
 	currDB.Unlock()
-	err = currDB.SetRoleChannel(i.GuildID, requestedChatID, roleName)
+	err := currDB.SetRoleChannel(i.GuildID, requestedChatID, roleName)
 	if err != nil {
-		log.Println(err)
+		content := Bold("Provided channel is already used.\n") + "Please, provide another, available chatID."
+		Response(s, i, content)
+		return
 	}
-	return
+
+	noticeChatContent := fmt.Sprintf("Now chat is used for %v role.", roleName)
+	if _, ok := noticeChat(s, requestedChatID, noticeChatContent); ok != nil {
+		content := "Invalid Chat ID!"
+		Response(s, i, content)
+		return
+	}
+
+	messageContent := fmt.Sprintf("Done, now is %v chat is %v chat.", requestedChatID, roleName)
+	Response(s, i, messageContent)
 }
 
 func (c *AddChannelRoleCommand) IsUsedForGame() bool {
@@ -292,11 +192,11 @@ type ChoiceGameConfig struct {
 }
 
 func NewChoiceGameConfig() *ChoiceGameConfig {
-	name := "start_game"
+	name := "choice_config"
 	return &ChoiceGameConfig{
 		cmd: &discordgo.ApplicationCommand{
 			Name:        name,
-			Description: "Start a new game. This output a list of game configs for voting",
+			Description: "This output a list of game configs for voting.",
 		},
 		isUsedForGame: true,
 		name:          name,
@@ -319,42 +219,47 @@ func (c *ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interactio
 	currRedisDB, isContains := redis.GetCurrRedisDB()
 	if !isContains {
 		log.Println("redis is not exists, command: startGameCommand")
-		err := s.InteractionRespond(i, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Internal Server Error!",
-			},
-		})
-		if err != nil {
-			log.Print(err)
-		}
+		content := "Internal Server Error!"
+		Response(s, i, content)
 	}
+
 	registrationMessageID, err := currRedisDB.GetInitialGameMessageID(i.GuildID)
 	if (err != nil || registrationMessageID == "") && g.State == game.NonDefinedState {
 		messageContent := Emphasized("Registration Deadline passed!") + "\n" + "Please, " +
 			Bold("use the /register_game command") + " to register a new game."
-
-		err = s.InteractionRespond(i, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: messageContent,
-			},
-		})
-		if err != nil {
-			log.Print(err)
-		}
+		Response(s, i, messageContent)
 		return
 	}
 
-	err = s.InteractionRespond(i, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "Empty for now...",
-		},
-	})
-	if err != nil {
-		log.Print(err)
+	// Set empty players to game (to save it)
+	_, playersCount := message2.GetUsersByEmojiID(
+		s, i.ChannelID, registrationMessageID, RegistrationPlayerSticker)
+
+	// If playersCount not in range [minAvailableCount, maxAvailableCount],
+	// Send message that it's impossible to choice config.
+	minPossiblePlayers := config.GetMinPlayersCount()
+	maxPossiblePlayers := config.GetMaxPlayersCount()
+	if playersCount < minPossiblePlayers {
+		content := Bold("The number of players is too small to start the game.\n") +
+			"Number of registered players: " + CodeBlock("", strconv.Itoa(playersCount)) +
+			"\nMinimum number to vote on game config choices: " + CodeBlock("", strconv.Itoa(minPossiblePlayers))
+		Response(s, i, content)
+	} else if playersCount > maxPossiblePlayers {
+		content := Bold("The number of players is too large to start the game.\n") +
+			"Number of registered players: " + CodeBlock("", strconv.Itoa(playersCount)) +
+			"\nMaximum number to vote on game config choices: " + CodeBlock("", strconv.Itoa(minPossiblePlayers))
+		Response(s, i, content)
 	}
+
+	// If playersCount is ok, set empty players to game (to safe it.)
+	startPlayers, _ := message2.GetUsersByEmojiID(
+		s, i.ChannelID, registrationMessageID, RegistrationPlayerSticker)
+	g.StartPlayers = players.GenerateEmptyPlayers(startPlayers)
+	// And spectators.
+	spectators, _ := message2.GetUsersByEmojiID(s, i.ChannelID, registrationMessageID, RegistrationSpectatorSticker)
+	g.Spectators = players.GenerateEmptyPlayers(spectators)
+	// Send a message to config.
+	Response(s, i, "Empty for now...")
 }
 
 // AboutRolesCommand command logic
@@ -390,19 +295,11 @@ func (c *AboutRolesCommand) GetName() string {
 
 func (c *AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game) {
 	messageContent := Bold("Below information about all roles:\n")
-	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: messageContent,
-		},
-	})
-	if err != nil {
-		log.Print(err)
-	}
+	Response(s, i, messageContent)
 	messageContent = ""
 
 	sendMessage := func(s *discordgo.Session, i *discordgo.Interaction, message string) {
-		_, err = s.ChannelMessageSend(i.ChannelID, messageContent)
+		_, err := s.ChannelMessageSend(i.ChannelID, messageContent)
 		if err != nil {
 			log.Print(err)
 		}
@@ -420,4 +317,52 @@ func (c *AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 		}
 	}
 	sendMessage(s, i, messageContent)
+}
+
+// YanLohCommand command
+type YanLohCommand struct {
+	cmd           *discordgo.ApplicationCommand
+	isUsedForGame bool
+	name          string
+}
+
+func NewYanLohCommand() *YanLohCommand {
+	name := "yan_loh"
+	return &YanLohCommand{
+		cmd: &discordgo.ApplicationCommand{
+			Name:        name,
+			Description: "Call Yan with this command!",
+		},
+		isUsedForGame: false,
+		name:          name,
+	}
+}
+
+func (c *YanLohCommand) GetCmd() *discordgo.ApplicationCommand {
+	return c.cmd
+}
+
+func (c *YanLohCommand) GetName() string {
+	return c.name
+}
+
+func (c *YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game) {
+	messageContent := "Возможно, что ян и лох. И древлян. Но что бы его же ботом его обзывать..."
+	Response(s, i, messageContent)
+
+	// async kick requester
+	guildID := i.GuildID
+	go func(sessId, kickedUserID string) {
+		var kickPing time.Duration = 3
+		time.Sleep(time.Second * kickPing)
+
+		err := s.GuildMemberMove(sessId, kickedUserID, nil)
+		if err != nil {
+			log.Printf("failed kick user, err: %v", err)
+		}
+	}(guildID, i.Member.User.ID)
+}
+
+func (c *YanLohCommand) IsUsedForGame() bool {
+	return c.isUsedForGame
 }

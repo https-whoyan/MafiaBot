@@ -1,5 +1,7 @@
 package bot
 
+import h "github.com/https-whoyan/MafiaBot/internal/bot/handlers"
+
 import (
 	"errors"
 	"github.com/https-whoyan/MafiaBot/internal/core/game"
@@ -40,7 +42,7 @@ type Bot struct {
 	sync.RWMutex
 	token    string
 	Session  *discordgo.Session
-	Commands map[string]Command
+	Commands map[string]h.Command
 	Games    map[string]*game.Game
 	// Games this a map,
 	// the key in which is the State of the server where the bot is running,
@@ -59,7 +61,7 @@ func InitBot(cnf *BotConfig) {
 		bot := &Bot{
 			token:    token,
 			Session:  s,
-			Commands: make(map[string]Command),
+			Commands: make(map[string]h.Command),
 			Games:    make(map[string]*game.Game),
 		}
 		bot.initBotCommands()
@@ -123,7 +125,7 @@ func (b *Bot) Close() error {
 	return nil
 }
 
-func (b *Bot) initCommand(c Command) {
+func (b *Bot) initCommand(c h.Command) {
 	b.Lock()
 	defer b.Unlock()
 	commandName := c.GetName()
@@ -131,11 +133,11 @@ func (b *Bot) initCommand(c Command) {
 }
 
 func (b *Bot) initBotCommands() {
-	b.initCommand(NewYanLohCommand())
-	b.initCommand(NewAddChannelRole())
-	b.initCommand(NewRegisterGameCommand())
-	b.initCommand(NewChoiceGameConfig())
-	b.initCommand(NewAboutRolesCommand())
+	b.initCommand(h.NewYanLohCommand())
+	b.initCommand(h.NewAddChannelRole())
+	b.initCommand(h.NewRegisterGameCommand())
+	b.initCommand(h.NewChoiceGameConfig())
+	b.initCommand(h.NewAboutRolesCommand())
 }
 
 func (b *Bot) registerHandlers() {
@@ -153,7 +155,7 @@ func (b *Bot) registerHandlers() {
 	}
 }
 
-func (b *Bot) getSIHandler(cmd Command, cmdName string) func(
+func (b *Bot) getSIHandler(cmd h.Command, cmdName string) func(
 	s *discordgo.Session, i *discordgo.InteractionCreate) {
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// I recognize the name of the team
@@ -165,9 +167,9 @@ func (b *Bot) getSIHandler(cmd Command, cmdName string) func(
 		}
 
 		// If it executed in private chat
-		if isPrivateMessage(i) {
+		if h.IsPrivateMessage(i) {
 			// Reply "it is a private chat"
-			noticePrivateChat(s, i)
+			h.NoticePrivateChat(s, i)
 			return
 		}
 
@@ -200,7 +202,7 @@ func (b *Bot) getSIHandler(cmd Command, cmdName string) func(
 		//I check to see if the command name is register_game. If not, it means that the
 		// person uses the game command without registering it.
 		if executedCommandName != "register_game" {
-			noticeIsEmptyGame(s, i)
+			h.NoticeIsEmptyGame(s, i)
 			return
 		}
 

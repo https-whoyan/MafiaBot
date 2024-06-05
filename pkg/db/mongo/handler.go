@@ -57,11 +57,16 @@ func (db *MongoDB) DeleteRoleChannel(guildID string, role string) error {
 }
 
 func (db *MongoDB) SetRoleChannel(guildID string, channelIID string, role string) error {
-	// Delete if contains
 	if db.TryLock() {
 		defer db.Unlock()
 	}
-	err := db.DeleteRoleChannel(guildID, role)
+	// If channelIID used in other role:
+	channelIIDRole, err := db.GetRoleByChannelIID(guildID, channelIID)
+	if channelIIDRole != role && channelIIDRole != "" {
+		return errors.New("permission denied")
+	}
+	// Delete if contains
+	err = db.DeleteRoleChannel(guildID, role)
 	coll, err := db.getColl(DbName, RolesChannelCollection)
 	if err != nil {
 		return err
@@ -101,6 +106,9 @@ func (db *MongoDB) GetRoleByChannelIID(guildID string, channelIID string) (strin
 		},
 	}
 	err = coll.FindOne(ctx, filter).Decode(&result)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return "", nil
+	}
 	if err != nil {
 		return "", err
 	}

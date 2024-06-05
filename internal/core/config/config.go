@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/https-whoyan/MafiaBot/internal/core/roles"
+	"math"
 )
 
 type RoleConfig struct {
@@ -497,4 +498,20 @@ var (
 
 func GetConfigsByPlayersCount(playersCount int) []*RolesConfig {
 	return *Configs[playersCount]
+}
+
+func GetMinPlayersCount() int {
+	minPlayersCount := math.MaxInt
+	for playersCount, _ := range Configs {
+		minPlayersCount = min(minPlayersCount, playersCount)
+	}
+	return minPlayersCount
+}
+
+func GetMaxPlayersCount() int {
+	minPlayersCount := 0
+	for playersCount, _ := range Configs {
+		minPlayersCount = max(minPlayersCount, playersCount)
+	}
+	return minPlayersCount
 }

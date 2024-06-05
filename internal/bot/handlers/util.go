@@ -2,37 +2,17 @@ package bot
 
 import (
 	"errors"
-	"github.com/bwmarrin/discordgo"
+	"log"
+	"strings"
+
 	"github.com/https-whoyan/MafiaBot/internal/bot/channel"
 	"github.com/https-whoyan/MafiaBot/internal/core/config"
 	"github.com/https-whoyan/MafiaBot/internal/core/game"
 	"github.com/https-whoyan/MafiaBot/internal/core/roles"
 	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
-	"log"
-	"strings"
+
+	"github.com/bwmarrin/discordgo"
 )
-
-// _____________
-// Text Style
-// _____________
-
-func Bold(s string) string {
-	return "**" + s + "**"
-}
-
-func Italic(s string) string {
-	return "_" + s + "_"
-}
-
-func Emphasized(s string) string {
-	return "__" + s + "__"
-}
-
-func CodeBlock(language, text string) string {
-	return "```" + language + text + "```"
-}
-
-// _____________
 
 // Send message to chatID
 func noticeChat(s *discordgo.Session, chatID string, content ...string) (map[string]*discordgo.Message, error) {
@@ -48,39 +28,35 @@ func noticeChat(s *discordgo.Session, chatID string, content ...string) (map[str
 	return messages, nil
 }
 
-// finds out if a message has been sent to private messages
-func isPrivateMessage(i *discordgo.InteractionCreate) bool {
-	return i.GuildID == ""
-}
-
-func noticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	content := Bold("All commands are used on the server.\n") + "If you have difficulties in using the bot, " +
-		"please refer to the repository documentation: https://github.com/https-whoyan/MafiaBot"
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+// Response reply to interaction by provided content (s.InteractionResponse)
+func Response(s *discordgo.Session, i *discordgo.Interaction, content string) {
+	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: content,
 		},
 	})
 	if err != nil {
-		log.Println(errors.Join(
-			errors.New("there was an error when sending a private message, err: "), err),
-		)
+		log.Print(err)
 	}
 }
 
-// If game not exists
-func noticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "You can't interact with the game because you haven't registered it\n" +
-				Bold("Write the "+Emphasized("/register_game")+" command") + " to start the game.",
-		},
-	})
-	if err != nil {
-		log.Println(err)
-	}
+// IsPrivateMessage finds out if a message has been sent to private messages
+func IsPrivateMessage(i *discordgo.InteractionCreate) bool {
+	return i.GuildID == ""
+}
+
+func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	content := Bold("All commands are used on the server.\n") + "If you have difficulties in using the bot, " +
+		"please refer to the repository documentation: https://github.com/https-whoyan/MafiaBot"
+	Response(s, i.Interaction, content)
+}
+
+// NoticeIsEmptyGame If game not exists
+func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	content := "You can't interact with the game because you haven't registered it\n" +
+		Bold("Write the "+Emphasized("/register_game")+" command") + " to start the game."
+	Response(s, i.Interaction, content)
 }
 
 // SetRolesChannels to game.
