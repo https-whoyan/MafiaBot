@@ -22,7 +22,8 @@ const (
 )
 
 type Game struct {
-	sync.Mutex
+	sync.RWMutex
+	GuildID      string              `json:"guildID"`
 	RolesConfig  *config.RolesConfig `json:"rolesConfig"`
 	StartPlayers []*players.Player   `json:"startPlayers"`
 	Dead         []*players.Player   `json:"dead"`
@@ -34,17 +35,8 @@ type Game struct {
 	// presents to the bot which discord chat is used for which role.
 	// key: str - role name
 	// It is necessary, that would not load mongoDB too much, and that would quickly validate the vote team
+	ch    chan int
 	State State `json:"state"`
-}
-
-func NewGame(playersCount int) *Game {
-	return &Game{
-		StartPlayers: make([]*players.Player, 0, playersCount),
-		Dead:         make([]*players.Player, 0, playersCount),
-		Active:       make([]*players.Player, 0, playersCount),
-		Spectators:   make([]*players.Player, 0, playersCount),
-		State:        RegisterState,
-	}
 }
 
 func (g *Game) SetState(state State) {

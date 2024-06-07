@@ -1,15 +1,15 @@
 package bot
 
-import h "github.com/https-whoyan/MafiaBot/internal/bot/handlers"
-
 import (
 	"errors"
-	"github.com/https-whoyan/MafiaBot/internal/core/game"
 	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	h "github.com/https-whoyan/MafiaBot/internal/bot/handlers"
+	"github.com/https-whoyan/MafiaBot/internal/core/game"
 
 	"github.com/bwmarrin/discordgo"
 )
