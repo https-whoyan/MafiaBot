@@ -4,6 +4,9 @@ package time
 const (
 	RegistrationDeadlineSeconds     = 300
 	VotingGameConfigDeadlineSeconds = 300
+
+	FakeVotingMinSeconds = 5
+	FakeVotingMaxSeconds = 25
 )
 
 // Everything below is automatically calculated

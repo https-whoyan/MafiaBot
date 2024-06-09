@@ -133,11 +133,18 @@ func (b *Bot) initCommand(c h.Command) {
 }
 
 func (b *Bot) initBotCommands() {
-	b.initCommand(h.NewYanLohCommand())
-	b.initCommand(h.NewAddChannelRole())
+	// Channels
+	b.initCommand(h.NewAddMainChannelCommand())
+	b.initCommand(h.NewAddChannelRoleCommand())
+
+	// Game
 	b.initCommand(h.NewRegisterGameCommand())
 	b.initCommand(h.NewChoiceGameConfig())
+
+	// Other
+	b.initCommand(h.NewYanLohCommand())
 	b.initCommand(h.NewAboutRolesCommand())
+
 }
 
 func (b *Bot) registerHandlers() {
@@ -172,6 +179,7 @@ func (b *Bot) getSIHandler(cmd h.Command, cmdName string) func(
 			h.NoticePrivateChat(s, i)
 			return
 		}
+		log.Printf("Executed guild ID: %v", i.GuildID)
 
 		// If command use not use for game interaction
 		if !cmd.IsUsedForGame() {
@@ -183,7 +191,6 @@ func (b *Bot) getSIHandler(cmd h.Command, cmdName string) func(
 
 		// I know the guildID
 		executedGuildID := i.GuildID
-		log.Printf("Executed guild ID: %v", executedGuildID)
 		// And is there a game on this server
 		_, containsGame := b.Games[executedGuildID]
 

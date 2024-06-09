@@ -1,11 +1,12 @@
 package game
 
 import (
+	"sync"
+
 	"github.com/https-whoyan/MafiaBot/internal/bot/channel"
 	"github.com/https-whoyan/MafiaBot/internal/core/config"
 	"github.com/https-whoyan/MafiaBot/internal/core/players"
 	"github.com/https-whoyan/MafiaBot/internal/core/roles"
-	"sync"
 )
 
 type State int
@@ -30,15 +31,38 @@ type Game struct {
 	Active       []*players.Player   `json:"active"`
 	Spectators   []*players.Player   `json:"spectators"`
 	// keeps what role is voting right now.
-	NightVoting         *roles.Role                     `json:"nightVoting"`
-	InteractionChannels map[string]*channel.RoleChannel `json:"interactionChannels"`
+	NightVoting *roles.Role `json:"nightVoting"`
 	// presents to the bot which discord chat is used for which role.
 	// key: str - role name
 	// It is necessary, that would not load mongoDB too much, and that would quickly validate the vote team
-	ch    chan int
-	State State `json:"state"`
+	InteractionChannels map[string]*channel.RoleChannel `json:"interactionChannels"`
+	ch                  chan int
+	PreviousState       State `json:"previousState"`
+	State               State `json:"state"`
+}
+
+func (g *Game) GetNextState() State {
+	switch g.State {
+	case RegisterState:
+		return StartingState
+	case StartingState:
+		return NightState
+	case NightState:
+		return DayState
+	case DayState:
+		return VotingState
+	case VotingState:
+		return NightState
+	}
+
+	return g.PreviousState
 }
 
 func (g *Game) SetState(state State) {
 	g.State = state
+}
+
+func (g *Game) ChangeStateToPause() {
+	g.PreviousState = g.State
+	g.State = PausedState
 }

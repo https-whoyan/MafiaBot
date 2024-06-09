@@ -14,6 +14,15 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+func isCorrectChatID(s *discordgo.Session, chatID string) bool {
+	if s.TryLock() {
+		defer s.Unlock()
+	}
+
+	ch, err := s.Channel(chatID)
+	return err == nil && ch != nil
+}
+
 // Send message to chatID
 func noticeChat(s *discordgo.Session, chatID string, content ...string) (map[string]*discordgo.Message, error) {
 	// Represent Message by their content.
@@ -108,10 +117,23 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 	// Convert a map to slice
 	var emptyRolesArr []string
 	for emptyRole, _ := range emptyRolesMp {
-		emptyRolesArr = append(emptyRolesArr, emptyRole)
+		emptyRolesArr = append(emptyRolesArr, strings.ToLower(emptyRole))
 	}
 	// Return
 	return emptyRolesArr, nil
+}
+
+// Check, if main channel exists or not
+func existsMainChannel(guildID string) bool {
+	currMongo, exists := mongo.GetCurrMongoDB()
+	if !exists {
+		return false
+	}
+	channelIID, err := currMongo.GetMainChannelIID(guildID)
+	if err != nil {
+		return false
+	}
+	return channelIID != ""
 }
 
 func CreateConfigMessage(cfg *config.RolesConfig) string {

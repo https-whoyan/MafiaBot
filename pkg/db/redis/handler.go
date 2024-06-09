@@ -2,7 +2,7 @@ package redis
 
 import (
 	"context"
-	time2 "github.com/https-whoyan/MafiaBot/internal/time"
+	time2 "github.com/https-whoyan/MafiaBot/pkg/time"
 	"time"
 )
 
