@@ -1,9 +1,15 @@
 package config
 
 import (
-	"github.com/https-whoyan/MafiaBot/internal/core/roles"
 	"math"
+
+	"github.com/https-whoyan/MafiaBot/internal/core/roles"
 )
+
+// Presents all available role combinations and their number
+// depending on the total number of players.
+//
+// Absolutely free for editing.
 
 type RoleConfig struct {
 	Role  *roles.Role `json:"role"`
@@ -11,8 +17,9 @@ type RoleConfig struct {
 }
 
 type RolesConfig struct {
-	PlayersCount int                    `json:"playersCount"`
-	RolesMp      map[string]*RoleConfig `json:"rolesMp"`
+	PlayersCount int `json:"playersCount"`
+	// RolesMp present RoleConfig by RoleName.
+	RolesMp map[string]*RoleConfig `json:"rolesMp"`
 }
 
 type ConfigsByPlayerCount []*RolesConfig
@@ -502,7 +509,7 @@ func GetConfigsByPlayersCount(playersCount int) []*RolesConfig {
 
 func GetMinPlayersCount() int {
 	minPlayersCount := math.MaxInt
-	for playersCount, _ := range Configs {
+	for playersCount := range Configs {
 		minPlayersCount = min(minPlayersCount, playersCount)
 	}
 	return minPlayersCount
@@ -510,7 +517,7 @@ func GetMinPlayersCount() int {
 
 func GetMaxPlayersCount() int {
 	minPlayersCount := 0
-	for playersCount, _ := range Configs {
+	for playersCount := range Configs {
 		minPlayersCount = max(minPlayersCount, playersCount)
 	}
 	return minPlayersCount

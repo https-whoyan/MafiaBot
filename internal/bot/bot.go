@@ -8,6 +8,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/https-whoyan/MafiaBot/internal/bot/fmt"
 	h "github.com/https-whoyan/MafiaBot/internal/bot/handlers"
 	"github.com/https-whoyan/MafiaBot/internal/core/game"
 
@@ -40,14 +41,22 @@ var (
 
 type Bot struct {
 	sync.RWMutex
-	token    string
-	Session  *discordgo.Session
+	// DiscordGo token
+	token string
+	// DiscordGo Session
+	Session *discordgo.Session
+	// Seen from https://github.com/bwmarrin/discordgo/tree/master/examples/slash_commands
+	// The key is the name of the command.
 	Commands map[string]h.Command
-	Games    map[string]*game.Game
 	// Games this a map,
 	// the key in which is the State of the server where the bot is running,
 	// and the value is the game.
+	Games map[string]*game.Game
+	// To save discordgo.ApplicationCommand's for closing deleting.
 	registeredCommands []*discordgo.ApplicationCommand
+	// To format messages.
+	// Implement of FmtInterface.
+	FMTer *fmt.BotFMTer
 }
 
 func InitBot(cnf *BotConfig) {
@@ -63,6 +72,7 @@ func InitBot(cnf *BotConfig) {
 			Session:  s,
 			Commands: make(map[string]h.Command),
 			Games:    make(map[string]*game.Game),
+			FMTer:    fmt.NewBotFMTer(),
 		}
 		bot.initBotCommands()
 		bot.registerHandlers()
@@ -185,7 +195,7 @@ func (b *Bot) getSIHandler(cmd h.Command, cmdName string) func(
 		if !cmd.IsUsedForGame() {
 			// Just execute a Execute()
 			log.Printf("Execute %v command.", cmdName)
-			cmd.Execute(s, i.Interaction, nil)
+			cmd.Execute(s, i.Interaction, nil, b.FMTer)
 			return
 		}
 
@@ -198,15 +208,13 @@ func (b *Bot) getSIHandler(cmd h.Command, cmdName string) func(
 		if containsGame {
 			log.Printf("Execute %v command.", cmdName)
 			currGame := b.Games[executedGuildID]
-			currGame.Lock()
-			defer currGame.Unlock()
 			// I call the Execute method of the command
 			cmd.Execute(s, i.Interaction, currGame)
 			return
 		}
 
 		// Otherwise I know the game isn't registered.
-		//I check to see if the command name is register_game. If not, it means that the
+		// I check to see if the command name is register_game. If not, it means that the
 		// person uses the game command without registering it.
 		if executedCommandName != "register_game" {
 			h.NoticeIsEmptyGame(s, i)
@@ -215,10 +223,8 @@ func (b *Bot) getSIHandler(cmd h.Command, cmdName string) func(
 
 		// I use the register_game command
 		log.Printf("Must be register_game: Execute %v command.", cmdName)
-		b.Games[executedGuildID] = &game.Game{}
+		b.Games[executedGuildID] = game.GetNewGame(executedGuildID)
 		currGame := b.Games[executedGuildID]
-		currGame.Lock()
-		defer currGame.Unlock()
 		cmd.Execute(s, i.Interaction, currGame)
 
 		return

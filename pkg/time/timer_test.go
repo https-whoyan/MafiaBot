@@ -1,11 +1,11 @@
 package time
 
 import (
-	"fmt"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTimer(t *testing.T) {
@@ -13,7 +13,6 @@ func TestTimer(t *testing.T) {
 		ch := make(chan int)
 		done := make(chan struct{})
 
-		fmt.Println("Запустил timer")
 		go Timer(ch, done, 5)
 		go func() {
 			ch <- 5

@@ -1,18 +1,29 @@
 package user
 
 import (
+	"errors"
 	"github.com/bwmarrin/discordgo"
-	"strconv"
 )
 
-func RenameUserInServerByNewID(s *discordgo.Session, guildID string, userGameID int, u *discordgo.User) error {
-	prefix := strconv.Itoa(userGameID) + ": "
-	newNickname := prefix + u.Username
-	err := s.GuildMemberNickname(guildID, u.ID, newNickname)
-	return err
+// It is
+// Core RenameUserProviderInterface realization
+
+type BotUserRenameProvider struct {
+	s       *discordgo.Session
+	guildID string
 }
 
-func RenameUserInServerByNick(s *discordgo.Session, guildID string, nick string, u *discordgo.User) error {
-	err := s.GuildMemberNickname(guildID, u.ID, nick)
+func NewBotUserRenameProvider(s *discordgo.Session, guildID string) *BotUserRenameProvider {
+	return &BotUserRenameProvider{
+		s:       s,
+		guildID: guildID,
+	}
+}
+
+func (p BotUserRenameProvider) RenameUser(userServerID string, newNick string) error {
+	if p.s == nil || p.guildID == "" {
+		return errors.New("bot User Rename Error, empty fields")
+	}
+	err := p.s.GuildMemberNickname(p.guildID, userServerID, newNick)
 	return err
 }

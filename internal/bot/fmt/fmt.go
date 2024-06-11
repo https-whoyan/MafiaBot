@@ -1,23 +1,31 @@
-package bot
+package fmt
 
 // _____________
 // Text Style
 // _____________
 
-func Bold(s string) string {
+// BotFMTer FmtInterface core realization
+type BotFMTer struct{}
+
+func NewBotFMTer() *BotFMTer {
+	return &BotFMTer{}
+}
+
+func (BotFMTer) Bold(s string) string {
 	return "**" + s + "**"
 }
 
-func Italic(s string) string {
+func (BotFMTer) Italic(s string) string {
 	return "_" + s + "_"
 }
 
-func Emphasized(s string) string {
-	return "__" + s + "__"
+func (BotFMTer) Underline(s string) string {
+	return "__" + string(s) + "__"
 }
 
-func CodeBlock(language, text string) string {
-	return "```" + language + text + "```"
+// CodeBlock language may be empty, it's ok
+func (BotFMTer) CodeBlock(language string, s string) string {
+	return "```" + language + s + "```"
 }
 
 // __________

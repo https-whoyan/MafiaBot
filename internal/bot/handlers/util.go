@@ -2,6 +2,7 @@ package bot
 
 import (
 	"errors"
+	"github.com/https-whoyan/MafiaBot/internal/bot/fmt"
 	"log"
 	"strings"
 
@@ -56,7 +57,7 @@ func IsPrivateMessage(i *discordgo.InteractionCreate) bool {
 }
 
 func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	content := Bold("All commands are used on the server.\n") + "If you have difficulties in using the bot, " +
+	content := fmt.Bold("All commands are used on the server.\n") + "If you have difficulties in using the bot, " +
 		"please refer to the repository documentation: https://github.com/https-whoyan/MafiaBot"
 	Response(s, i.Interaction, content)
 }
@@ -64,7 +65,7 @@ func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate) {
 // NoticeIsEmptyGame If game not exists
 func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	content := "You can't interact with the game because you haven't registered it\n" +
-		Bold("Write the "+Emphasized("/register_game")+" command") + " to start the game."
+		fmt.Bold("Write the "+fmt.Emphasized("/register_game")+" command") + " to start the game."
 	Response(s, i.Interaction, content)
 }
 
@@ -84,7 +85,7 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 	// emptyRolesMp: save not contains channel roles
 	emptyRolesMp := make(map[string]bool)
 	// mappedRoles: save contains channels roles
-	mappedRoles := make(map[string]*channel.RoleChannel)
+	mappedRoles := make(map[string]*channel.BotRoleChannel)
 	for _, roleName := range allRolesNames {
 		if strings.ToLower(roleName) == "don" {
 			continue
