@@ -2,15 +2,15 @@ package bot
 
 import (
 	"errors"
-	"github.com/https-whoyan/MafiaBot/internal/bot/fmt"
+	"github.com/https-whoyan/MafiaBot/internal/bot/converter"
 	"log"
 	"strings"
 
 	"github.com/https-whoyan/MafiaBot/internal/bot/channel"
-	"github.com/https-whoyan/MafiaBot/internal/core/config"
+	botFMT "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
 	"github.com/https-whoyan/MafiaBot/internal/core/game"
 	"github.com/https-whoyan/MafiaBot/internal/core/roles"
-	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
+	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -56,16 +56,16 @@ func IsPrivateMessage(i *discordgo.InteractionCreate) bool {
 	return i.GuildID == ""
 }
 
-func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	content := fmt.Bold("All commands are used on the server.\n") + "If you have difficulties in using the bot, " +
+func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate, fMTer *botFMT.DiscordFMTer) {
+	content := fMTer.Bold("All commands are used on the server.\n") + "If you have difficulties in using the bot, " +
 		"please refer to the repository documentation: https://github.com/https-whoyan/MafiaBot"
 	Response(s, i.Interaction, content)
 }
 
 // NoticeIsEmptyGame If game not exists
-func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate, fMTer *botFMT.DiscordFMTer) {
 	content := "You can't interact with the game because you haven't registered it\n" +
-		fmt.Bold("Write the "+fmt.Emphasized("/register_game")+" command") + " to start the game."
+		fMTer.Bold("Write the "+fMTer.Underline("/register_game")+" command") + " to start the game."
 	Response(s, i.Interaction, content)
 }
 
@@ -95,7 +95,7 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 			emptyRolesMp[roleName] = true
 			continue
 		}
-		newRoleChannel, err := channel.LoadRoleChannel(s, channelIID, roleName)
+		newRoleChannel, err := channel.NewBotRoleChannel(s, channelIID, roleName)
 		if err != nil {
 			emptyRolesMp[roleName] = true
 			continue
@@ -110,18 +110,17 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 
 	// If a have all roles
 	if len(emptyRolesMp) == 0 {
-		// Save it to g.InteractionChannels
-		g.InteractionChannels = mappedRoles
-		// And return it
-		return []string{}, nil
+		// Convert
+		sliceMappedRoles := converter.GetMapValues(mappedRoles)
+		InterfaceRoleChannelSlice := converter.ConvertRoleChannelsSliceToIChannelSlice(sliceMappedRoles)
+
+		// Save it to g.RoleChannels.
+		err := g.SetRoleChannels(InterfaceRoleChannelSlice)
+
+		return []string{}, err
 	}
-	// Convert a map to slice
-	var emptyRolesArr []string
-	for emptyRole, _ := range emptyRolesMp {
-		emptyRolesArr = append(emptyRolesArr, strings.ToLower(emptyRole))
-	}
-	// Return
-	return emptyRolesArr, nil
+
+	return converter.GetMapKeys(emptyRolesMp), nil
 }
 
 // Check, if main channel exists or not
@@ -135,8 +134,4 @@ func existsMainChannel(guildID string) bool {
 		return false
 	}
 	return channelIID != ""
-}
-
-func CreateConfigMessage(cfg *config.RolesConfig) string {
-	return ""
 }

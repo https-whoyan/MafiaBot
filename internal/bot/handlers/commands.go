@@ -2,19 +2,21 @@ package bot
 
 import (
 	"fmt"
+	"github.com/https-whoyan/MafiaBot/internal/bot/converter"
 	"log"
 	"strconv"
 	"strings"
 	"time"
 
-	fmt2 "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
-	message2 "github.com/https-whoyan/MafiaBot/internal/bot/message"
-	"github.com/https-whoyan/MafiaBot/internal/core/config"
-	"github.com/https-whoyan/MafiaBot/internal/core/game"
-	"github.com/https-whoyan/MafiaBot/internal/core/roles"
-	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
-	"github.com/https-whoyan/MafiaBot/pkg/db/redis"
-	time2 "github.com/https-whoyan/MafiaBot/pkg/time"
+	botFMTPack "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
+	botMsgPack "github.com/https-whoyan/MafiaBot/internal/bot/message"
+	coreCfgPack "github.com/https-whoyan/MafiaBot/internal/core/config"
+	coreGamePack "github.com/https-whoyan/MafiaBot/internal/core/game"
+	coreRolesPack "github.com/https-whoyan/MafiaBot/internal/core/roles"
+	botTimePack "github.com/https-whoyan/MafiaBot/internal/core/time"
+
+	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
+	"github.com/https-whoyan/MafiaBot/pkg/repository/redis"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -48,7 +50,7 @@ func NewAddChannelRoleCommand() *AddChannelRoleCommand {
 	}
 
 	generateOptions := func() []*discordgo.ApplicationCommandOption {
-		allNamesOfRoles := roles.GetAllNightInteractionRolesNames()
+		allNamesOfRoles := coreRolesPack.GetAllNightInteractionRolesNames()
 		var options []*discordgo.ApplicationCommandOption
 		for _, roleName := range allNamesOfRoles {
 			// For done using mafia chat
@@ -78,7 +80,8 @@ func (c AddChannelRoleCommand) GetName() string {
 	return c.name
 }
 
-func (c AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game) {
+func (c AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
+	_ *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
 	if len(i.ApplicationCommandData().Options) == 0 {
 		content := "Must be option!"
 		Response(s, i, content)
@@ -96,11 +99,9 @@ func (c AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 		return
 	}
 
-	currDB.Lock()
-	defer currDB.Unlock()
 	isFreeChatID, _ := currDB.IsFreeChannelIID(i.GuildID, requestedChatID)
 	if !isFreeChatID {
-		content := fmt2.Bold("Provided channel is already used.\n") + "Please, provide another, available chatID."
+		content := f.B("Provided channel is already used.\n") + "Please, provide another, available chatID."
 		Response(s, i, content)
 		return
 	}
@@ -121,12 +122,12 @@ func (c AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 	noticeChatContent := fmt.Sprintf("Now chat is used for %v role.", roleName)
 	_, err = noticeChat(s, requestedChatID, noticeChatContent)
 	if err != nil {
-		content := "Bot can't write to given chat. " + fmt2.Bold("\nReuse command.")
+		content := "Bot can't write to given chat. " + f.Bold("\nReuse command.")
 		Response(s, i, content)
 		return
 	}
 	messageContent := fmt.Sprintf("Done, now is %v chat is used for %v role.", requestedChatID, roleName) +
-		fmt2.Bold(fmt2.Emphasized("\nThanks!"))
+		f.BU("\nThanks!")
 	Response(s, i, messageContent)
 }
 
@@ -170,7 +171,8 @@ func (c AddMainChannelCommand) GetName() string {
 	return c.name
 }
 
-func (c AddMainChannelCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game) {
+func (c AddMainChannelCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
+	_ *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
 	if len(i.ApplicationCommandData().Options) == 0 {
 		content := "Must be option!"
 		Response(s, i, content)
@@ -187,11 +189,9 @@ func (c AddMainChannelCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 		return
 	}
 
-	currDB.Lock()
-	defer currDB.Unlock()
 	isFreeChatID, _ := currDB.IsFreeChannelIID(i.GuildID, newChatID)
 	if !isFreeChatID {
-		content := fmt2.Bold("Provided channel is already used.\n") + "Please, provide another, available chatID."
+		content := f.B("Provided channel is already used.\n") + "Please, provide another, available chatID."
 		Response(s, i, content)
 		return
 	}
@@ -213,7 +213,7 @@ func (c AddMainChannelCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 	noticeChatContent := fmt.Sprintf("Now chat will be used as main for games.")
 	_, err = noticeChat(s, newChatID, noticeChatContent)
 	if err != nil {
-		content := "Bot can't write to given chat. " + fmt2.Bold("\nReuse command.")
+		content := "Bot can't write to given chat. " + f.B("\nReuse command.")
 		Response(s, i, content)
 		return
 	}
@@ -256,7 +256,8 @@ func (c RegisterGameCommand) GetName() string {
 	return c.name
 }
 
-func (c RegisterGameCommand) validationChannels(s *discordgo.Session, i *discordgo.Interaction, g *game.Game) (
+func (c RegisterGameCommand) validationChannels(s *discordgo.Session, i *discordgo.Interaction,
+	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) (
 	correct bool) {
 	emptyRoles, err := setRolesChannels(s, i.GuildID, g)
 	if err != nil {
@@ -267,8 +268,8 @@ func (c RegisterGameCommand) validationChannels(s *discordgo.Session, i *discord
 
 	var content string
 	if len(emptyRoles) != 0 {
-		content += fmt2.Bold("You don't configure all channels for bot interaction. ") +
-			"Please, use " + fmt2.Bold(fmt2.Emphasized("/add_channel_role")) + " to fix " + strings.Join(emptyRoles, ", ") +
+		content += ("You don't configure all channels for bot interaction. ") +
+			"Please, use " + f.BU("/add_channel_role") + " to fix " + strings.Join(emptyRoles, ", ") +
 			" roles."
 	}
 
@@ -277,10 +278,10 @@ func (c RegisterGameCommand) validationChannels(s *discordgo.Session, i *discord
 			content += "\n\n"
 		}
 
-		content += fmt2.Bold("You don't configure main channel for bot interaction.") + "\n" +
-			fmt2.Italic("All messages regarding the game will be sent there.") + "\n" +
+		content += f.B("You don't configure main channel for bot interaction.") + "\n" +
+			f.I("All messages regarding the game will be sent there.") + "\n" +
 			"To add a main chat channel for interaction, use the command " +
-			fmt2.Emphasized(fmt2.Bold("/add_main_channel"))
+			f.BU("/add_main_channel")
 	}
 
 	if len(content) == 0 {
@@ -290,22 +291,23 @@ func (c RegisterGameCommand) validationChannels(s *discordgo.Session, i *discord
 	return false
 }
 
-func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, g *game.Game) {
+func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
+	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
 	// Validation
-	if !c.validationChannels(s, i, g) {
+	if !c.validationChannels(s, i, g, f) {
 		return
 	}
 	// If ok, set game to NonDefinedState
-	g.SetState(game.NonDefinedState)
+	g.SetState(coreGamePack.NonDefinedState)
 	// Send message.
 	Response(s, i, "Ok. Message below.")
 
 	// Send additional message and save it ID
-	deadlineStr := strconv.Itoa(time2.RegistrationDeadlineMinutes)
+	deadlineStr := strconv.Itoa(botTimePack.RegistrationDeadlineMinutes)
 	responseMessageText := "Registration has begun. \n" +
-		fmt2.Bold("Post "+fmt2.RegistrationPlayerSticker+" reaction below.") + fmt2.Italic(" If you want to be a spectator, "+
-		"put the reaction "+fmt2.RegistrationSpectatorSticker+".") + "\n\n" + fmt2.Bold(
-		fmt2.Emphasized("Deadline: "+deadlineStr+" minutes"))
+		f.B("Post "+botFMTPack.RegistrationPlayerSticker+" reaction below.") + f.I(" If you want to be a spectator, "+
+		"put the reaction "+botFMTPack.RegistrationSpectatorSticker+".") + "\n\n" + f.B(
+		f.U("Deadline: "+deadlineStr+" minutes"))
 
 	channelID := i.ChannelID
 	message, err := s.ChannelMessageSend(channelID, responseMessageText)
@@ -360,7 +362,8 @@ func (c ChoiceGameConfig) IsUsedForGame() bool {
 	return c.isUsedForGame
 }
 
-func (c ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interaction, g *game.Game) {
+func (c ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interaction,
+	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
 	currRedisDB, isContains := redis.GetCurrRedisDB()
 	if !isContains {
 		log.Println("redis is not exists, command: startGameCommand")
@@ -369,41 +372,46 @@ func (c ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interaction
 	}
 
 	registrationMessageID, err := currRedisDB.GetInitialGameMessageID(i.GuildID)
-	if (err != nil || registrationMessageID == "") && g.State == game.NonDefinedState {
-		messageContent := fmt2.Emphasized("Registration Deadline passed!") + "\n" + "Please, " +
-			fmt2.Bold("use the /register_game command") + " to register a new game."
+	if (err != nil || registrationMessageID == "") && g.State == coreGamePack.NonDefinedState {
+		messageContent := f.U("Registration Deadline passed!") + "\n" + "Please, " +
+			f.B("use the /register_game command") + " to register a new game."
 		Response(s, i, messageContent)
 		return
 	}
 
 	// Set empty players to game (to save it)
-	_, playersCount := message2.GetUsersByEmojiID(
-		s, i.ChannelID, registrationMessageID, fmt2.RegistrationPlayerSticker)
+	_, playersCount := botMsgPack.GetUsersByEmojiID(
+		s, i.ChannelID, registrationMessageID, botFMTPack.RegistrationPlayerSticker)
 
 	// If playersCount not in range [minAvailableCount, maxAvailableCount],
 	// Send message that it's impossible to choice config.
-	minPossiblePlayers := config.GetMinPlayersCount()
-	maxPossiblePlayers := config.GetMaxPlayersCount()
+	minPossiblePlayers := coreCfgPack.GetMinPlayersCount()
+	maxPossiblePlayers := coreCfgPack.GetMaxPlayersCount()
 	if playersCount < minPossiblePlayers {
-		content := fmt2.Bold("The number of players is too small to start the game.\n") +
-			"Number of registered players: " + fmt2.CodeBlock("", strconv.Itoa(playersCount)) +
-			"\nMinimum number to vote on game config choices: " + fmt2.CodeBlock("", strconv.Itoa(minPossiblePlayers))
+		content := f.B("The number of players is too small to start the game.\n") +
+			"Number of registered players: " + f.CD(strconv.Itoa(playersCount)) +
+			"\nMinimum number to vote on game config choices: " + f.CD(strconv.Itoa(minPossiblePlayers))
 		Response(s, i, content)
 	} else if playersCount > maxPossiblePlayers {
-		content := fmt2.Bold("The number of players is too large to start the game.\n") +
-			"Number of registered players: " + fmt2.CodeBlock("", strconv.Itoa(playersCount)) +
-			"\nMaximum number to vote on game config choices: " + fmt2.CodeBlock("", strconv.Itoa(minPossiblePlayers))
+		content := f.B("The number of players is too large to start the game.\n") +
+			"Number of registered players: " + f.CD(strconv.Itoa(playersCount)) +
+			"\nMaximum number to vote on game config choices: " + f.CD(strconv.Itoa(minPossiblePlayers))
 		Response(s, i, content)
 	}
 
-	// If playersCount is ok, set empty players to game (to safe it.)
-	startPlayers, _ := message2.GetUsersByEmojiID(
-		s, i.ChannelID, registrationMessageID, fmt2.RegistrationPlayerSticker)
-	g.StartPlayers = players.GenerateEmptyPlayers(startPlayers)
+	// If playersCount is ok,
+	// set empty players to game (to safe it.)
+	startBotPlayers, _ := botMsgPack.GetUsersByEmojiID(
+		s, i.ChannelID, registrationMessageID, botFMTPack.RegistrationPlayerSticker)
+	startGamePlayers := converter.DiscordUsersToEmptyPlayers(startBotPlayers, false)
+	g.SetStartPlayers(startGamePlayers)
+
 	// And spectators.
-	spectators, _ := message2.GetUsersByEmojiID(s, i.ChannelID, registrationMessageID, fmt2.RegistrationSpectatorSticker)
-	g.Spectators = players.GenerateEmptyPlayers(spectators)
-	// Send a message to config.
+	botSpectators, _ := botMsgPack.GetUsersByEmojiID(s, i.ChannelID, registrationMessageID, botFMTPack.RegistrationSpectatorSticker)
+	spectators := converter.DiscordUsersToEmptyPlayers(botSpectators, true)
+	g.SetSpectators(spectators)
+
+	//TODO!
 	Response(s, i, "Empty for now...")
 }
 
@@ -444,7 +452,8 @@ func (c YanLohCommand) GetName() string {
 	return c.name
 }
 
-func (c YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game) {
+func (c YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
+	_ *coreGamePack.Game, _ *botFMTPack.DiscordFMTer) {
 	messageContent := "Возможно, что ян и лох. И древлян. Но что бы его же ботом его обзывать..."
 	Response(s, i, messageContent)
 
@@ -496,7 +505,9 @@ func (c AboutRolesCommand) GetName() string {
 	return c.name
 }
 
-func (c AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interaction, _ *game.Game, f fmt2.BotFMTer) {
+func (c AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
+	_ *coreGamePack.Game,
+	f *botFMTPack.DiscordFMTer) {
 	messageContent := f.Bold("Below information about all roles:\n")
 	Response(s, i, messageContent)
 	messageContent = ""
@@ -508,10 +519,10 @@ func (c AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interactio
 		}
 	}
 
-	allSortedRoles := roles.GetAllRolesNames()
+	allSortedRoles := coreRolesPack.GetAllRolesNames()
 	for _, roleName := range allSortedRoles {
-		messageContent += "================================\n"
-		messageContent += roles.GetDefinitionOfRole(roleName)
+		messageContent += "\n================================\n"
+		messageContent += coreRolesPack.GetDefinitionOfRole(f, roleName)
 
 		// To erase 2000 max length error
 		if len(messageContent) >= 1500 {

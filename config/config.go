@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/https-whoyan/MafiaBot/internal/bot"
-	"github.com/https-whoyan/MafiaBot/pkg/db/mongo"
-	"github.com/https-whoyan/MafiaBot/pkg/db/redis"
+	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
+	"github.com/https-whoyan/MafiaBot/pkg/repository/redis"
 )
 
 type Config struct {

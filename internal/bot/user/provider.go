@@ -5,22 +5,21 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-// It is
+// BotUserRenameProvider is
 // Core RenameUserProviderInterface realization
-
 type BotUserRenameProvider struct {
-	s       *discordgo.Session
 	guildID string
+	s       *discordgo.Session
 }
 
 func NewBotUserRenameProvider(s *discordgo.Session, guildID string) *BotUserRenameProvider {
 	return &BotUserRenameProvider{
-		s:       s,
 		guildID: guildID,
+		s:       s,
 	}
 }
 
-func (p BotUserRenameProvider) RenameUser(userServerID string, newNick string) error {
+func (p BotUserRenameProvider) RenameUser(_ string, userServerID string, newNick string) error {
 	if p.s == nil || p.guildID == "" {
 		return errors.New("bot User Rename Error, empty fields")
 	}

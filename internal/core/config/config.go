@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"math"
 
 	"github.com/https-whoyan/MafiaBot/internal/core/roles"
@@ -10,6 +11,9 @@ import (
 // depending on the total number of players.
 //
 // Absolutely free for editing.
+
+// Not to edit!
+// Represent Config structs
 
 type RoleConfig struct {
 	Role  *roles.Role `json:"role"`
@@ -23,6 +27,8 @@ type RolesConfig struct {
 }
 
 type ConfigsByPlayerCount []*RolesConfig
+
+// Yes, edit it))
 
 var (
 	// FivePlayersConfigs represent configs with 5 players
@@ -503,8 +509,22 @@ var (
 	}
 )
 
-func GetConfigsByPlayersCount(playersCount int) []*RolesConfig {
-	return *Configs[playersCount]
+// _______!!!!!!!!!!_______
+// Not to edit!
+// _______!!!!!!!!!!_______
+
+var (
+	SmallCountOfPeopleToConfig = errors.New("small people to config")
+	BigCountOfPeopleToConfig   = errors.New("big people to config")
+)
+
+func GetConfigsByPlayersCount(playersCount int) ([]*RolesConfig, error) {
+	if playersCount < GetMinPlayersCount() {
+		return nil, SmallCountOfPeopleToConfig
+	} else if playersCount > GetMaxPlayersCount() {
+		return nil, BigCountOfPeopleToConfig
+	}
+	return *Configs[playersCount], nil
 }
 
 func GetMinPlayersCount() int {

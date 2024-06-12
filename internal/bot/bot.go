@@ -8,16 +8,18 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/https-whoyan/MafiaBot/internal/bot/fmt"
-	h "github.com/https-whoyan/MafiaBot/internal/bot/handlers"
-	"github.com/https-whoyan/MafiaBot/internal/core/game"
+	botFMTPack "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
+	botGamePack "github.com/https-whoyan/MafiaBot/internal/bot/game"
+	handlerPack "github.com/https-whoyan/MafiaBot/internal/bot/handlers"
+	userPack "github.com/https-whoyan/MafiaBot/internal/bot/user"
+	gamePack "github.com/https-whoyan/MafiaBot/internal/core/game"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-// ____
-// cfg
-// ____
+// ____________
+// BotConfig
+// ____________
 
 type BotConfig struct {
 	token string
@@ -30,9 +32,9 @@ func LoadBotConfig() *BotConfig {
 	}
 }
 
-// ____
+// ________
 // Bot
-// ____
+// ________
 
 var (
 	botOnce     sync.Once
@@ -47,16 +49,18 @@ type Bot struct {
 	Session *discordgo.Session
 	// Seen from https://github.com/bwmarrin/discordgo/tree/master/examples/slash_commands
 	// The key is the name of the command.
-	Commands map[string]h.Command
+	Commands map[string]handlerPack.Command
 	// Games this a map,
 	// the key in which is the State of the server where the bot is running,
 	// and the value is the game.
-	Games map[string]*game.Game
-	// To save discordgo.ApplicationCommand's for closing deleting.
+	Games map[string]*gamePack.Game
+	// To save DiscordGo.ApplicationCommand's for closing deleting.
 	registeredCommands []*discordgo.ApplicationCommand
 	// To format messages.
+	//
 	// Implement of FmtInterface.
-	FMTer *fmt.BotFMTer
+	FMTer       *botFMTPack.DiscordFMTer
+	GameSetting *gamePack.Setting
 }
 
 func InitBot(cnf *BotConfig) {
@@ -67,13 +71,15 @@ func InitBot(cnf *BotConfig) {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		bot := &Bot{
 			token:    token,
 			Session:  s,
-			Commands: make(map[string]h.Command),
-			Games:    make(map[string]*game.Game),
-			FMTer:    fmt.NewBotFMTer(),
+			Commands: make(map[string]handlerPack.Command),
+			Games:    make(map[string]*gamePack.Game),
+			FMTer:    botFMTPack.FMTInstance,
 		}
+
 		bot.initBotCommands()
 		bot.registerHandlers()
 		botInstance = bot
@@ -135,7 +141,11 @@ func (b *Bot) Close() error {
 	return nil
 }
 
-func (b *Bot) initCommand(c h.Command) {
+// ____________________________________________________________
+// All below functions initialize or delete the required variables.
+// ____________________________________________________________
+
+func (b *Bot) initCommand(c handlerPack.Command) {
 	b.Lock()
 	defer b.Unlock()
 	commandName := c.GetName()
@@ -144,35 +154,37 @@ func (b *Bot) initCommand(c h.Command) {
 
 func (b *Bot) initBotCommands() {
 	// Channels
-	b.initCommand(h.NewAddMainChannelCommand())
-	b.initCommand(h.NewAddChannelRoleCommand())
+	b.initCommand(handlerPack.NewAddMainChannelCommand())
+	b.initCommand(handlerPack.NewAddChannelRoleCommand())
 
 	// Game
-	b.initCommand(h.NewRegisterGameCommand())
-	b.initCommand(h.NewChoiceGameConfig())
+	b.initCommand(handlerPack.NewRegisterGameCommand())
+	b.initCommand(handlerPack.NewChoiceGameConfig())
 
 	// Other
-	b.initCommand(h.NewYanLohCommand())
-	b.initCommand(h.NewAboutRolesCommand())
+	b.initCommand(handlerPack.NewYanLohCommand())
+	b.initCommand(handlerPack.NewAboutRolesCommand())
 
 }
 
 func (b *Bot) registerHandlers() {
 	log.Print("Register handlers")
 	for _, cmd := range b.Commands {
-		b.Lock()
 		// To avoid closing the loop
 		newCmd := cmd
 		cmdName := newCmd.GetName()
 		log.Printf("Register handler, command name: %v", cmdName)
 		// Lock
+		b.Lock()
 		newHandler := b.getSIHandler(newCmd, cmdName)
 		b.Session.AddHandler(newHandler)
 		b.Unlock()
 	}
 }
 
-func (b *Bot) getSIHandler(cmd h.Command, cmdName string) func(
+// getSIHandler Is bot command handler get Function.
+// All comments in function.
+func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 	s *discordgo.Session, i *discordgo.InteractionCreate) {
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		// I recognize the name of the team
@@ -184,9 +196,9 @@ func (b *Bot) getSIHandler(cmd h.Command, cmdName string) func(
 		}
 
 		// If it executed in private chat
-		if h.IsPrivateMessage(i) {
+		if handlerPack.IsPrivateMessage(i) {
 			// Reply "it is a private chat"
-			h.NoticePrivateChat(s, i)
+			handlerPack.NoticePrivateChat(s, i, b.FMTer)
 			return
 		}
 		log.Printf("Executed guild ID: %v", i.GuildID)
@@ -209,7 +221,7 @@ func (b *Bot) getSIHandler(cmd h.Command, cmdName string) func(
 			log.Printf("Execute %v command.", cmdName)
 			currGame := b.Games[executedGuildID]
 			// I call the Execute method of the command
-			cmd.Execute(s, i.Interaction, currGame)
+			cmd.Execute(s, i.Interaction, currGame, b.FMTer)
 			return
 		}
 
@@ -217,15 +229,20 @@ func (b *Bot) getSIHandler(cmd h.Command, cmdName string) func(
 		// I check to see if the command name is register_game. If not, it means that the
 		// person uses the game command without registering it.
 		if executedCommandName != "register_game" {
-			h.NoticeIsEmptyGame(s, i)
+			handlerPack.NoticeIsEmptyGame(s, i, b.FMTer)
 			return
 		}
 
 		// I use the register_game command
 		log.Printf("Must be register_game: Execute %v command.", cmdName)
-		b.Games[executedGuildID] = game.GetNewGame(executedGuildID)
+
+		// (Get UserRename provider)
+		userRenameProvider := userPack.NewBotUserRenameProvider(s, executedGuildID)
+		gameConfig := botGamePack.GetNewGameConfig(userRenameProvider)
+
+		b.Games[executedGuildID] = gamePack.GetNewGame(executedGuildID, gameConfig)
 		currGame := b.Games[executedGuildID]
-		cmd.Execute(s, i.Interaction, currGame)
+		cmd.Execute(s, i.Interaction, currGame, b.FMTer)
 
 		return
 	}

@@ -56,6 +56,10 @@ func (ch BotRoleChannel) RemoveUser(serverUserID string) error {
 	return err
 }
 
+func (ch BotRoleChannel) GetServerID() string {
+	return ch.ChannelIID
+}
+
 func (ch BotRoleChannel) GetRole() *roles.Role {
 	return ch.Role
 }
@@ -112,10 +116,15 @@ func (ch BotMainChannel) RemoveUser(serverUserID string) error {
 	return err
 }
 
+func (ch BotMainChannel) GetServerID() string {
+	return ch.ChannelIID
+}
+
 func (ch BotMainChannel) Write(b []byte) (n int, err error) {
 	return SendMessage(ch.s, ch.ChannelIID, b)
 }
 
+// SendMessage send message provided channelIID channel, using discordgo.Session
 func SendMessage(s *discordgo.Session, channelIID string, b []byte) (n int, err error) {
 	if s == nil {
 		return 0, errors.New("nil session")

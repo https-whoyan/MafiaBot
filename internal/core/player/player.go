@@ -42,32 +42,28 @@ type Player struct {
 	LifeStatus AliveStatus `json:"lifeStatus"`
 	// What a player should be doing right now
 	InteractionStatus VoteStatus `json:"interactionStatus"`
-	// Use to rename user in your interpretation
-	RenameProvider RenameUserProviderInterface
 }
 
 // ________________________________________________
 // Functions to get new players (or Spectating)
 // ________________________________________________
 
-func NewEmptyPlayer(tag string, username string, provider RenameUserProviderInterface) *Player {
+func NewEmptyPlayer(tag string, username string) *Player {
 	return &Player{
 		Tag:               tag,
 		OldNick:           username,
 		LifeStatus:        Alive,
 		InteractionStatus: Passed,
 		Vote:              -1,
-		RenameProvider:    provider,
 	}
 }
 
-func NewSpectator(tag string, username string, provider RenameUserProviderInterface) *Player {
+func NewSpectator(tag string, username string) *Player {
 	return &Player{
 		Tag:               tag,
 		OldNick:           username,
 		LifeStatus:        Spectating,
 		InteractionStatus: Muted,
 		Vote:              -1,
-		RenameProvider:    provider,
 	}
 }
