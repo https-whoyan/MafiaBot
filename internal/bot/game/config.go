@@ -3,7 +3,8 @@ package game
 import (
 	botFMT "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
 	coreUserPack "github.com/https-whoyan/MafiaBot/internal/bot/user"
-	coreGamePack "github.com/https-whoyan/MafiaBot/internal/core/game"
+
+	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
 )
 
 var (

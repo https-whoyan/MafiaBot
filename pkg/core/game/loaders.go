@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	channelPack "github.com/https-whoyan/MafiaBot/internal/core/channel"
-	playerPack "github.com/https-whoyan/MafiaBot/internal/core/player"
+	channelPack "github.com/https-whoyan/MafiaBot/core/channel"
+	playerPack "github.com/https-whoyan/MafiaBot/core/player"
 )
 
 // _________________

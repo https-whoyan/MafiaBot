@@ -2,8 +2,9 @@ package game
 
 import (
 	"errors"
-	configPack "github.com/https-whoyan/MafiaBot/internal/core/config"
-	rolesPack "github.com/https-whoyan/MafiaBot/internal/core/roles"
+
+	configPack "github.com/https-whoyan/MafiaBot/core/config"
+	rolesPack "github.com/https-whoyan/MafiaBot/core/roles"
 )
 
 // ___________________________

@@ -3,7 +3,7 @@ package config
 import (
 	"math/rand"
 
-	"github.com/https-whoyan/MafiaBot/internal/core/roles"
+	"github.com/https-whoyan/MafiaBot/core/roles"
 )
 
 func GetShuffledRolesConfig(cfg *RolesConfig) []*roles.Role {

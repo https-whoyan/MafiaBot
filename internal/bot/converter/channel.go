@@ -1,8 +1,8 @@
 package converter
 
 import (
+	IChannel "github.com/https-whoyan/MafiaBot/core/channel"
 	botChannel "github.com/https-whoyan/MafiaBot/internal/bot/channel"
-	IChannel "github.com/https-whoyan/MafiaBot/internal/core/channel"
 )
 
 func ConvertRoleChannelsSliceToIChannelSlice(sl []*botChannel.BotRoleChannel) []IChannel.RoleChannel {

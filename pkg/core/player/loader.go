@@ -5,7 +5,7 @@ import (
 	"log"
 	"math/rand"
 
-	"github.com/https-whoyan/MafiaBot/internal/core/config"
+	"github.com/https-whoyan/MafiaBot/core/config"
 )
 
 // ___________________________________

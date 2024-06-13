@@ -2,14 +2,16 @@ package bot
 
 import (
 	"errors"
-	"github.com/https-whoyan/MafiaBot/internal/bot/converter"
 	"log"
 	"strings"
 
+	"github.com/https-whoyan/MafiaBot/core/game"
+	"github.com/https-whoyan/MafiaBot/core/roles"
+
 	"github.com/https-whoyan/MafiaBot/internal/bot/channel"
+	"github.com/https-whoyan/MafiaBot/internal/bot/converter"
 	botFMT "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
-	"github.com/https-whoyan/MafiaBot/internal/core/game"
-	"github.com/https-whoyan/MafiaBot/internal/core/roles"
+
 	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 
 	"github.com/bwmarrin/discordgo"
@@ -65,7 +67,7 @@ func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate, fMT
 // NoticeIsEmptyGame If game not exists
 func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate, fMTer *botFMT.DiscordFMTer) {
 	content := "You can't interact with the game because you haven't registered it\n" +
-		fMTer.Bold("Write the "+fMTer.Underline("/register_game")+" command") + " to start the game."
+		fMTer.Bold("Write the "+fMTer.Underline(RegisterGameCommandName)+" command") + " to start the game."
 	Response(s, i.Interaction, content)
 }
 

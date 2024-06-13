@@ -4,11 +4,11 @@ import (
 	"errors"
 	"sync"
 
-	channelPack "github.com/https-whoyan/MafiaBot/internal/core/channel"
-	configPack "github.com/https-whoyan/MafiaBot/internal/core/config"
-	fmtPack "github.com/https-whoyan/MafiaBot/internal/core/message/fmt"
-	playerPack "github.com/https-whoyan/MafiaBot/internal/core/player"
-	rolesPack "github.com/https-whoyan/MafiaBot/internal/core/roles"
+	channelPack "github.com/https-whoyan/MafiaBot/core/channel"
+	configPack "github.com/https-whoyan/MafiaBot/core/config"
+	fmtPack "github.com/https-whoyan/MafiaBot/core/message/fmt"
+	playerPack "github.com/https-whoyan/MafiaBot/core/player"
+	rolesPack "github.com/https-whoyan/MafiaBot/core/roles"
 )
 
 // ____________________

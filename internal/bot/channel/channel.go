@@ -3,8 +3,10 @@ package channel
 import (
 	"errors"
 	"fmt"
+
+	"github.com/https-whoyan/MafiaBot/core/roles"
+
 	"github.com/bwmarrin/discordgo"
-	"github.com/https-whoyan/MafiaBot/internal/core/roles"
 )
 
 // BotRoleChannel provided a channel, with interaction with role.

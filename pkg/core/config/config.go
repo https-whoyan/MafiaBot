@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/https-whoyan/MafiaBot/internal/core/roles"
+	"github.com/https-whoyan/MafiaBot/core/roles"
 )
 
 // Presents all available role combinations and their number

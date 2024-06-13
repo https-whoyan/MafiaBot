@@ -2,8 +2,9 @@ package redis
 
 import (
 	"context"
-	time2 "github.com/https-whoyan/MafiaBot/internal/core/time"
 	"time"
+
+	coreTime "github.com/https-whoyan/MafiaBot/core/time"
 )
 
 const (
@@ -17,7 +18,7 @@ func (r *RedisDB) SetInitialGameMessageID(guildID string, messageID string) erro
 
 	ctx := context.Background()
 	key := initialGameTB + ":" + guildID
-	lifeDuration := time2.RegistrationDeadlineSeconds * time.Second
+	lifeDuration := coreTime.RegistrationDeadlineSeconds * time.Second
 	err := r.db.Set(ctx, key, messageID, lifeDuration).Err()
 	return err
 }
@@ -38,7 +39,7 @@ func (r *RedisDB) SetConfigGameVotingMessageID(guildID string, messageID string)
 
 	ctx := context.Background()
 	key := configVotingGameTB + ":" + guildID
-	lifeDuration := time2.VotingGameConfigDeadlineSeconds * time.Second
+	lifeDuration := coreTime.VotingGameConfigDeadlineSeconds * time.Second
 	err := r.db.Set(ctx, key, messageID, lifeDuration).Err()
 	return err
 }

@@ -1,8 +1,8 @@
 package game
 
 import (
-	"github.com/https-whoyan/MafiaBot/internal/core/channel"
-	"github.com/https-whoyan/MafiaBot/internal/core/converter"
+	"github.com/https-whoyan/MafiaBot/core/channel"
+	"github.com/https-whoyan/MafiaBot/core/converter"
 )
 
 func (g *Game) searchRoleChannelByIID(channelIID string) channel.RoleChannel {

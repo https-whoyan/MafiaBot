@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/https-whoyan/MafiaBot/internal/core/channel"
-	"github.com/https-whoyan/MafiaBot/internal/core/player"
+	"github.com/https-whoyan/MafiaBot/core/channel"
+	"github.com/https-whoyan/MafiaBot/core/player"
 )
 
 // This file contains everything about the voting mechanics.
@@ -207,4 +207,15 @@ func (g *Game) DayVote(vP VoteProviderInterface, opt *OptionalChannelIID) error 
 	// validated Before
 	votedPlayer.Vote, _ = strconv.Atoi(vote)
 	return nil
+}
+
+// ResetTheVotes use to reset all player votes
+func (g *Game) ResetTheVotes() {
+	g.RLock()
+	allPlayers := g.Active
+	g.RUnlock()
+
+	for _, activePlayer := range allPlayers {
+		activePlayer.Vote = EmptyVoteInt
+	}
 }

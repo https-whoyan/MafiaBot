@@ -3,7 +3,7 @@ package channel
 import (
 	"io"
 
-	"github.com/https-whoyan/MafiaBot/internal/core/roles"
+	"github.com/https-whoyan/MafiaBot/core/roles"
 )
 
 type Channel interface {

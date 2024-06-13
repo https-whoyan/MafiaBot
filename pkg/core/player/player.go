@@ -1,7 +1,7 @@
 package player
 
 import (
-	"github.com/https-whoyan/MafiaBot/internal/core/roles"
+	"github.com/https-whoyan/MafiaBot/core/roles"
 )
 
 // _______________________

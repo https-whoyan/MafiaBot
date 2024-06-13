@@ -1,8 +1,9 @@
 package converter
 
 import (
+	corePlayerPack "github.com/https-whoyan/MafiaBot/core/player"
+
 	"github.com/bwmarrin/discordgo"
-	corePlayerPack "github.com/https-whoyan/MafiaBot/internal/core/player"
 )
 
 func DiscordUsersToEmptyPlayers(users []*discordgo.User, isSpectators bool) []*corePlayerPack.Player {

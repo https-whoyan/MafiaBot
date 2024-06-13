@@ -8,11 +8,11 @@ import (
 	"sync"
 	"syscall"
 
+	gamePack "github.com/https-whoyan/MafiaBot/core/game"
 	botFMTPack "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
 	botGamePack "github.com/https-whoyan/MafiaBot/internal/bot/game"
 	handlerPack "github.com/https-whoyan/MafiaBot/internal/bot/handlers"
 	userPack "github.com/https-whoyan/MafiaBot/internal/bot/user"
-	gamePack "github.com/https-whoyan/MafiaBot/internal/core/game"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -158,7 +158,7 @@ func (b *Bot) initBotCommands() {
 
 	// Game
 	b.initCommand(handlerPack.NewRegisterGameCommand())
-	b.initCommand(handlerPack.NewChoiceGameConfig())
+	b.initCommand(handlerPack.NewChoiceGameConfigCommand())
 
 	// Other
 	b.initCommand(handlerPack.NewYanLohCommand())
@@ -227,7 +227,7 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 		// Otherwise I know the game isn't registered.
 		// I check to see if the command name is register_game. If not, it means that the
 		// person uses the game command without registering it.
-		if executedCommandName != "register_game" {
+		if executedCommandName != handlerPack.RegisterGameCommandName {
 			handlerPack.NoticeIsEmptyGame(s, i, b.FMTer)
 			return
 		}
@@ -240,7 +240,7 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 		gameConfig := botGamePack.GetNewGameConfig(userRenameProvider)
 
 		b.Games[executedGuildID] = gamePack.GetNewGame(executedGuildID, gameConfig...)
-		log.Printf("")
+		log.Printf("Registered new game by %v Guild ID", executedGuildID)
 		cmd.Execute(s, i.Interaction, b.Games[executedGuildID], b.FMTer)
 
 		return

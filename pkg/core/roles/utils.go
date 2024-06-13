@@ -1,9 +1,10 @@
 package roles
 
 import (
-	"github.com/https-whoyan/MafiaBot/internal/core/message/fmt"
 	"sort"
 	"strings"
+
+	"github.com/https-whoyan/MafiaBot/core/message/fmt"
 )
 
 // Utils.
