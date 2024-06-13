@@ -7,7 +7,7 @@ import (
 // Почему еще не добавили эти функции в стандартную библиотеку....
 
 func GetMapKeys[K cmp.Ordered, E any](mp map[K]E) []K {
-	keys := make([]K, len(mp))
+	var keys []K
 	for key := range mp {
 		keys = append(keys, key)
 	}
@@ -15,7 +15,7 @@ func GetMapKeys[K cmp.Ordered, E any](mp map[K]E) []K {
 }
 
 func GetMapValues[K cmp.Ordered, E any](mp map[K]E) []E {
-	values := make([]E, len(mp))
+	var values []E
 	for _, val := range mp {
 		values = append(values, val)
 	}

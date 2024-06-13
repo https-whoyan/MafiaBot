@@ -59,3 +59,21 @@ type RoleChannel interface {
 type MainChannel interface {
 	Channel
 }
+
+// FromUserToSpectator Switch User in channel to spectator
+func FromUserToSpectator(channel Channel, serverUserID string) error {
+	err := channel.RemoveUser(serverUserID)
+	if err != nil {
+		return err
+	}
+	return channel.AddSpectator(serverUserID)
+}
+
+// FromSpectatorToUser Switch Spectator in channel to user
+func FromSpectatorToUser(channel Channel, serverUserID string) error {
+	err := channel.RemoveUser(serverUserID)
+	if err != nil {
+		return err
+	}
+	return channel.AddPlayer(serverUserID)
+}

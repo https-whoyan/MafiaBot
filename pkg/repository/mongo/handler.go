@@ -3,11 +3,11 @@ package mongo
 import (
 	"context"
 	"errors"
-	"fmt"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"strings"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
@@ -332,7 +332,6 @@ func (db *MongoDB) SetMainChannel(guildID string, channelIID string) error {
 
 	result, err := coll.UpdateOne(ctx, filter, updateSet)
 	if err != nil || result.ModifiedCount == 0 {
-		fmt.Println(err)
 		return errors.New("no updated documents")
 	}
 

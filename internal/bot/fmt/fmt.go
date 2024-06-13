@@ -4,10 +4,9 @@ package fmt
 // Text Style, FMTer
 // _____________
 
+var DiscordFMTInstance = &DiscordFMTer{}
+
 // DiscordFMTer FmtInterface core realization
-
-var FMTInstance = &DiscordFMTer{}
-
 type DiscordFMTer struct{}
 
 func (DiscordFMTer) Bold(s string) string {

@@ -28,7 +28,7 @@ type RolesConfig struct {
 
 type ConfigsByPlayerCount []*RolesConfig
 
-// Yes, edit it))
+// Yes, edit it.
 
 var (
 	// FivePlayersConfigs represent configs with 5 players
@@ -518,13 +518,16 @@ var (
 	BigCountOfPeopleToConfig   = errors.New("big people to config")
 )
 
-func GetConfigsByPlayersCount(playersCount int) ([]*RolesConfig, error) {
-	if playersCount < GetMinPlayersCount() {
-		return nil, SmallCountOfPeopleToConfig
+// GetConfigsByPlayersCount int in out present nearest available number of players
+func GetConfigsByPlayersCount(playersCount int) ([]*RolesConfig, int, error) {
+	smallestGroupOfPeople := GetMinPlayersCount()
+	biggestGroupOfPeople := GetMaxPlayersCount()
+	if playersCount < smallestGroupOfPeople {
+		return nil, smallestGroupOfPeople, SmallCountOfPeopleToConfig
 	} else if playersCount > GetMaxPlayersCount() {
-		return nil, BigCountOfPeopleToConfig
+		return nil, biggestGroupOfPeople, BigCountOfPeopleToConfig
 	}
-	return *Configs[playersCount], nil
+	return *Configs[playersCount], playersCount, nil
 }
 
 func GetMinPlayersCount() int {

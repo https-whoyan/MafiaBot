@@ -4,8 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 )
+
+// ___________________________________
+// RenameUserProviderInterface
+// ___________________________________
 
 // RenameUserProviderInterface
 //
@@ -17,6 +20,7 @@ type RenameUserProviderInterface interface {
 	RenameUser(channelIID string, userServerID string, newNick string) error
 }
 
+// Yes, edit it
 const (
 	playerPatternWithoutNickname     = "%v"             // ID
 	playerPrefixPattern              = "%v: %v"         // ID, Nick
@@ -43,7 +47,7 @@ var (
 	}
 
 	logIsEmptyProvider = func(serverUserID string, oldNick string, newNick string, channelIID string) {
-		log.Printf("RenameProvider is not provided. User with ServerID %v %v will "+
+		log.Printf("renameProvider is not provided. User with ServerID %v %v will "+
 			"not be renamed to %v in %v channel.",
 			serverUserID, oldNick, newNick, channelIID)
 	}
@@ -86,7 +90,7 @@ func (p *Player) RenameToSpectator(provider RenameUserProviderInterface, channel
 	}
 	var newNick string
 	if len(p.OldNick) == 0 {
-		newNick = strconv.Itoa(p.ID)
+		newNick = getNewPlayerNicknameWithoutNick(p.ID)
 	} else {
 		newNick = getNewSpectatorNickname(p.OldNick)
 	}
@@ -115,7 +119,7 @@ func (p *Player) RenameUserAfterGame(provider RenameUserProviderInterface, chann
 	newNick := p.OldNick
 	oldNick := getNewPlayerNickname(p.ID, p.OldNick)
 	if provider == nil {
-		log.Printf("RenameProvider is not provided. Player with ServerID %v %v will "+
+		log.Printf("renameProvider is not provided. Player with ServerID %v %v will "+
 			"not be unrenamed to %v from %v in %v channel",
 			p.Tag, p.OldNick, newNick, oldNick, channelIID)
 		return nil

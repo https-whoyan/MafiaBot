@@ -78,10 +78,6 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 	if !isContains {
 		return []string{}, errors.New("MongoDB doesn't initialized")
 	}
-	// Try to lock session
-	if s.TryLock() {
-		defer s.Unlock()
-	}
 	// emptyRolesMp: save not contains channel roles
 	emptyRolesMp := make(map[string]bool)
 	// mappedRoles: save contains channels roles
@@ -102,12 +98,6 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 		}
 		mappedRoles[roleName] = newRoleChannel
 	}
-
-	// Try lock game
-	if g.TryLock() {
-		defer g.Unlock()
-	}
-
 	// If a have all roles
 	if len(emptyRolesMp) == 0 {
 		// Convert

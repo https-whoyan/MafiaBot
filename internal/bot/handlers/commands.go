@@ -1,16 +1,17 @@
 package bot
 
 import (
+	"errors"
 	"fmt"
-	"github.com/https-whoyan/MafiaBot/internal/bot/converter"
 	"log"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/https-whoyan/MafiaBot/internal/bot/converter"
 	botFMTPack "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
 	botMsgPack "github.com/https-whoyan/MafiaBot/internal/bot/message"
-	coreCfgPack "github.com/https-whoyan/MafiaBot/internal/core/config"
+	coreConfigPack "github.com/https-whoyan/MafiaBot/internal/core/config"
 	coreGamePack "github.com/https-whoyan/MafiaBot/internal/core/game"
 	coreRolesPack "github.com/https-whoyan/MafiaBot/internal/core/roles"
 	botTimePack "github.com/https-whoyan/MafiaBot/internal/core/time"
@@ -44,7 +45,7 @@ func NewAddChannelRoleCommand() *AddChannelRoleCommand {
 	generateOption := func(roleName string) *discordgo.ApplicationCommandOption {
 		return &discordgo.ApplicationCommandOption{
 			Name:        roleName,
-			Description: "Add " + roleName + " interaction chat",
+			Description: fmt.Sprintf("Add %s interationChat", roleName),
 			Type:        discordgo.ApplicationCommandOptionString,
 		}
 	}
@@ -197,7 +198,6 @@ func (c AddMainChannelCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 	}
 
 	if !isCorrectChatID(s, newChatID) {
-		fmt.Println(newChatID)
 		content := "Invalid Chat ID!"
 		Response(s, i, content)
 		return
@@ -256,9 +256,8 @@ func (c RegisterGameCommand) GetName() string {
 	return c.name
 }
 
-func (c RegisterGameCommand) validationChannels(s *discordgo.Session, i *discordgo.Interaction,
-	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) (
-	correct bool) {
+func (c RegisterGameCommand) trySetRolesChannel(s *discordgo.Session, i *discordgo.Interaction,
+	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) (correct bool) {
 	emptyRoles, err := setRolesChannels(s, i.GuildID, g)
 	if err != nil {
 		content := "Internal Server Error"
@@ -294,11 +293,10 @@ func (c RegisterGameCommand) validationChannels(s *discordgo.Session, i *discord
 func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
 	// Validation
-	if !c.validationChannels(s, i, g, f) {
+	if !c.trySetRolesChannel(s, i, g, f) {
 		return
 	}
-	// If ok, set game to NonDefinedState
-	g.SetState(coreGamePack.NonDefinedState)
+
 	// Send message.
 	Response(s, i, "Ok. Message below.")
 
@@ -385,18 +383,20 @@ func (c ChoiceGameConfig) Execute(s *discordgo.Session, i *discordgo.Interaction
 
 	// If playersCount not in range [minAvailableCount, maxAvailableCount],
 	// Send message that it's impossible to choice config.
-	minPossiblePlayers := coreCfgPack.GetMinPlayersCount()
-	maxPossiblePlayers := coreCfgPack.GetMaxPlayersCount()
-	if playersCount < minPossiblePlayers {
+	_, nearest, err := coreConfigPack.GetConfigsByPlayersCount(playersCount)
+	switch {
+	case errors.Is(err, coreConfigPack.SmallCountOfPeopleToConfig):
 		content := f.B("The number of players is too small to start the game.\n") +
 			"Number of registered players: " + f.CD(strconv.Itoa(playersCount)) +
-			"\nMinimum number to vote on game config choices: " + f.CD(strconv.Itoa(minPossiblePlayers))
+			"\nMinimum number to vote on game config choices: " + f.CD(strconv.Itoa(nearest))
 		Response(s, i, content)
-	} else if playersCount > maxPossiblePlayers {
+		return
+	case errors.Is(err, coreConfigPack.BigCountOfPeopleToConfig):
 		content := f.B("The number of players is too large to start the game.\n") +
 			"Number of registered players: " + f.CD(strconv.Itoa(playersCount)) +
-			"\nMaximum number to vote on game config choices: " + f.CD(strconv.Itoa(minPossiblePlayers))
+			"\nMaximum number to vote on game config choices: " + f.CD(strconv.Itoa(nearest))
 		Response(s, i, content)
+		return
 	}
 
 	// If playersCount is ok,

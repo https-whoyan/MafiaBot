@@ -42,13 +42,19 @@ const (
 )
 
 // ____________________
-// Setting
+// Options
 // ____________________
 
-type Setting struct {
-	FMTer          fmtPack.FmtInterface
-	RenameProvider playerPack.RenameUserProviderInterface
-	RenameMode     RenameMode
+type GameOption func(g *Game)
+
+func FMTerOpt(fmtEr fmtPack.FmtInterface) GameOption {
+	return func(g *Game) { g.fmtEr = fmtEr }
+}
+func RenamePrOpt(rP playerPack.RenameUserProviderInterface) GameOption {
+	return func(g *Game) { g.renameProvider = rP }
+}
+func RenameModeOpt(mode RenameMode) GameOption {
+	return func(g *Game) { g.RenameMode = mode }
 }
 
 // __________________
@@ -77,31 +83,34 @@ type Game struct {
 	// key: str - role name
 	RoleChannels  map[string]channelPack.RoleChannel
 	MainChannel   channelPack.MainChannel
-	ch            chan int
+	Ch            chan VoteProviderInterface
 	PreviousState State `json:"previousState"`
 	State         State `json:"state"`
 	// For beautiful messages
 	fmtEr fmtPack.FmtInterface
 	// Use to rename user in your interpretation
-	RenameProvider playerPack.RenameUserProviderInterface
-	RenameMode     RenameMode `json:"renameMode"`
+	renameProvider playerPack.RenameUserProviderInterface
+	RenameMode     RenameMode `json:"RenameMode"`
 }
 
-func GetNewGame(guildID string, cfg Setting) *Game {
-	return &Game{
+func GetNewGame(guildID string, opts ...GameOption) *Game {
+	newGame := &Game{
 		GuildID: guildID,
 		State:   NonDefinedState,
 		// Chan create.
-		ch: make(chan int),
+		Ch: make(chan VoteProviderInterface),
 		// Slices.
 		Active:     make([]*playerPack.Player, 0),
 		Dead:       make([]*playerPack.Player, 0),
 		Spectators: make([]*playerPack.Player, 0),
-		// Set interfaces
-		fmtEr:          cfg.FMTer,
-		RenameProvider: cfg.RenameProvider,
-		RenameMode:     cfg.RenameMode,
+		// Create a map
+		RoleChannels: make(map[string]channelPack.RoleChannel),
 	}
+	// Set options
+	for _, opt := range opts {
+		opt(newGame)
+	}
+	return newGame
 }
 
 // _________________
@@ -152,76 +161,8 @@ func (g *Game) ChangeStateToPause() {
 // Start
 // ______________
 
-/*
-	After RegisterGame I must have all information about
-		1) Tags and usernames of players
-		2) RoleChannels info
-		3) GuildID (Ok, optional)
-		4) MainChannel implementation
-		5) Spectators
-		6) And chan (See GetNewGame)
-		7) fmtEr
-		8) RenameProvider
-		9) RenameMode
-
-	Let's validate it.
-*/
-
-// Validation Errors.
-var (
-	EmptyConfigErr                             = errors.New("empty config")
-	MismatchPlayersCountAndGamePlayersCountErr = errors.New("mismatch config playersCount and game players")
-	NotFullRoleChannelInfoErr                  = errors.New("not full role channel info")
-	NotMainChannelInfoErr                      = errors.New("not main channel info")
-	EmptyChanErr                               = errors.New("empty channel")
-	EmptyFMTerErr                              = errors.New("empty FMTer")
-	EmptyRenameProviderErr                     = errors.New("empty rename provider")
-	EmptyRenameModeErr                         = errors.New("empty rename mode")
-)
-
-func (g *Game) validation(cfg *configPack.RolesConfig) error {
-	g.RLock()
-	defer g.RUnlock()
-
-	var err error
-	if cfg == nil {
-		return EmptyConfigErr
-	}
-	if cfg.PlayersCount != len(g.Active) {
-		err = errors.Join(err, MismatchPlayersCountAndGamePlayersCountErr)
-	}
-	if len(g.RoleChannels) != len(rolesPack.GetAllNightInteractionRolesNames()) {
-		err = errors.Join(err, NotFullRoleChannelInfoErr)
-	}
-	if g.MainChannel == nil {
-		err = errors.Join(err, NotMainChannelInfoErr)
-	}
-	if g.ch == nil {
-		err = errors.Join(err, EmptyChanErr)
-	}
-	if g.fmtEr == nil {
-		err = errors.Join(err, EmptyFMTerErr)
-	}
-	if g.RenameMode == NotRenameModeMode {
-		return err
-	}
-	if g.RenameProvider == nil {
-		err = errors.Join(err, EmptyRenameProviderErr)
-	}
-	switch g.RenameMode {
-	case RenameInGuildMode:
-		return err
-	case RenameOnlyInMainChannelMode:
-		return err
-	case RenameInAllChannelsMode:
-		return err
-	}
-	err = errors.Join(err, EmptyRenameModeErr)
-	return err
-}
-
 func (g *Game) Start(cfg *configPack.RolesConfig) error {
-	if err := g.validation(cfg); err != nil {
+	if err := g.validationStart(cfg); err != nil {
 		return err
 	}
 	g.Lock()
@@ -302,7 +243,7 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 	case NotRenameModeMode: // No actions
 	case RenameInGuildMode:
 		for _, player := range g.StartPlayers {
-			err = player.RenameAfterGettingID(g.RenameProvider, "")
+			err = player.RenameAfterGettingID(g.renameProvider, "")
 			if err != nil {
 				return err
 			}
@@ -311,7 +252,7 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 		mainChannelServerID := g.MainChannel.GetServerID()
 
 		for _, player := range g.StartPlayers {
-			err = player.RenameAfterGettingID(g.RenameProvider, mainChannelServerID)
+			err = player.RenameAfterGettingID(g.renameProvider, mainChannelServerID)
 			if err != nil {
 				return err
 			}
@@ -326,7 +267,7 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 			playerRoleName := player.Role.Name
 			playerInteractionChannel := g.RoleChannels[playerRoleName]
 			playerInteractionChannelIID := playerInteractionChannel.GetServerID()
-			err = player.RenameAfterGettingID(g.RenameProvider, playerInteractionChannelIID)
+			err = player.RenameAfterGettingID(g.renameProvider, playerInteractionChannelIID)
 			if err != nil {
 				return err
 			}
@@ -336,7 +277,7 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 		mainChannelServerID := g.MainChannel.GetServerID()
 
 		for _, player := range g.StartPlayers {
-			err = player.RenameAfterGettingID(g.RenameProvider, mainChannelServerID)
+			err = player.RenameAfterGettingID(g.renameProvider, mainChannelServerID)
 			if err != nil {
 				return err
 			}

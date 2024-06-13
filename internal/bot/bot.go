@@ -59,8 +59,7 @@ type Bot struct {
 	// To format messages.
 	//
 	// Implement of FmtInterface.
-	FMTer       *botFMTPack.DiscordFMTer
-	GameSetting *gamePack.Setting
+	FMTer *botFMTPack.DiscordFMTer
 }
 
 func InitBot(cnf *BotConfig) {
@@ -77,7 +76,7 @@ func InitBot(cnf *BotConfig) {
 			Session:  s,
 			Commands: make(map[string]handlerPack.Command),
 			Games:    make(map[string]*gamePack.Game),
-			FMTer:    botFMTPack.FMTInstance,
+			FMTer:    botFMTPack.DiscordFMTInstance,
 		}
 
 		bot.initBotCommands()
@@ -133,11 +132,11 @@ func (b *Bot) Close() error {
 	b.Lock()
 	defer b.Unlock()
 	b.DeleteHandlers()
+	b.removeRegisteredCommands()
 	err := b.Session.Close()
 	if err != nil {
 		return err
 	}
-	b.removeRegisteredCommands()
 	return nil
 }
 
@@ -240,9 +239,9 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 		userRenameProvider := userPack.NewBotUserRenameProvider(s, executedGuildID)
 		gameConfig := botGamePack.GetNewGameConfig(userRenameProvider)
 
-		b.Games[executedGuildID] = gamePack.GetNewGame(executedGuildID, gameConfig)
-		currGame := b.Games[executedGuildID]
-		cmd.Execute(s, i.Interaction, currGame, b.FMTer)
+		b.Games[executedGuildID] = gamePack.GetNewGame(executedGuildID, gameConfig...)
+		log.Printf("")
+		cmd.Execute(s, i.Interaction, b.Games[executedGuildID], b.FMTer)
 
 		return
 	}

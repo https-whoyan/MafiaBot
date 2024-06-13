@@ -2,19 +2,20 @@ package game
 
 import (
 	botFMT "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
-	"github.com/https-whoyan/MafiaBot/internal/bot/user"
-	"github.com/https-whoyan/MafiaBot/internal/core/game"
+	coreUserPack "github.com/https-whoyan/MafiaBot/internal/bot/user"
+	coreGamePack "github.com/https-whoyan/MafiaBot/internal/core/game"
 )
 
 var (
-	FMTer           = botFMT.FMTInstance // Same once struct
-	ConstRenameMode = game.RenameInGuildMode
+	FMTer           = botFMT.DiscordFMTInstance // Same once struct
+	ConstRenameMode = coreGamePack.RenameInGuildMode
 )
 
-func GetNewGameConfig(renameProvider *user.BotUserRenameProvider) game.Setting {
-	return game.Setting{
-		FMTer:          FMTer,
-		RenameProvider: renameProvider,
-		RenameMode:     ConstRenameMode,
+func GetNewGameConfig(renameProvider *coreUserPack.BotUserRenameProvider) []coreGamePack.GameOption {
+	options := []coreGamePack.GameOption{
+		coreGamePack.FMTerOpt(FMTer),
+		coreGamePack.RenameModeOpt(ConstRenameMode),
+		coreGamePack.RenamePrOpt(renameProvider),
 	}
+	return options
 }
