@@ -83,7 +83,7 @@ type Game struct {
 	// key: str - role name
 	RoleChannels  map[string]channelPack.RoleChannel
 	MainChannel   channelPack.MainChannel
-	Ch            chan VoteProviderInterface
+	VoteChan      chan VoteProviderInterface
 	PreviousState State `json:"previousState"`
 	State         State `json:"state"`
 	// For beautiful messages
@@ -98,7 +98,7 @@ func GetNewGame(guildID string, opts ...GameOption) *Game {
 		GuildID: guildID,
 		State:   NonDefinedState,
 		// Chan create.
-		Ch: make(chan VoteProviderInterface),
+		VoteChan: make(chan VoteProviderInterface),
 		// Slices.
 		Active:     make([]*playerPack.Player, 0),
 		Dead:       make([]*playerPack.Player, 0),
@@ -118,7 +118,11 @@ func GetNewGame(guildID string, opts ...GameOption) *Game {
 // _________________
 
 func (g *Game) GetNextState() State {
+	g.RLock()
+	defer g.RUnlock()
 	switch g.State {
+	case NonDefinedState:
+		return RegisterState
 	case RegisterState:
 		return StartingState
 	case StartingState:
@@ -135,16 +139,14 @@ func (g *Game) GetNextState() State {
 }
 
 func (g *Game) SetState(state State) {
-	g.Lock()
-	defer g.Unlock()
+	g.RLock()
 	currGState := g.State
+	g.RUnlock()
 	g.PreviousState = currGState
 	g.State = state
 }
 
 func (g *Game) SwitchState() {
-	g.Lock()
-	defer g.Unlock()
 	nextState := g.GetNextState()
 	g.SetState(nextState)
 }
@@ -155,6 +157,25 @@ func (g *Game) ChangeStateToPause() {
 	currGState := g.State
 	g.PreviousState = currGState
 	g.State = PausedState
+}
+
+var StateDefinition = map[State]string{
+	NonDefinedState: "is full raw (nothing is known)",
+	RegisterState:   "is waited for registration",
+	StartingState:   "is prepared for starting",
+	NightState:      "is in night state",
+	DayState:        "is in day state",
+	VotingState:     "is in day voting state",
+	PausedState:     "is in paused state",
+	FinishState:     "is finished",
+}
+
+func GetStateDefinition(state State) string {
+	definition, contains := StateDefinition[state]
+	if !contains {
+		return "is unknown for server"
+	}
+	return definition
 }
 
 // ______________

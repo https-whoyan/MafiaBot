@@ -219,7 +219,12 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 		if containsGame {
 			log.Printf("Execute %v command.", cmdName)
 			currGame := b.Games[executedGuildID]
-			// I call the Execute method of the command
+			// Validate Is correct command by game state
+			content, isOk := handlerPack.ValidateCommandByGameState(executedCommandName, currGame, b.FMTer)
+			if !isOk {
+				handlerPack.Response(s, i.Interaction, content)
+			}
+			// If ok, I call the Execute method of the command
 			cmd.Execute(s, i.Interaction, currGame, b.FMTer)
 			return
 		}
@@ -240,6 +245,11 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 		gameConfig := botGamePack.GetNewGameConfig(userRenameProvider)
 
 		b.Games[executedGuildID] = gamePack.GetNewGame(executedGuildID, gameConfig...)
+		content, isOk := handlerPack.ValidateCommandByGameState(executedCommandName, b.Games[executedGuildID], b.FMTer)
+		if !isOk {
+			handlerPack.Response(s, i.Interaction, content)
+			return
+		}
 		log.Printf("Registered new game by %v Guild ID", executedGuildID)
 		cmd.Execute(s, i.Interaction, b.Games[executedGuildID], b.FMTer)
 

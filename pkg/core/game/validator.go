@@ -54,7 +54,7 @@ func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 	if g.MainChannel == nil {
 		err = errors.Join(err, NotMainChannelInfoErr)
 	}
-	if g.Ch == nil {
+	if g.VoteChan == nil {
 		err = errors.Join(err, EmptyChanErr)
 	}
 	if g.fmtEr == nil {

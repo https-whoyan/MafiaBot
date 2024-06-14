@@ -1,10 +1,8 @@
 package roles
 
 import (
+	"github.com/https-whoyan/MafiaBot/core/converter"
 	"sort"
-	"strings"
-
-	"github.com/https-whoyan/MafiaBot/core/message/fmt"
 )
 
 // Utils.
@@ -51,22 +49,15 @@ func GetAllSortedRoles() []*Role {
 	return allRoles
 }
 
-// _____________________________________________________________________
-// Beautiful presentations of roles to display information about them.
-// _____________________________________________________________________
-
-func GetDefinitionOfRole(f fmt.FmtInterface, roleName string) string {
-	fixDescription := func(s string) string {
-		words := strings.Split(s, " ")
-		return strings.Join(words, " ")
+func GetAllTeams() []Team {
+	mpTeams := make(map[Team]bool)
+	for _, role := range MappedRoles {
+		mpTeams[role.Team] = true
 	}
 
-	role := MappedRoles[roleName]
-	var message string
-
-	name := string(fmt.BoldUnderline(f, role.Name))
-	team := string(f.Bold("Team: ")) + StringTeam[role.Team]
-	description := fixDescription(role.Description)
-	message = name + "\n\n" + team + "\n" + description
-	return message
+	teamsSlice := converter.GetMapKeys(mpTeams)
+	sort.Slice(teamsSlice, func(i, j int) bool {
+		return teamsSlice[i] < teamsSlice[j]
+	})
+	return teamsSlice
 }

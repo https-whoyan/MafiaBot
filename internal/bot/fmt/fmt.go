@@ -18,10 +18,17 @@ func (DiscordFMTer) Italic(s string) string {
 func (DiscordFMTer) Underline(s string) string {
 	return "__" + string(s) + "__"
 }
-
-// CodeBlock language may be empty, it's ok
-func (DiscordFMTer) CodeBlock(language string, s string) string {
-	return "```" + language + s + "```"
+func (DiscordFMTer) Block(s string) string {
+	return "`" + s + "`"
+}
+func (DiscordFMTer) LineSplitter() string {
+	return "\n"
+}
+func (DiscordFMTer) InfoSplitter() string {
+	return "=============================="
+}
+func (DiscordFMTer) Tab() string {
+	return "    "
 }
 
 // For less code.
@@ -35,8 +42,11 @@ func (f DiscordFMTer) I(s string) string {
 func (f DiscordFMTer) U(s string) string {
 	return f.Underline(s)
 }
-func (f DiscordFMTer) CD(s string) string {
-	return f.CodeBlock("", s)
+func (f DiscordFMTer) Bl(s string) string {
+	return f.Block(s)
+}
+func (f DiscordFMTer) NL() string {
+	return f.LineSplitter()
 }
 
 // B + U / B + I / I + U
@@ -56,15 +66,15 @@ func (f DiscordFMTer) IU(s string) string {
 // __________
 
 var (
-	RegistrationPlayerSticker    = ":grin:"
-	RegistrationSpectatorSticker = ":smiling_imp:"
+	RegistrationPlayerSticker    = "😁"
+	RegistrationSpectatorSticker = "😈"
 	LuckySticker                 = ":four_leaf_clover:"
 )
 
 // MappedStickersUnicode save stickers Unicode:
 var MappedStickersUnicode = map[string]string{
-	RegistrationPlayerSticker:    "U+1F601",
-	RegistrationSpectatorSticker: "U+1F608",
+	RegistrationPlayerSticker:    "😁",
+	RegistrationSpectatorSticker: "😈",
 }
 
 func GetUnicodeBySticker(sticker string) string {

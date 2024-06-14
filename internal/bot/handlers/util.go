@@ -59,14 +59,15 @@ func IsPrivateMessage(i *discordgo.InteractionCreate) bool {
 }
 
 func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate, fMTer *botFMT.DiscordFMTer) {
-	content := fMTer.Bold("All commands are used on the server.\n") + "If you have difficulties in using the bot, " +
+	content := fMTer.Bold("All commands are used on the server.") + fMTer.NL() +
+		"If you have difficulties in using the bot, " +
 		"please refer to the repository documentation: https://github.com/https-whoyan/MafiaBot"
 	Response(s, i.Interaction, content)
 }
 
 // NoticeIsEmptyGame If game not exists
 func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate, fMTer *botFMT.DiscordFMTer) {
-	content := "You can't interact with the game because you haven't registered it\n" +
+	content := "You can't interact with the game because you haven't registered it" + fMTer.NL() +
 		fMTer.Bold("Write the "+fMTer.Underline(RegisterGameCommandName)+" command") + " to start the game."
 	Response(s, i.Interaction, content)
 }
