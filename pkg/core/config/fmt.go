@@ -30,21 +30,22 @@ func (cfg *RolesConfig) GetMessageAboutConfig(f fmt.FmtInterface) string {
 			"he plays as a separate team. "+"When checked by the detective, he is considered as a peaceful "+
 			"player, but this is not entirely true.)")
 	}
-	message += tripleNL + f.InfoSplitter() + NL
+	message += tripleNL
 
-	teamsMessages := make([]string, teamsCount)
+	var teamsMessages []string
 	for _, team := range cfg.GetTeamsByCfg() {
 		var teamMessage string
 		playersInTeamsCount := cfg.GetPlayersCountByTeam(team)
-		teamMessage = f.Bold("In "+roles.StringTeam[team]+" plays ") + f.Block(strconv.Itoa(playersInTeamsCount))
+		teamMessage = f.Bold("In "+roles.StringTeam[team]+" plays ") + f.Block(strconv.Itoa(playersInTeamsCount)) +
+			f.Bold(" players.")
 		teamMessage += NL
 
-		rolesMessages := make([]string, len(teamsMp[team]))
+		var rolesMessages []string
 		for _, roleCfg := range teamsMp[team] {
 			roleMessage := f.Tab() + roleCfg.Role.Name + " " + f.Block(strconv.Itoa(roleCfg.Count))
 			rolesMessages = append(rolesMessages, roleMessage)
 		}
-		teamsMessages = append(teamsMessages, strings.Join(rolesMessages, NL))
+		teamsMessages = append(teamsMessages, teamMessage+strings.Join(rolesMessages, NL))
 	}
 	message += strings.Join(teamsMessages, doubleNL)
 	return message

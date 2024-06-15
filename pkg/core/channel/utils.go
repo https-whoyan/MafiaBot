@@ -19,3 +19,11 @@ func SearchChannelByGameID(channels []Channel, channelID string) Channel {
 
 	return nil
 }
+
+func RoleSliceToChannelSlice(roleChannels []RoleChannel) []Channel {
+	var channelSlice []Channel
+	for _, roleChannel := range roleChannels {
+		channelSlice = append(channelSlice, roleChannel)
+	}
+	return channelSlice
+}

@@ -11,10 +11,11 @@ import (
 	coreConfigPack "github.com/https-whoyan/MafiaBot/core/config"
 	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
 	coreRolesPack "github.com/https-whoyan/MafiaBot/core/roles"
-	botTimePack "github.com/https-whoyan/MafiaBot/core/time"
 	botCnvPack "github.com/https-whoyan/MafiaBot/internal/bot/converter"
 	botFMTPack "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
+	botGameCfgPack "github.com/https-whoyan/MafiaBot/internal/bot/game"
 	botMsgPack "github.com/https-whoyan/MafiaBot/internal/bot/message"
+	botTimeConstsPack "github.com/https-whoyan/MafiaBot/internal/bot/time"
 
 	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 	"github.com/https-whoyan/MafiaBot/pkg/repository/redis"
@@ -35,6 +36,7 @@ const (
 	ChoiceGameConfigCommandName = "choose_game_config"
 	YanLohCommandName           = "yan_loh"
 	AboutRolesCommandName       = "about_roles"
+	StartGameCommandName        = "start_game"
 )
 
 // _______________________
@@ -80,13 +82,9 @@ func NewAddChannelRoleCommand() *AddChannelRoleCommand {
 	}
 }
 
-func (c AddChannelRoleCommand) GetCmd() *discordgo.ApplicationCommand {
-	return c.cmd
-}
-
-func (c AddChannelRoleCommand) GetName() string {
-	return c.name
-}
+func (c AddChannelRoleCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c AddChannelRoleCommand) GetName() string                       { return c.name }
+func (c AddChannelRoleCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
 func (c AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	_ *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
@@ -128,7 +126,7 @@ func (c AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 	}
 
 	noticeChatContent := fmt.Sprintf("Now chat is used for %v role.", roleName)
-	_, err = noticeChat(s, requestedChatID, noticeChatContent)
+	_, err = sendMessages(s, requestedChatID, noticeChatContent)
 	if err != nil {
 		content := "Bot can't write to given chat. " + f.NL() + f.Bold("Reuse command.")
 		Response(s, i, content)
@@ -137,10 +135,6 @@ func (c AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 	messageContent := fmt.Sprintf("Done, now is %v chat is used for %v role.", requestedChatID, roleName) +
 		f.NL() + f.BU("Thanks!")
 	Response(s, i, messageContent)
-}
-
-func (c AddChannelRoleCommand) IsUsedForGame() bool {
-	return c.isUsedForGame
 }
 
 // AddMainChannelCommand command logic
@@ -169,13 +163,9 @@ func NewAddMainChannelCommand() *AddMainChannelCommand {
 	}
 }
 
-func (c AddMainChannelCommand) GetCmd() *discordgo.ApplicationCommand {
-	return c.cmd
-}
-
-func (c AddMainChannelCommand) GetName() string {
-	return c.name
-}
+func (c AddMainChannelCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c AddMainChannelCommand) GetName() string                       { return c.name }
+func (c AddMainChannelCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
 func (c AddMainChannelCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	_ *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
@@ -216,7 +206,7 @@ func (c AddMainChannelCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 	}
 
 	noticeChatContent := fmt.Sprintf("Now chat will be used as main for games.")
-	_, err = noticeChat(s, newChatID, noticeChatContent)
+	_, err = sendMessages(s, newChatID, noticeChatContent)
 	if err != nil {
 		content := "Bot can't write to given chat. " + f.NL() + f.B("Reuse command.")
 		Response(s, i, content)
@@ -224,10 +214,6 @@ func (c AddMainChannelCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 	}
 	messageContent := "Done, you configure main interaction chat."
 	Response(s, i, messageContent)
-}
-
-func (c AddMainChannelCommand) IsUsedForGame() bool {
-	return c.isUsedForGame
 }
 
 // _____________________
@@ -252,13 +238,9 @@ func NewRegisterGameCommand() *RegisterGameCommand {
 	}
 }
 
-func (c RegisterGameCommand) GetCmd() *discordgo.ApplicationCommand {
-	return c.cmd
-}
-
-func (c RegisterGameCommand) GetName() string {
-	return c.name
-}
+func (c RegisterGameCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c RegisterGameCommand) GetName() string                       { return c.name }
+func (c RegisterGameCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
 func (c RegisterGameCommand) trySetRolesChannel(s *discordgo.Session, i *discordgo.Interaction,
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) (correct bool) {
@@ -306,7 +288,7 @@ func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interact
 	Response(s, i, "Ok. Message below.")
 
 	// Send additional message and save it ID
-	deadlineStr := strconv.Itoa(botTimePack.RegistrationDeadlineMinutes)
+	deadlineStr := strconv.Itoa(botTimeConstsPack.RegistrationDeadlineMinutes)
 	responseMessageText := "Registration has begun." + f.NL() +
 		f.B("Post "+botFMTPack.RegistrationPlayerSticker+" reaction below.") + f.I(" If you want to be a spectator, "+
 		"put the reaction "+botFMTPack.RegistrationSpectatorSticker+".") + f.NL() + f.NL() + f.B(
@@ -325,14 +307,12 @@ func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interact
 		log.Print("DB isn't initialed, couldn't get currDB")
 		return
 	}
-	err = currDB.SetInitialGameMessageID(i.GuildID, messageID)
+	err = currDB.SetInitialGameMessageID(
+		i.GuildID, messageID,
+		botTimeConstsPack.RegistrationDeadlineSeconds*time.Second)
 	if err != nil {
 		log.Print(err)
 	}
-}
-
-func (c RegisterGameCommand) IsUsedForGame() bool {
-	return c.isUsedForGame
 }
 
 // ChoiceGameConfigCommand command logic
@@ -353,17 +333,9 @@ func NewChoiceGameConfigCommand() *ChoiceGameConfigCommand {
 	}
 }
 
-func (c ChoiceGameConfigCommand) GetCmd() *discordgo.ApplicationCommand {
-	return c.cmd
-}
-
-func (c ChoiceGameConfigCommand) GetName() string {
-	return c.name
-}
-
-func (c ChoiceGameConfigCommand) IsUsedForGame() bool {
-	return c.isUsedForGame
-}
+func (c ChoiceGameConfigCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c ChoiceGameConfigCommand) GetName() string                       { return c.name }
+func (c ChoiceGameConfigCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
 func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
@@ -385,10 +357,10 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 
 	// If playersCount not in range [minAvailableCount, maxAvailableCount],
 	// Send message that it's impossible to choice config.
-	registrationStickerUnicode := botFMTPack.GetUnicodeBySticker(botFMTPack.RegistrationPlayerSticker)
+	registrationStickerUnicode := botFMTPack.RegistrationPlayerSticker
 	_, playersCount := botMsgPack.GetUsersByEmojiID(s, i.ChannelID, registrationMessageID, registrationStickerUnicode)
 
-	_, nearest, err := coreConfigPack.GetConfigsByPlayersCount(playersCount)
+	allConfigs, nearest, err := coreConfigPack.GetConfigsByPlayersCount(playersCount)
 	switch {
 	case errors.Is(err, coreConfigPack.SmallCountOfPeopleToConfig):
 		content := f.B("The number of players is too small to start the game.") + f.NL() +
@@ -412,14 +384,105 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 	g.SetStartPlayers(startGamePlayers)
 
 	// And spectators.
-	registerSpectatorStickerUnicode := botFMTPack.GetUnicodeBySticker(botFMTPack.RegistrationSpectatorSticker)
+	registerSpectatorStickerUnicode := botFMTPack.RegistrationSpectatorSticker
 	botSpectators, _ := botMsgPack.GetUsersByEmojiID(s, i.ChannelID,
 		registrationMessageID, registerSpectatorStickerUnicode)
 	spectators := botCnvPack.DiscordUsersToEmptyPlayers(botSpectators, true)
 	g.SetSpectators(spectators)
 
-	//TODO!
+	content := "Below is a list of available game configurations. " + f.NL() +
+		f.B("If you like the configuration") + ",  please " +
+		f.BU("put a reaction ") + botFMTPack.ConfigChoiceSticker + f.BU(" on the post.") + f.NL() +
+		"You can give a reaction to any number of configurations. " + f.NL() + f.NL()
+	content += f.I("The bot will choose the configuration with the most reactions. "+
+		"If there are several configurations, a random one will be selected.") + f.NL() + f.NL()
+	deadlineStr := strconv.Itoa(botTimeConstsPack.VotingGameConfigDeadlineMinutes)
+	content += "Deadline: " + f.BU(deadlineStr+" minutes") + "."
+	Response(s, i, content)
+
+	db, isContains := redis.GetCurrRedisDB()
+	if !isContains {
+		log.Println("redis is not exists, command: startGameCommand")
+		content = "Internal Server Error!"
+		_, _ = sendMessages(s, i.ChannelID, content)
+		return
+	}
+
+	// Create a ConfigMessages structure to safe all message to redis
+	cfgMessages := botGameCfgPack.NewConfigMessages(i.GuildID, playersCount, len(allConfigs))
+	for index, config := range allConfigs {
+		_, _ = sendMessages(s, i.ChannelID, f.InfoSplitter())
+		messageContent := config.GetMessageAboutConfig(f)
+		mpMessages, _ := sendMessages(s, i.ChannelID, messageContent)
+		cfgMessages.AddNewMessage(index, mpMessages[messageContent].ID)
+	}
+	err = db.SetConfigGameVotingMessages(cfgMessages, botTimeConstsPack.VotingGameConfigDeadlineSeconds*time.Second)
+	if err != nil {
+		log.Println(err)
+	}
+
+	return
+}
+
+type StartGameCommand struct {
+	cmd           *discordgo.ApplicationCommand
+	isUsedForGame bool
+	name          string
+}
+
+func NewStartGameCommand() *StartGameCommand {
+	return &StartGameCommand{
+		cmd: &discordgo.ApplicationCommand{
+			Name:        StartGameCommandName,
+			Description: "Start game after game config choosing",
+		},
+		isUsedForGame: true,
+		name:          StartGameCommandName,
+	}
+}
+
+func (c StartGameCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c StartGameCommand) GetName() string                       { return c.name }
+func (c StartGameCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
+func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
+	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
+	r, isContains := redis.GetCurrRedisDB()
+	if !isContains {
+		Response(s, i, "Internal Server Error!")
+		return
+	}
+
+	cfgMessages, err := r.GetConfigGameVotingMessageID(i.GuildID)
+	if err != nil {
+		Response(s, i, "Internal Server Error!")
+		return
+	}
+
+	g.SwitchState()
+
+	// Set Reactions count to cfgMessages
+	for _, message := range cfgMessages.Messages {
+		messageIID := message.MessageID
+		emoji := botFMTPack.RegistrationPlayerSticker
+		_, messageCount := botMsgPack.GetUsersByEmojiID(s, i.ChannelID, messageIID, emoji)
+		message.SetReactionCount(messageCount)
+	}
+
+	winner, playerCount, isRandom := cfgMessages.GetWinner()
+	if isRandom {
+		// Simulation :))))
+		_, _ = sendMessages(s, i.ChannelID, f.B("Choosing Random configuration..."))
+		time.Sleep(time.Millisecond * time.Duration(1400))
+	}
+	winnerConfig := coreConfigPack.GetConfigByPlayersCountAndIndex(playerCount, winner)
+	//TODO!!!!
 	Response(s, i, "Empty for now...")
+	err = g.Start(winnerConfig)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Printf("Start Game in %v Guild", i.GuildID)
+	return
 }
 
 // ______________
@@ -450,13 +513,9 @@ func NewYanLohCommand() *YanLohCommand {
 	}
 }
 
-func (c YanLohCommand) GetCmd() *discordgo.ApplicationCommand {
-	return c.cmd
-}
-
-func (c YanLohCommand) GetName() string {
-	return c.name
-}
+func (c YanLohCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c YanLohCommand) GetName() string                       { return c.name }
+func (c YanLohCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
 func (c YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	_ *coreGamePack.Game, _ *botFMTPack.DiscordFMTer) {
@@ -476,19 +535,11 @@ func (c YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	}(guildID, i.Member.User.ID)
 }
 
-func (c YanLohCommand) IsUsedForGame() bool {
-	return c.isUsedForGame
-}
-
 // AboutRolesCommand command logic
 type AboutRolesCommand struct {
 	cmd           *discordgo.ApplicationCommand
 	isUsedForGame bool
 	name          string
-}
-
-func (c AboutRolesCommand) IsUsedForGame() bool {
-	return c.isUsedForGame
 }
 
 func NewAboutRolesCommand() *AboutRolesCommand {
@@ -502,13 +553,9 @@ func NewAboutRolesCommand() *AboutRolesCommand {
 	}
 }
 
-func (c AboutRolesCommand) GetCmd() *discordgo.ApplicationCommand {
-	return c.cmd
-}
-
-func (c AboutRolesCommand) GetName() string {
-	return c.name
-}
+func (c AboutRolesCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c AboutRolesCommand) GetName() string                       { return c.name }
+func (c AboutRolesCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
 func (c AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	_ *coreGamePack.Game,

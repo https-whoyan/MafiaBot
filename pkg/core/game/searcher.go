@@ -15,7 +15,7 @@ func (g *Game) searchRoleChannelByIID(channelIID string) channel.RoleChannel {
 func (g *Game) searchChannelByID(channelIID string) channel.Channel {
 	var allChannels []channel.Channel
 	allRoleChannels := converter.GetMapValues(g.RoleChannels)
-	allChannels = append(allChannels, converter.RoleSliceToChannelSlice(allRoleChannels)...)
+	allChannels = append(allChannels, channel.RoleSliceToChannelSlice(allRoleChannels)...)
 
 	allChannels = append(allChannels, g.MainChannel)
 

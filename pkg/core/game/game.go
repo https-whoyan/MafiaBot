@@ -139,9 +139,9 @@ func (g *Game) GetNextState() State {
 }
 
 func (g *Game) SetState(state State) {
-	g.RLock()
+	g.Lock()
 	currGState := g.State
-	g.RUnlock()
+	defer g.Unlock()
 	g.PreviousState = currGState
 	g.State = state
 }

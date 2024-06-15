@@ -14,14 +14,11 @@ type FmtInterface interface {
 	// In my case, i use "============ * 1298121893" (WITHOUT LineSplitter())
 	InfoSplitter() string
 	Tab() string
+	// Mention For mention a particular player.
+	// @, for example.
+	Mention() string
 }
 
-func BoldItalic(f FmtInterface, s string) string {
-	return f.Italic(f.Bold(s))
-}
-func BoldUnderline(f FmtInterface, s string) string {
-	return f.Underline(f.Bold(s))
-}
-func ItalicUnderline(f FmtInterface, s string) string {
-	return f.Italic(f.Underline(s))
-}
+func BoldItalic(f FmtInterface, s string) string      { return f.Italic(f.Bold(s)) }
+func BoldUnderline(f FmtInterface, s string) string   { return f.Underline(f.Bold(s)) }
+func ItalicUnderline(f FmtInterface, s string) string { return f.Italic(f.Underline(s)) }

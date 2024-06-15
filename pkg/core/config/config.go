@@ -31,6 +31,47 @@ type ConfigsByPlayerCount []*RolesConfig
 // Yes, edit it.
 
 var (
+	TwoTestConfigs = &ConfigsByPlayerCount{
+		{
+			PlayersCount: 2,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+			},
+		},
+		{
+			PlayersCount: 2,
+			RolesMp: map[string]*RoleConfig{
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+			},
+		},
+		{
+			PlayersCount: 2,
+			RolesMp: map[string]*RoleConfig{
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+	}
 	// FivePlayersConfigs represent configs with 5 players
 	FivePlayersConfigs = &ConfigsByPlayerCount{
 		{
@@ -496,6 +537,7 @@ var (
 var (
 	// Configs int key represent count of players
 	Configs = map[int]*ConfigsByPlayerCount{
+		2:  TwoTestConfigs,
 		5:  FivePlayersConfigs,
 		6:  SixPlayersConfigs,
 		7:  SevenPlayersConfigs,

@@ -167,7 +167,7 @@ func (g *Game) NightVote(vP VoteProviderInterface, opt *OptionalChannelIID) erro
 	votedPlayerID, isServerID := vP.GetVotedPlayerID()
 	g.RLock()
 	votedPlayer := player.SearchPlayerByID(g.Active, votedPlayerID, isServerID)
-	g.Unlock()
+	g.RUnlock()
 	vote := vP.GetVote()
 	g.RLock()
 	defer g.RUnlock()

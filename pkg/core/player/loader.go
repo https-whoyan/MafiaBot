@@ -35,20 +35,12 @@ func GeneratePlayers(tags []string, oldUsernames []string, cfg *config.RolesConf
 
 	n := len(tags)
 	IDs := generateRandomOrderToIDs(n)
-	rolesArr := config.GetShuffledRolesConfig(cfg)
+	rolesArr := cfg.GetShuffledRolesConfig()
 
 	players := make([]*Player, n)
 
 	for i := 0; i <= n-1; i++ {
-		players[i] = &Player{
-			ID:                IDs[i],
-			OldNick:           oldUsernames[i],
-			Tag:               tags[i],
-			Role:              rolesArr[i],
-			Vote:              -1,
-			LifeStatus:        Alive,
-			InteractionStatus: Passed,
-		}
+		players[i] = NewPlayer(IDs[i], oldUsernames[i], tags[i], rolesArr[i])
 	}
 
 	return players, nil

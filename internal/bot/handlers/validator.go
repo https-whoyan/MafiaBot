@@ -27,6 +27,11 @@ func ValidateCommandByGameState(commandName string, g *game.Game, fmtEr *fmt.Dis
 		case game.RegisterState:
 			return "", true
 		}
+	case StartGameCommandName:
+		switch gameState {
+		case game.RegisterState:
+			return "", true
+		}
 	}
 
 	return content, false

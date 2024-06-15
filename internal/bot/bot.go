@@ -159,6 +159,7 @@ func (b *Bot) initBotCommands() {
 	// Game
 	b.initCommand(handlerPack.NewRegisterGameCommand())
 	b.initCommand(handlerPack.NewChoiceGameConfigCommand())
+	b.initCommand(handlerPack.NewStartGameCommand())
 
 	// Other
 	b.initCommand(handlerPack.NewYanLohCommand())
@@ -223,6 +224,7 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 			content, isOk := handlerPack.ValidateCommandByGameState(executedCommandName, currGame, b.FMTer)
 			if !isOk {
 				handlerPack.Response(s, i.Interaction, content)
+				return
 			}
 			// If ok, I call the Execute method of the command
 			cmd.Execute(s, i.Interaction, currGame, b.FMTer)
