@@ -30,21 +30,11 @@ const (
 )
 
 var (
-	getNewPlayerNickname = func(ID int, oldNick string) string {
-		return fmt.Sprintf(playerPrefixPattern, ID, oldNick)
-	}
-	getNewPlayerNicknameWithoutNick = func(ID int) string {
-		return fmt.Sprintf(playerPatternWithoutNickname, ID)
-	}
-	getNewSpectatorNickname = func(oldNick string) string {
-		return fmt.Sprintf(spectatorPrefixPattern, oldNick)
-	}
-	getNewPlayerDeadNicknameWithoutNickname = func(ID int) string {
-		return fmt.Sprintf(deadPrefixPatternWithoutNickname, ID)
-	}
-	getNewPlayerDeadNickname = func(ID int, oldNick string) string {
-		return fmt.Sprintf(deadPrefixPattern, ID, oldNick)
-	}
+	getNewPlayerNickname                    = func(ID int, oldNick string) string { return fmt.Sprintf(playerPrefixPattern, ID, oldNick) }
+	getNewPlayerNicknameWithoutNick         = func(ID int) string { return fmt.Sprintf(playerPatternWithoutNickname, ID) }
+	getNewSpectatorNickname                 = func(oldNick string) string { return fmt.Sprintf(spectatorPrefixPattern, oldNick) }
+	getNewPlayerDeadNicknameWithoutNickname = func(ID int) string { return fmt.Sprintf(deadPrefixPatternWithoutNickname, ID) }
+	getNewPlayerDeadNickname                = func(ID int, oldNick string) string { return fmt.Sprintf(deadPrefixPattern, ID, oldNick) }
 
 	logIsEmptyProvider = func(serverUserID string, oldNick string, newNick string, channelIID string) {
 		log.Printf("renameProvider is not provided. User with ServerID %v %v will "+
@@ -111,6 +101,10 @@ func (p *Player) RenameToDeadPlayer(provider RenameUserProviderInterface, channe
 	} else {
 		newNick = getNewPlayerNickname(p.ID, p.OldNick)
 	}
+	if provider == nil {
+		logIsEmptyProvider(p.Tag, p.OldNick, newNick, channelIID)
+		return nil
+	}
 
 	return provider.RenameUser(channelIID, p.Tag, newNick)
 }
@@ -119,9 +113,7 @@ func (p *Player) RenameUserAfterGame(provider RenameUserProviderInterface, chann
 	newNick := p.OldNick
 	oldNick := getNewPlayerNickname(p.ID, p.OldNick)
 	if provider == nil {
-		log.Printf("renameProvider is not provided. Player with ServerID %v %v will "+
-			"not be unrenamed to %v from %v in %v channel",
-			p.Tag, p.OldNick, newNick, oldNick, channelIID)
+		logIsEmptyProvider(p.Tag, oldNick, newNick, channelIID)
 		return nil
 	}
 	return provider.RenameUser(channelIID, p.Tag, newNick)

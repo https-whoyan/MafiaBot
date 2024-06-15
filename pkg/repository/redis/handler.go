@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	botGame "github.com/https-whoyan/MafiaBot/internal/bot/game"
+	botGame "github.com/https-whoyan/MafiaBot/internal/game"
 )
 
 const (

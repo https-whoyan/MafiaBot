@@ -1,10 +1,11 @@
 package game
 
 import (
-	botFMT "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
-	coreUserPack "github.com/https-whoyan/MafiaBot/internal/bot/user"
 	"math/rand"
 	"sort"
+
+	botFMT "github.com/https-whoyan/MafiaBot/internal/fmt"
+	coreUserPack "github.com/https-whoyan/MafiaBot/internal/user"
 
 	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
 )

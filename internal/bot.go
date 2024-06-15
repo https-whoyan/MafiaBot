@@ -9,10 +9,10 @@ import (
 	"syscall"
 
 	gamePack "github.com/https-whoyan/MafiaBot/core/game"
-	botFMTPack "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
-	botGamePack "github.com/https-whoyan/MafiaBot/internal/bot/game"
-	handlerPack "github.com/https-whoyan/MafiaBot/internal/bot/handlers"
-	userPack "github.com/https-whoyan/MafiaBot/internal/bot/user"
+	botFMTPack "github.com/https-whoyan/MafiaBot/internal/fmt"
+	botGamePack "github.com/https-whoyan/MafiaBot/internal/game"
+	handlerPack "github.com/https-whoyan/MafiaBot/internal/handlers"
+	userPack "github.com/https-whoyan/MafiaBot/internal/user"
 
 	"github.com/bwmarrin/discordgo"
 )

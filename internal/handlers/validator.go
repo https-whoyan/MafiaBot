@@ -3,7 +3,7 @@ package bot
 import (
 	"github.com/https-whoyan/MafiaBot/core/game"
 
-	"github.com/https-whoyan/MafiaBot/internal/bot/fmt"
+	"github.com/https-whoyan/MafiaBot/internal/fmt"
 )
 
 // ValidateCommandByGameState validate, is correct command name by current game State.

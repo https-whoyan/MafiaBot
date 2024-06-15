@@ -2,7 +2,7 @@ package bot
 
 import (
 	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
-	botFMTPack "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
+	botFMTPack "github.com/https-whoyan/MafiaBot/internal/fmt"
 
 	"github.com/bwmarrin/discordgo"
 )

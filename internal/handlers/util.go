@@ -8,9 +8,9 @@ import (
 	"github.com/https-whoyan/MafiaBot/core/game"
 	"github.com/https-whoyan/MafiaBot/core/roles"
 
-	"github.com/https-whoyan/MafiaBot/internal/bot/channel"
-	"github.com/https-whoyan/MafiaBot/internal/bot/converter"
-	botFMT "github.com/https-whoyan/MafiaBot/internal/bot/fmt"
+	"github.com/https-whoyan/MafiaBot/internal/channel"
+	"github.com/https-whoyan/MafiaBot/internal/converter"
+	botFMT "github.com/https-whoyan/MafiaBot/internal/fmt"
 
 	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 
