@@ -97,6 +97,9 @@ func (p *Player) RenameToDeadPlayer(provider RenameUserProviderInterface, channe
 	if p.ID <= 0 {
 		return InvalidID
 	}
+	if p.LifeStatus != Dead {
+		return UserIsNotDead
+	}
 	var newNick string
 	if len(p.OldNick) == 0 {
 		newNick = getNewPlayerNicknameWithoutNick(p.ID)

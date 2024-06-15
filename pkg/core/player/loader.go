@@ -25,7 +25,8 @@ func generateRandomOrderToIDs(n int) []int {
 	return IDs
 }
 
-func GeneratePlayers(tags []string, oldUsernames []string, cfg *config.RolesConfig) ([]*Player, error) {
+func GeneratePlayers(tags []string, oldUsernames []string,
+	serverUsernames []string, cfg *config.RolesConfig) ([]*Player, error) {
 	if len(tags) != cfg.PlayersCount {
 		return []*Player{}, errors.New("unexpected mismatch of playing participants and configs")
 	}
@@ -40,7 +41,7 @@ func GeneratePlayers(tags []string, oldUsernames []string, cfg *config.RolesConf
 	players := make([]*Player, n)
 
 	for i := 0; i <= n-1; i++ {
-		players[i] = NewPlayer(IDs[i], tags[i], oldUsernames[i], rolesArr[i])
+		players[i] = NewPlayer(IDs[i], tags[i], oldUsernames[i], serverUsernames[i], rolesArr[i])
 	}
 
 	return players, nil
@@ -53,7 +54,8 @@ func GeneratePlayers(tags []string, oldUsernames []string, cfg *config.RolesConf
 
 // First
 
-func GenerateEmptyPlayersByTagsAndUsernames(tags []string, usernames []string, isAllSpectators bool) []*Player {
+func GenerateEmptyPlayersByTagsAndUsernames(tags []string, usernames []string, serverUsernames []string,
+	isAllSpectators bool) []*Player {
 	if len(tags) != len(usernames) {
 		log.Println("Unexpected mismatch of playing participants and nicknames")
 		return []*Player{}
@@ -62,9 +64,9 @@ func GenerateEmptyPlayersByTagsAndUsernames(tags []string, usernames []string, i
 	for i, tag := range tags {
 		var newPlayer *Player
 		if isAllSpectators {
-			newPlayer = NewSpectator(tag, usernames[i])
+			newPlayer = NewSpectator(tag, usernames[i], serverUsernames[i])
 		}
-		newPlayer = NewEmptyPlayer(tag, usernames[i])
+		newPlayer = NewEmptyPlayer(tag, usernames[i], serverUsernames[i])
 		players = append(players, newPlayer)
 	}
 	return players
@@ -86,11 +88,19 @@ func GetUsernamesByPlayers(players []*Player) []string {
 	return names
 }
 
+func GetServerNamesByPlayers(players []*Player) []string {
+	names := make([]string, len(players))
+	for i, player := range players {
+		names[i] = player.ServerNick
+	}
+	return names
+}
+
 // Second
 
 func GenerateEmptyPlayersByFunc(
 	x any,
-	getTagAndUsername func(x any, index int) (string, string),
+	getTagAndUsername func(x any, index int) (string, string, string),
 	countOfNewPlayers int, isAllSpectators bool) []*Player {
 
 	isRecovered := false
@@ -105,12 +115,12 @@ func GenerateEmptyPlayersByFunc(
 	players := make([]*Player, countOfNewPlayers)
 
 	for i := 0; i <= countOfNewPlayers-1; i++ {
-		tag, username := getTagAndUsername(x, i)
+		tag, username, serverUsername := getTagAndUsername(x, i)
 		var newPlayer *Player
 		if isAllSpectators {
-			newPlayer = NewSpectator(tag, username)
+			newPlayer = NewSpectator(tag, username, serverUsername)
 		} else {
-			newPlayer = NewEmptyPlayer(tag, username)
+			newPlayer = NewEmptyPlayer(tag, username, serverUsername)
 		}
 		players[i] = newPlayer
 	}

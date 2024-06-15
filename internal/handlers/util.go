@@ -2,13 +2,14 @@ package bot
 
 import (
 	"errors"
-	"github.com/https-whoyan/MafiaBot/core/game"
-	"github.com/https-whoyan/MafiaBot/core/roles"
+	"github.com/https-whoyan/MafiaBot/core/converter"
 	"log"
 	"strings"
 
-	"github.com/https-whoyan/MafiaBot/internal/channel"
-	"github.com/https-whoyan/MafiaBot/internal/converter"
+	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
+	coreRolePack "github.com/https-whoyan/MafiaBot/core/roles"
+	botChannelPack "github.com/https-whoyan/MafiaBot/internal/channel"
+	botConvertedPack "github.com/https-whoyan/MafiaBot/internal/converter"
 	botFMT "github.com/https-whoyan/MafiaBot/internal/fmt"
 
 	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
@@ -39,6 +40,25 @@ func sendMessages(s *discordgo.Session, chatID string, content ...string) (map[s
 	return messages, nil
 }
 
+// SendToUser Send to userID a message
+func SendToUser(s *discordgo.Session, userID string, msg string) error {
+	// Create a channel
+	channel, err := s.UserChannelCreate(userID)
+	if err != nil || channel == nil {
+		if channel == nil {
+			return errors.New("channel Create Failed, empty channel")
+		}
+		return err
+	}
+	channelID := channel.ID
+	_, err = s.ChannelMessageSend(channelID, msg)
+	return err
+}
+
+// ___________________
+// Response func
+// ___________________
+
 // Response reply to interaction by provided content (s.InteractionResponse)
 func Response(s *discordgo.Session, i *discordgo.Interaction, content string) {
 	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
@@ -51,6 +71,10 @@ func Response(s *discordgo.Session, i *discordgo.Interaction, content string) {
 		log.Print(err)
 	}
 }
+
+// ____________________
+// Error responses
+// ____________________
 
 // IsPrivateMessage finds out if a message has been sent to private messages
 func IsPrivateMessage(i *discordgo.InteractionCreate) bool {
@@ -71,10 +95,14 @@ func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate, fMT
 	Response(s, i.Interaction, content)
 }
 
+// __________________
+// Channels
+// ___________________
+
 // SetRolesChannels to game.
-func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]string, error) {
+func setRolesChannels(s *discordgo.Session, guildID string, g *coreGamePack.Game) ([]string, error) {
 	// Get night interaction roles names
-	allRolesNames := roles.GetAllNightInteractionRolesNames()
+	allRolesNames := coreRolePack.GetAllNightInteractionRolesNames()
 	// Get curr MongoDB struct
 	currDB, isContains := mongo.GetCurrMongoDB()
 	if !isContains {
@@ -83,7 +111,7 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 	// emptyRolesMp: save not contains channel roles
 	emptyRolesMp := make(map[string]bool)
 	// mappedRoles: save contains channels roles
-	mappedRoles := make(map[string]*channel.BotRoleChannel)
+	mappedRoles := make(map[string]*botChannelPack.BotRoleChannel)
 
 	addNewChannelIID := func(roleName, channelName string) {
 		channelIID, err := currDB.GetChannelIIDByRole(guildID, channelName)
@@ -91,7 +119,7 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 			emptyRolesMp[channelName] = true
 			return
 		}
-		newRoleChannel, err := channel.NewBotRoleChannel(s, channelIID, roleName)
+		newRoleChannel, err := botChannelPack.NewBotRoleChannel(s, channelIID, roleName)
 		if err != nil {
 			emptyRolesMp[channelName] = true
 			return
@@ -100,8 +128,8 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 	}
 
 	for _, roleName := range allRolesNames {
-		if strings.ToLower(roleName) == strings.ToLower(roles.Don.Name) {
-			addNewChannelIID(roleName, roles.Mafia.Name)
+		if strings.ToLower(roleName) == strings.ToLower(coreRolePack.Don.Name) {
+			addNewChannelIID(roleName, coreRolePack.Mafia.Name)
 			continue
 		}
 		addNewChannelIID(roleName, roleName)
@@ -109,8 +137,8 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 	// If a have all roles
 	if len(emptyRolesMp) == 0 {
 		// Convert
-		sliceMappedRoles := converter.GetMapValues(mappedRoles)
-		InterfaceRoleChannelSlice := converter.ConvertRoleChannelsSliceToIChannelSlice(sliceMappedRoles)
+		sliceMappedRoles := botConvertedPack.GetMapValues(mappedRoles)
+		InterfaceRoleChannelSlice := botConvertedPack.ConvertRoleChannelsSliceToIChannelSlice(sliceMappedRoles)
 
 		// Save it to g.RoleChannels.
 		err := g.SetRoleChannels(InterfaceRoleChannelSlice)
@@ -134,9 +162,9 @@ func existsMainChannel(guildID string) bool {
 	return channelIID != ""
 }
 
-func setMainChannel(s *discordgo.Session, guildID string, g *game.Game) {
+func setMainChannel(s *discordgo.Session, guildID string, g *coreGamePack.Game) {
 	currMongo, _ := mongo.GetCurrMongoDB()
 	channelIID, _ := currMongo.GetMainChannelIID(guildID)
-	mainChannel, _ := channel.NewBotMainChannel(s, channelIID)
+	mainChannel, _ := botChannelPack.NewBotMainChannel(s, channelIID)
 	_ = g.SetMainChannel(mainChannel)
 }

@@ -3,6 +3,7 @@ package channel
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/https-whoyan/MafiaBot/core/roles"
 
@@ -49,12 +50,17 @@ func (ch BotRoleChannel) AddSpectator(serverUserID string) error {
 	overridePermission := discordgo.PermissionOverwriteTypeMember
 	var viewPermutation int64 = discordgo.PermissionViewChannel
 
+	if err := ch.RemoveUser(serverUserID); err != nil {
+		log.Println(err)
+	}
+
 	err := ch.s.ChannelPermissionSet(ch.ChannelIID, serverUserID, overridePermission, viewPermutation, 0)
 	return err
 }
 
 func (ch BotRoleChannel) RemoveUser(serverUserID string) error {
-	err := ch.s.ChannelPermissionDelete(ch.ChannelIID, serverUserID)
+	overridePermission := discordgo.PermissionOverwriteTypeMember
+	err := ch.s.ChannelPermissionSet(ch.ChannelIID, serverUserID, overridePermission, 0, 0)
 	return err
 }
 
@@ -104,12 +110,17 @@ func (ch BotMainChannel) AddSpectator(serverUserID string) error {
 	overridePermission := discordgo.PermissionOverwriteTypeMember
 	var viewPermutation int64 = discordgo.PermissionViewChannel
 
+	if err := ch.RemoveUser(serverUserID); err != nil {
+		log.Println(err)
+	}
+
 	err := ch.s.ChannelPermissionSet(ch.ChannelIID, serverUserID, overridePermission, viewPermutation, 0)
 	return err
 }
 
 func (ch BotMainChannel) RemoveUser(serverUserID string) error {
-	err := ch.s.ChannelPermissionDelete(ch.ChannelIID, serverUserID)
+	overridePermission := discordgo.PermissionOverwriteTypeMember
+	err := ch.s.ChannelPermissionSet(ch.ChannelIID, serverUserID, overridePermission, 0, 0)
 	return err
 }
 

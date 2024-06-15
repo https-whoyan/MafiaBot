@@ -57,7 +57,7 @@ var (
 )
 
 func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
-	PrintStruct((*g))
+	//PrintStruct((*g))
 	g.RLock()
 	defer g.RUnlock()
 

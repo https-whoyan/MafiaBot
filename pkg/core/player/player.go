@@ -32,12 +32,14 @@ type Player struct {
 	ID int `json:"id"`
 	// Tag Represent account ID on the presentation platform
 	Tag string `json:"tag"`
+	// Represent Server nick in your implementation
+	// Using for Mentions.
+	ServerNick string `json:"server_nick"`
 	// OldNick before renaming.
 	// My implementation of the game assumes bot will change player nicknames to
 	// their IDs for easier recognition (1, 2, 3...)
 	OldNick string `json:"oldNick"`
 	// Nick after renaming.
-	// Using for Mentions.
 	Nick string      `json:"nick"`
 	Role *roles.Role `json:"role"`
 	// Vote which player ID the player is voting for
@@ -51,33 +53,36 @@ type Player struct {
 // Functions to get new players (or Spectating)
 // ________________________________________________
 
-func NewEmptyPlayer(tag string, username string) *Player {
+func NewEmptyPlayer(tag string, username string, serverUsername string) *Player {
 	return &Player{
 		Tag:               tag,
 		Nick:              username,
 		OldNick:           username,
+		ServerNick:        serverUsername,
 		LifeStatus:        Alive,
 		InteractionStatus: Passed,
 	}
 }
 
-func NewPlayer(id int, tag string, username string, role *roles.Role) *Player {
+func NewPlayer(id int, tag string, username string, serverUsername string, role *roles.Role) *Player {
 	return &Player{
 		ID:                id,
 		OldNick:           username,
 		Nick:              username,
 		Tag:               tag,
+		ServerNick:        serverUsername,
 		Role:              role,
 		LifeStatus:        Alive,
 		InteractionStatus: Passed,
 	}
 }
 
-func NewSpectator(tag string, username string) *Player {
+func NewSpectator(tag string, username string, serverUsername string) *Player {
 	return &Player{
 		Tag:               tag,
 		OldNick:           username,
 		Nick:              username,
+		ServerNick:        serverUsername,
 		LifeStatus:        Spectating,
 		InteractionStatus: Muted,
 		Vote:              -1,

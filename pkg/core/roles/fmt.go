@@ -30,22 +30,23 @@ func GetEmojiByName(name string) string {
 	return MappedEmoji[name]
 }
 
+func FixDescription(description string) string {
+	words := strings.Split(description, " ")
+	return strings.Join(words, " ")
+}
+
 // _____________________________________________________________________
 // Beautiful presentations of roles to display information about them.
 // _____________________________________________________________________
 
 func GetDefinitionOfRole(f fmt.FmtInterface, roleName string) string {
-	fixDescription := func(s string) string {
-		words := strings.Split(s, " ")
-		return strings.Join(words, " ")
-	}
 
 	role := MappedRoles[roleName]
 	var message string
 
 	name := f.Block(role.Name)
 	team := f.Bold("Team: ") + StringTeam[role.Team]
-	description := fixDescription(role.Description)
+	description := FixDescription(role.Description)
 	message = name + f.LineSplitter() + f.LineSplitter() + team + f.LineSplitter() + description
 	return message
 }

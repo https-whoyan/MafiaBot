@@ -10,6 +10,7 @@ import (
 
 	coreConfigPack "github.com/https-whoyan/MafiaBot/core/config"
 	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
+	coreMessagePack "github.com/https-whoyan/MafiaBot/core/message"
 	corePlayerPack "github.com/https-whoyan/MafiaBot/core/player"
 	coreRolesPack "github.com/https-whoyan/MafiaBot/core/roles"
 	botCnvPack "github.com/https-whoyan/MafiaBot/internal/converter"
@@ -492,6 +493,13 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 	if err != nil {
 		_, _ = sendMessages(s, i.ChannelID, f.IU("Can't start game, internal server error!"))
 		log.Println(err)
+		return
+	}
+	for _, player := range g.StartPlayers {
+		err = SendToUser(s, player.Tag, coreMessagePack.GetStartRoleDefinition(player, f))
+		if err != nil {
+			log.Println(err)
+		}
 	}
 	log.Printf("Start Game in %v Guild", i.GuildID)
 	return
@@ -584,6 +592,6 @@ func (c AboutRolesCommand) Execute(s *discordgo.Session, i *discordgo.Interactio
 
 	messages := coreRolesPack.GetDefinitionsOfAllRoles(f, 2000)
 	for _, message := range messages {
-		sendMessage(s, i, message)
+		sendMessage(s, i, coreRolesPack.FixDescription(message))
 	}
 }

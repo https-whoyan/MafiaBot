@@ -1,28 +1,31 @@
 package user
 
-import (
-	"errors"
-	"github.com/bwmarrin/discordgo"
-)
+import "github.com/bwmarrin/discordgo"
 
-// BotUserRenameProvider is
-// Core RenameUserProviderInterface realization
-type BotUserRenameProvider struct {
-	guildID string
-	s       *discordgo.Session
+func GetUsersOnlyIncludeInTags(users []*discordgo.User, tags []string) ([]*discordgo.User, int) {
+	mpTags := make(map[string]bool)
+	for _, tag := range tags {
+		mpTags[tag] = true
+	}
+	ans := make([]*discordgo.User, 0)
+	for _, user := range users {
+		if mpTags[user.ID] {
+			ans = append(ans, user)
+		}
+	}
+	return ans, len(ans)
 }
 
-func NewBotUserRenameProvider(s *discordgo.Session, guildID string) *BotUserRenameProvider {
-	return &BotUserRenameProvider{
-		guildID: guildID,
-		s:       s,
+func GetUsersNotInclude(users []*discordgo.User, needNotInclude []*discordgo.User) ([]*discordgo.User, int) {
+	mpIds := make(map[string]bool)
+	for _, user := range needNotInclude {
+		mpIds[user.ID] = true
 	}
-}
-
-func (p BotUserRenameProvider) RenameUser(_ string, userServerID string, newNick string) error {
-	if p.s == nil || p.guildID == "" {
-		return errors.New("bot User Rename Error, empty fields")
+	ans := make([]*discordgo.User, 0)
+	for _, user := range users {
+		if !mpIds[user.ID] {
+			ans = append(ans, user)
+		}
 	}
-	err := p.s.GuildMemberNickname(p.guildID, userServerID, newNick)
-	return err
+	return ans, len(ans)
 }

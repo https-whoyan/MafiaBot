@@ -197,7 +197,8 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 	// Get Players
 	tags := playerPack.GetTagsByPlayers(g.StartPlayers)
 	oldNicknames := playerPack.GetUsernamesByPlayers(g.StartPlayers)
-	players, err := playerPack.GeneratePlayers(tags, oldNicknames, cfg)
+	serverUsernames := playerPack.GetServerNamesByPlayers(g.StartPlayers)
+	players, err := playerPack.GeneratePlayers(tags, oldNicknames, serverUsernames, cfg)
 	if err != nil {
 		return err
 	}
@@ -247,10 +248,6 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	for _, player := range g.StartPlayers {
-		PrintStruct(*player)
 	}
 
 	// _______________
