@@ -2,7 +2,6 @@ package game
 
 import (
 	"errors"
-	"fmt"
 	"slices"
 	"sync"
 
@@ -213,8 +212,6 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 
 	// We need to add spectators and players to channel.
 	// First, add users to role channels.
-	fmt.Println("Добавил в активных:")
-	PrintStruct(*g)
 	for _, player := range g.StartPlayers {
 		if player.Role.NightVoteOrder == -1 {
 			continue
@@ -226,7 +223,6 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 			return err
 		}
 	}
-	fmt.Println("Добавил игроков в role chat")
 
 	// Then add spectators to game
 	for _, spectator := range g.Spectators {
@@ -238,8 +234,6 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 		}
 	}
 
-	fmt.Println("Добавил спектаторов в role chat")
-
 	// Then, add all players to main chat.
 	for _, player := range g.StartPlayers {
 		err = g.MainChannel.AddPlayer(player.Tag)
@@ -247,7 +241,6 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 			return err
 		}
 	}
-	fmt.Println("Добавил игроков в main chat")
 	// And spectators.
 	for _, spectator := range g.Spectators {
 		err = g.MainChannel.AddSpectator(spectator.Tag)
@@ -255,7 +248,6 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 			return err
 		}
 	}
-	fmt.Println("добавил спектаторов в main chat")
 
 	for _, player := range g.StartPlayers {
 		PrintStruct(*player)
@@ -312,6 +304,5 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 	default:
 		return errors.New("invalid rename mode")
 	}
-	fmt.Println("Успешно переименовал")
 	return nil
 }

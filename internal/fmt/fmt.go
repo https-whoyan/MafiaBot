@@ -40,5 +40,5 @@ func (f DiscordFMTer) IU(s string) string { return f.I(f.U(s)) }
 var (
 	RegistrationPlayerSticker    = "😁"
 	RegistrationSpectatorSticker = "😈"
-	ConfigChoiceSticker          = "👍🏻"
+	ConfigChoiceSticker          = "👍"
 )

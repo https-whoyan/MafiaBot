@@ -10,12 +10,14 @@ import (
 
 	coreConfigPack "github.com/https-whoyan/MafiaBot/core/config"
 	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
+	corePlayerPack "github.com/https-whoyan/MafiaBot/core/player"
 	coreRolesPack "github.com/https-whoyan/MafiaBot/core/roles"
 	botCnvPack "github.com/https-whoyan/MafiaBot/internal/converter"
 	botFMTPack "github.com/https-whoyan/MafiaBot/internal/fmt"
 	botGameCfgPack "github.com/https-whoyan/MafiaBot/internal/game"
 	botMsgPack "github.com/https-whoyan/MafiaBot/internal/message"
 	botTimeConstsPack "github.com/https-whoyan/MafiaBot/internal/time"
+	botUserPack "github.com/https-whoyan/MafiaBot/internal/user"
 
 	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 	"github.com/https-whoyan/MafiaBot/pkg/repository/redis"
@@ -384,7 +386,10 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 	registerSpectatorStickerUnicode := botFMTPack.RegistrationSpectatorSticker
 	botSpectators, _ := botMsgPack.GetUsersByEmojiID(s, i.ChannelID,
 		registrationMessageID, registerSpectatorStickerUnicode)
-	spectators := botCnvPack.DiscordUsersToEmptyPlayers(botSpectators, true)
+	// We need no duplicates in active and spectators.
+	// Then, I get unique Spectators, which not include in active players.
+	uniqueBotSpectators, _ := botUserPack.GetUsersNotInclude(botSpectators, startBotPlayers)
+	spectators := botCnvPack.DiscordUsersToEmptyPlayers(uniqueBotSpectators, true)
 	g.SetSpectators(spectators)
 
 	content := "Below is a list of available game configurations. " + f.NL() +
@@ -460,9 +465,16 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 	// Set Reactions count to cfgMessages
 	for _, message := range cfgMessages.Messages {
 		messageIID := message.MessageID
-		emoji := botFMTPack.RegistrationPlayerSticker
-		_, messageCount := botMsgPack.GetUsersByEmojiID(s, i.ChannelID, messageIID, emoji)
-		message.SetReactionCount(messageCount)
+		emoji := botFMTPack.ConfigChoiceSticker
+		usersWhoLiked, _ := botMsgPack.GetUsersByEmojiID(s, i.ChannelID, messageIID, emoji)
+
+		// Validate, we only want users who participate in the game.
+		_, playersMessageCount := botUserPack.GetUsersOnlyIncludeInTags(
+			usersWhoLiked,
+			corePlayerPack.GetTagsByPlayers(g.StartPlayers))
+
+		// Set It.
+		message.SetReactionCount(playersMessageCount)
 	}
 
 	winner, playerCount, isRandom := cfgMessages.GetWinner()
