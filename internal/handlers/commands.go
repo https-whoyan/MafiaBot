@@ -60,13 +60,10 @@ func NewAddChannelRoleCommand() *AddChannelRoleCommand {
 	}
 
 	generateOptions := func() []*discordgo.ApplicationCommandOption {
-		allNamesOfRoles := coreRolesPack.GetAllNightInteractionRolesNames()
+		allNamesOfRoles := coreRolesPack.GetInteractionRoleNamesWhoHasOwnChat()
 		var options []*discordgo.ApplicationCommandOption
 		for _, roleName := range allNamesOfRoles {
-			// For done using mafia chat
-			if roleName != "Don" {
-				options = append(options, generateOption(strings.ToLower(roleName)))
-			}
+			options = append(options, generateOption(strings.ToLower(roleName)))
 		}
 		return options
 	}
@@ -242,7 +239,7 @@ func (c RegisterGameCommand) GetCmd() *discordgo.ApplicationCommand { return c.c
 func (c RegisterGameCommand) GetName() string                       { return c.name }
 func (c RegisterGameCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
-func (c RegisterGameCommand) trySetRolesChannel(s *discordgo.Session, i *discordgo.Interaction,
+func (c RegisterGameCommand) trySetChannels(s *discordgo.Session, i *discordgo.Interaction,
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) (correct bool) {
 	emptyRoles, err := setRolesChannels(s, i.GuildID, g)
 	if err != nil {
@@ -268,7 +265,7 @@ func (c RegisterGameCommand) trySetRolesChannel(s *discordgo.Session, i *discord
 			"To add a main chat channel for interaction, use the command " +
 			f.BU(AddMainChannelCommandName)
 	}
-
+	setMainChannel(s, i.GuildID, g)
 	if len(content) == 0 {
 		return true
 	}
@@ -279,7 +276,7 @@ func (c RegisterGameCommand) trySetRolesChannel(s *discordgo.Session, i *discord
 func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
 	// Validation
-	if !c.trySetRolesChannel(s, i, g, f) {
+	if !c.trySetChannels(s, i, g, f) {
 
 		return
 	}
@@ -470,15 +467,18 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 
 	winner, playerCount, isRandom := cfgMessages.GetWinner()
 	if isRandom {
-		// Simulation :))))
-		_, _ = sendMessages(s, i.ChannelID, f.B("Choosing Random configuration..."))
-		time.Sleep(time.Millisecond * time.Duration(1400))
+		Response(s, i, f.B("Choosing Random configuration..."))
+	} else {
+		Response(s, i, f.B("Setting the game's configuration..."))
 	}
+	// Simulation :))))
+	time.Sleep(time.Millisecond * time.Duration(1400))
 	winnerConfig := coreConfigPack.GetConfigByPlayersCountAndIndex(playerCount, winner)
 	//TODO!!!!
-	Response(s, i, "Empty for now...")
+	_, _ = sendMessages(s, i.ChannelID, f.InfoSplitter())
 	err = g.Start(winnerConfig)
 	if err != nil {
+		_, _ = sendMessages(s, i.ChannelID, f.IU("Can't start game, internal server error!"))
 		log.Println(err)
 	}
 	log.Printf("Start Game in %v Guild", i.GuildID)

@@ -22,7 +22,7 @@ func (cfg *RolesConfig) GetMessageAboutConfig(f fmt.FmtInterface) string {
 	teamsPlayersMsg := f.Bold("Teams") + " count: " + f.Block(strconv.Itoa(teamsCount))
 	rolesMsg := f.Bold("Roles") + " count: " + f.Block(strconv.Itoa(len(cfg.RolesMp)))
 
-	hasFool := cfg.HasFool()
+	hasFool := cfg.HasRole(roles.Fool)
 
 	message = playersPlayedMsg + NL + teamsPlayersMsg + NL + rolesMsg
 	if hasFool {

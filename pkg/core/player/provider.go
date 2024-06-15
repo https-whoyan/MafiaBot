@@ -67,6 +67,7 @@ func (p *Player) RenameAfterGettingID(provider RenameUserProviderInterface, chan
 	} else {
 		newNick = getNewPlayerNickname(p.ID, p.OldNick)
 	}
+	p.Nick = newNick
 	if provider == nil {
 		logIsEmptyProvider(p.Tag, p.OldNick, newNick, channelIID)
 		return nil
@@ -84,6 +85,7 @@ func (p *Player) RenameToSpectator(provider RenameUserProviderInterface, channel
 	} else {
 		newNick = getNewSpectatorNickname(p.OldNick)
 	}
+	p.Nick = newNick
 	if provider == nil {
 		logIsEmptyProvider(p.Tag, p.OldNick, newNick, channelIID)
 		return nil
@@ -101,6 +103,7 @@ func (p *Player) RenameToDeadPlayer(provider RenameUserProviderInterface, channe
 	} else {
 		newNick = getNewPlayerNickname(p.ID, p.OldNick)
 	}
+	p.Nick = newNick
 	if provider == nil {
 		logIsEmptyProvider(p.Tag, p.OldNick, newNick, channelIID)
 		return nil
@@ -112,6 +115,8 @@ func (p *Player) RenameToDeadPlayer(provider RenameUserProviderInterface, channe
 func (p *Player) RenameUserAfterGame(provider RenameUserProviderInterface, channelIID string) error {
 	newNick := p.OldNick
 	oldNick := getNewPlayerNickname(p.ID, p.OldNick)
+	p.Nick = newNick
+	p.OldNick = newNick
 	if provider == nil {
 		logIsEmptyProvider(p.Tag, oldNick, newNick, channelIID)
 		return nil

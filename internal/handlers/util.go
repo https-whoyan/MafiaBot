@@ -2,11 +2,10 @@ package bot
 
 import (
 	"errors"
-	"log"
-	"strings"
-
 	"github.com/https-whoyan/MafiaBot/core/game"
 	"github.com/https-whoyan/MafiaBot/core/roles"
+	"log"
+	"strings"
 
 	"github.com/https-whoyan/MafiaBot/internal/channel"
 	"github.com/https-whoyan/MafiaBot/internal/converter"
@@ -85,21 +84,27 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *game.Game) ([]str
 	emptyRolesMp := make(map[string]bool)
 	// mappedRoles: save contains channels roles
 	mappedRoles := make(map[string]*channel.BotRoleChannel)
-	for _, roleName := range allRolesNames {
-		if strings.ToLower(roleName) == "don" {
-			continue
-		}
-		channelIID, err := currDB.GetChannelIIDByRole(guildID, roleName)
+
+	addNewChannelIID := func(roleName, channelName string) {
+		channelIID, err := currDB.GetChannelIIDByRole(guildID, channelName)
 		if channelIID == "" {
-			emptyRolesMp[roleName] = true
-			continue
+			emptyRolesMp[channelName] = true
+			return
 		}
 		newRoleChannel, err := channel.NewBotRoleChannel(s, channelIID, roleName)
 		if err != nil {
-			emptyRolesMp[roleName] = true
-			continue
+			emptyRolesMp[channelName] = true
+			return
 		}
 		mappedRoles[roleName] = newRoleChannel
+	}
+
+	for _, roleName := range allRolesNames {
+		if strings.ToLower(roleName) == strings.ToLower(roles.Don.Name) {
+			addNewChannelIID(roleName, roles.Mafia.Name)
+			continue
+		}
+		addNewChannelIID(roleName, roleName)
 	}
 	// If a have all roles
 	if len(emptyRolesMp) == 0 {
@@ -127,4 +132,11 @@ func existsMainChannel(guildID string) bool {
 		return false
 	}
 	return channelIID != ""
+}
+
+func setMainChannel(s *discordgo.Session, guildID string, g *game.Game) {
+	currMongo, _ := mongo.GetCurrMongoDB()
+	channelIID, _ := currMongo.GetMainChannelIID(guildID)
+	mainChannel, _ := channel.NewBotMainChannel(s, channelIID)
+	_ = g.SetMainChannel(mainChannel)
 }

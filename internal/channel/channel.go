@@ -79,21 +79,16 @@ type BotMainChannel struct {
 	s          *discordgo.Session
 }
 
-func NewBotMainChannel(s *discordgo.Session, channelIID string, roleName string) (*BotRoleChannel, error) {
+func NewBotMainChannel(s *discordgo.Session, channelIID string) (*BotMainChannel, error) {
 	channel, err := s.Channel(channelIID)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("error getting channel: %v", err))
 	}
-	role, exists := roles.GetRoleByName(roleName)
-	if !exists {
-		return nil, errors.New(fmt.Sprintf("empty role %v", roleName))
-	}
 
-	return &BotRoleChannel{
+	return &BotMainChannel{
 		s:          s,
 		Chat:       channel,
 		ChannelIID: channelIID,
-		Role:       role,
 	}, nil
 }
 

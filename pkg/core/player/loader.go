@@ -40,7 +40,7 @@ func GeneratePlayers(tags []string, oldUsernames []string, cfg *config.RolesConf
 	players := make([]*Player, n)
 
 	for i := 0; i <= n-1; i++ {
-		players[i] = NewPlayer(IDs[i], oldUsernames[i], tags[i], rolesArr[i])
+		players[i] = NewPlayer(IDs[i], tags[i], oldUsernames[i], rolesArr[i])
 	}
 
 	return players, nil
@@ -58,7 +58,7 @@ func GenerateEmptyPlayersByTagsAndUsernames(tags []string, usernames []string, i
 		log.Println("Unexpected mismatch of playing participants and nicknames")
 		return []*Player{}
 	}
-	players := make([]*Player, len(tags))
+	var players []*Player
 	for i, tag := range tags {
 		var newPlayer *Player
 		if isAllSpectators {

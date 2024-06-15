@@ -1,14 +1,15 @@
 package config
 
 import (
-	"github.com/bwmarrin/discordgo"
-	"github.com/joho/godotenv"
 	"log"
 	"sync"
 
-	"github.com/https-whoyan/MafiaBot/internal/bot"
+	"github.com/https-whoyan/MafiaBot/internal"
 	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 	"github.com/https-whoyan/MafiaBot/pkg/repository/redis"
+
+	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {

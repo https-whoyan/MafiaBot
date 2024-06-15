@@ -2,6 +2,7 @@ package roles
 
 import (
 	"github.com/https-whoyan/MafiaBot/core/converter"
+	"slices"
 	"sort"
 )
 
@@ -19,6 +20,15 @@ func GetAllNightInteractionRolesNames() []string {
 		}
 	}
 	return roles
+}
+
+func GetInteractionRoleNamesWhoHasOwnChat() []string {
+	roles := GetAllNightInteractionRolesNames()
+	donIndex := slices.Index(roles, Don.Name)
+	if donIndex == -1 {
+		return roles
+	}
+	return slices.Delete(roles, donIndex, donIndex+1)
 }
 
 func GetAllRolesNames() []string {

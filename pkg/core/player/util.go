@@ -1,15 +1,19 @@
 package player
 
-import "strconv"
+import (
+	"slices"
+	"strconv"
+)
 
 func SearchPlayerByServerID(players []*Player, ID string) *Player {
-	for _, player := range players {
-		if player.Tag == ID {
-			return player
-		}
+	index := slices.IndexFunc(players, func(player *Player) bool {
+		return player.Tag == ID
+	})
+	if index == -1 {
+		return nil
 	}
 
-	return nil
+	return players[index]
 }
 
 func SearchPlayerByGameID(players []*Player, ID string) *Player {
@@ -18,12 +22,14 @@ func SearchPlayerByGameID(players []*Player, ID string) *Player {
 		return nil
 	}
 
-	for _, player := range players {
-		if player.ID == intID {
-			return player
-		}
+	index := slices.IndexFunc(players, func(player *Player) bool {
+		return player.ID == intID
+	})
+	if index == -1 {
+		return nil
 	}
-	return nil
+
+	return players[index]
 }
 
 func SearchPlayerByID(players []*Player, ID string, isServerID bool) *Player {

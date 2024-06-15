@@ -54,6 +54,7 @@ type Player struct {
 func NewEmptyPlayer(tag string, username string) *Player {
 	return &Player{
 		Tag:               tag,
+		Nick:              username,
 		OldNick:           username,
 		LifeStatus:        Alive,
 		InteractionStatus: Passed,
@@ -64,6 +65,7 @@ func NewPlayer(id int, tag string, username string, role *roles.Role) *Player {
 	return &Player{
 		ID:                id,
 		OldNick:           username,
+		Nick:              username,
 		Tag:               tag,
 		Role:              role,
 		LifeStatus:        Alive,
@@ -75,6 +77,7 @@ func NewSpectator(tag string, username string) *Player {
 	return &Player{
 		Tag:               tag,
 		OldNick:           username,
+		Nick:              username,
 		LifeStatus:        Spectating,
 		InteractionStatus: Muted,
 		Vote:              -1,

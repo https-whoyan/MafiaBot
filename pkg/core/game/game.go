@@ -2,6 +2,8 @@ package game
 
 import (
 	"errors"
+	"fmt"
+	"slices"
 	"sync"
 
 	channelPack "github.com/https-whoyan/MafiaBot/core/channel"
@@ -186,12 +188,12 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 	if err := g.validationStart(cfg); err != nil {
 		return err
 	}
-	g.Lock()
-	defer g.Unlock()
 	// Set state, config and players count
 	g.SwitchState()
+	g.Lock()
 	g.RolesConfig = cfg
 	g.PlayersCount = cfg.PlayersCount
+	g.Unlock()
 
 	// Get Players
 	tags := playerPack.GetTagsByPlayers(g.StartPlayers)
@@ -201,35 +203,30 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 		return err
 	}
 	// And state it to active and startPlayers fields
-	g.StartPlayers = players
-	g.Active = players
-
+	g.Lock()
+	g.StartPlayers = slices.Clone(players)
+	g.Active = slices.Clone(players)
+	g.Unlock()
 	// ________________
 	// Add to channels
 	// ________________
 
 	// We need to add spectators and players to channel.
-	// First, add users to hit channels.
+	// First, add users to role channels.
+	fmt.Println("Добавил в активных:")
+	PrintStruct(*g)
 	for _, player := range g.StartPlayers {
 		if player.Role.NightVoteOrder == -1 {
 			continue
 		}
 
-		// Use mafia interaction channel
-		if player.Role.Name == "Don" {
-			mafiaChannel := g.RoleChannels["mafia"]
-			err = mafiaChannel.AddPlayer(player.Tag)
-			if err != nil {
-				return err
-			}
-			continue
-		}
 		playerChannel := g.RoleChannels[player.Role.Name]
 		err = playerChannel.AddPlayer(player.Tag)
 		if err != nil {
 			return err
 		}
 	}
+	fmt.Println("Добавил игроков в role chat")
 
 	// Then add spectators to game
 	for _, spectator := range g.Spectators {
@@ -241,6 +238,8 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 		}
 	}
 
+	fmt.Println("Добавил спектаторов в role chat")
+
 	// Then, add all players to main chat.
 	for _, player := range g.StartPlayers {
 		err = g.MainChannel.AddPlayer(player.Tag)
@@ -248,6 +247,7 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 			return err
 		}
 	}
+	fmt.Println("Добавил игроков в main chat")
 	// And spectators.
 	for _, spectator := range g.Spectators {
 		err = g.MainChannel.AddSpectator(spectator.Tag)
@@ -255,11 +255,17 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 			return err
 		}
 	}
+	fmt.Println("добавил спектаторов в main chat")
+
+	for _, player := range g.StartPlayers {
+		PrintStruct(*player)
+	}
 
 	// _______________
 	// Renaming.
 	// _______________
-
+	g.Lock()
+	defer g.Unlock()
 	switch g.RenameMode {
 	case NotRenameModeMode: // No actions
 	case RenameInGuildMode:
@@ -306,5 +312,6 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 	default:
 		return errors.New("invalid rename mode")
 	}
+	fmt.Println("Успешно переименовал")
 	return nil
 }

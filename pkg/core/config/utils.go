@@ -58,9 +58,9 @@ func (cfg *RolesConfig) GetPlayersCountByTeam(team roles.Team) int {
 	return count
 }
 
-func (cfg *RolesConfig) HasFool() bool {
+func (cfg *RolesConfig) HasRole(role *roles.Role) bool {
 	for _, roleCfg := range cfg.RolesMp {
-		if roleCfg.Role == roles.Fool {
+		if roleCfg.Role == role {
 			return true
 		}
 	}

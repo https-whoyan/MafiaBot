@@ -2,6 +2,7 @@ package game
 
 import (
 	"errors"
+	"github.com/https-whoyan/MafiaBot/core/roles"
 	"strconv"
 
 	"github.com/https-whoyan/MafiaBot/core/channel"
@@ -67,6 +68,7 @@ var (
 	IncorrectVoteChannel = errors.New("incorrect vote channel")
 	IncorrectVotedPlayer = errors.New("incorrect voted player")
 	VotePlayerNotFound   = errors.New("vote player not found")
+	PlayerIsMutedErr     = errors.New("player is muted")
 )
 
 // voteProviderValidator is validator for VoteProviderInterface
@@ -169,13 +171,17 @@ func (g *Game) NightVote(vP VoteProviderInterface, opt *OptionalChannelIID) erro
 	votedPlayer := player.SearchPlayerByID(g.Active, votedPlayerID, isServerID)
 	g.RUnlock()
 	vote := vP.GetVote()
-	g.RLock()
-	defer g.RUnlock()
+	g.Lock()
+	defer g.Lock()
 	if vote == EmptyVoteStr {
 		votedPlayer.Vote = EmptyVoteInt
 	}
 	// validated Before
 	votedPlayer.Vote, _ = strconv.Atoi(vote)
+	if votedPlayer.Role == roles.Whore {
+		toVotedPlayer := player.SearchPlayerByID(g.Active, vote, false)
+		toVotedPlayer.InteractionStatus = player.Muted
+	}
 	return nil
 }
 
@@ -199,8 +205,8 @@ func (g *Game) DayVote(vP VoteProviderInterface, opt *OptionalChannelIID) error 
 	votedPlayer := player.SearchPlayerByID(g.Active, votedPlayerID, isServerID)
 	g.RUnlock()
 	vote := vP.GetVote()
-	g.RLock()
-	defer g.RUnlock()
+	g.Lock()
+	defer g.Lock()
 	if vote == EmptyVoteStr {
 		votedPlayer.Vote = EmptyVoteInt
 	}
@@ -217,5 +223,16 @@ func (g *Game) ResetTheVotes() {
 
 	for _, activePlayer := range allPlayers {
 		activePlayer.Vote = EmptyVoteInt
+	}
+}
+
+// ResetAllInteractionsStatuses use to reset all player interaction statuses
+func (g *Game) ResetAllInteractionsStatuses() {
+	g.RLock()
+	allPlayers := g.Active
+	g.RUnlock()
+
+	for _, activePlayer := range allPlayers {
+		activePlayer.InteractionStatus = player.Passed
 	}
 }

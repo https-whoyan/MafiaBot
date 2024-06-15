@@ -63,6 +63,16 @@ func (g *Game) SetRoleChannelByMap(chsMp map[any]channelPack.RoleChannel) (err e
 	return err
 }
 
+func (g *Game) SetMainChannel(ch channelPack.MainChannel) error {
+	g.Lock()
+	defer g.Unlock()
+	if ch == nil {
+		return errors.New("no main channel")
+	}
+	g.MainChannel = ch
+	return nil
+}
+
 // ___________________
 // Players
 // ___________________

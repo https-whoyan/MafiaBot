@@ -2,10 +2,29 @@ package game
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 
 	configPack "github.com/https-whoyan/MafiaBot/core/config"
 	rolesPack "github.com/https-whoyan/MafiaBot/core/roles"
 )
+
+// PrintStruct (For my tests)
+func PrintStruct(s interface{}) {
+	v := reflect.ValueOf(s)
+	t := v.Type()
+
+	if t.Kind() == reflect.Struct {
+		fmt.Printf("%s:\n", t.Name())
+		for i := 0; i < v.NumField(); i++ {
+			field := t.Field(i)
+			value := v.Field(i)
+			fmt.Printf("%s: %v\n", field.Name, value)
+		}
+	} else {
+		fmt.Println("Provided value is not a struct.")
+	}
+}
 
 // ___________________________
 // Game.Start validator
@@ -38,6 +57,7 @@ var (
 )
 
 func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
+	PrintStruct((*g))
 	g.RLock()
 	defer g.RUnlock()
 
@@ -45,7 +65,11 @@ func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 	if cfg == nil {
 		return EmptyConfigErr
 	}
-	if cfg.PlayersCount != len(g.Active) {
+
+	//fmt.Println("ChannelsLen: ", len(g.RoleChannels))
+	//fmt.Println("Excepted: ", len(rolesPack.GetInteractionRoleNamesWhoHasOwnChat()),
+	//	rolesPack.GetInteractionRoleNamesWhoHasOwnChat())
+	if cfg.PlayersCount != len(g.StartPlayers) {
 		err = errors.Join(err, MismatchPlayersCountAndGamePlayersCountErr)
 	}
 	if len(g.RoleChannels) != len(rolesPack.GetAllNightInteractionRolesNames()) {
