@@ -15,8 +15,8 @@ type FmtInterface interface {
 	InfoSplitter() string
 	Tab() string
 	// Mention For mention a particular player.
-	// @, for example.
-	Mention() string
+	// <@nick>, for example.
+	Mention(nick string) string
 }
 
 func BoldItalic(f FmtInterface, s string) string      { return f.Italic(f.Bold(s)) }

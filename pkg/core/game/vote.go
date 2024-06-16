@@ -69,6 +69,7 @@ var (
 	IncorrectVotedPlayer = errors.New("incorrect voted player")
 	VotePlayerNotFound   = errors.New("vote player not found")
 	PlayerIsMutedErr     = errors.New("player is muted")
+	VotePlayerIsNotAlive = errors.New("vote player is not alive")
 )
 
 // voteProviderValidator is validator for VoteProviderInterface
@@ -88,6 +89,9 @@ func (g *Game) voteProviderValidator(vP VoteProviderInterface) error {
 	_, err := strconv.Atoi(vote)
 	if err != nil {
 		return IncorrectVoteType
+	}
+	if votedPlayer.LifeStatus == player.Alive {
+		return VotePlayerIsNotAlive
 	}
 	toVotePlayer := player.SearchPlayerByID(g.Active, vote, false)
 	if toVotePlayer == nil {
@@ -122,12 +126,13 @@ func (g *Game) nightVoteValidator(vP VoteProviderInterface, roleChannel channel.
 	if roleChannel != nil && g.NightVoting != roleChannel.GetRole() {
 		return IncorrectVoteChannel
 	}
+	if votedPlayer.InteractionStatus == player.Muted {
+		return PlayerIsMutedErr
+	}
 	return nil
 }
 
 // dayVoteValidatorByChannelIID performs the same validation as dayVoteValidator.
-//
-// Use it, if you want, that day vote should be in a particular channel.
 func (g *Game) dayVoteValidatorByChannelIID(vP VoteProviderInterface, channelIID string) error {
 	foundChannel := g.searchChannelByID(channelIID)
 	if foundChannel == nil {
@@ -155,6 +160,8 @@ func NewOptionalChannelIID(channelIID string) *OptionalChannelIID {
 //
 // If you not need it, pass nil to the field.
 // If yes, use NewOptionalChannelIID
+//
+// Immediately puts all the right votes and changes the value of the fields if no error occurred.
 func (g *Game) NightVote(vP VoteProviderInterface, opt *OptionalChannelIID) error {
 	var err error
 	if opt == nil {
@@ -189,6 +196,8 @@ func (g *Game) NightVote(vP VoteProviderInterface, opt *OptionalChannelIID) erro
 //
 // If you not need it, pass nil to the field.
 // If yes, use NewOptionalChannelIID
+//
+// Immediately puts all the right votes and changes the value of the fields if no error occurred.
 func (g *Game) DayVote(vP VoteProviderInterface, opt *OptionalChannelIID) error {
 	var err error
 	if opt == nil {

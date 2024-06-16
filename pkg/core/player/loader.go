@@ -2,10 +2,8 @@ package player
 
 import (
 	"errors"
-	"log"
-	"math/rand"
-
 	"github.com/https-whoyan/MafiaBot/core/config"
+	"log"
 )
 
 // ___________________________________
@@ -13,14 +11,11 @@ import (
 // Role reversal, to put it simply.
 // ___________________________________
 
-func generateRandomOrderToIDs(n int) []int {
+func generateListToN(n int) []int {
 	var IDs []int
 	for i := 1; i <= n; i++ {
 		IDs = append(IDs, i)
 	}
-	rand.Shuffle(n, func(i, j int) {
-		IDs[i], IDs[j] = IDs[j], IDs[i]
-	})
 
 	return IDs
 }
@@ -35,7 +30,7 @@ func GeneratePlayers(tags []string, oldUsernames []string,
 	}
 
 	n := len(tags)
-	IDs := generateRandomOrderToIDs(n)
+	IDs := generateListToN(n)
 	rolesArr := cfg.GetShuffledRolesConfig()
 
 	players := make([]*Player, n)

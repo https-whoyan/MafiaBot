@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/https-whoyan/MafiaBot/core/message/fmt"
+	"github.com/https-whoyan/MafiaBot/core/fmt"
 	"github.com/https-whoyan/MafiaBot/core/roles"
 )
 

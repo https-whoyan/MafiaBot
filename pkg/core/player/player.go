@@ -33,7 +33,9 @@ type Player struct {
 	// Tag Represent account ID on the presentation platform
 	Tag string `json:"tag"`
 	// Represent Server nick in your implementation
-	// Using for Mentions.
+	// Using ONLY for Mentions.
+	//
+	// In my case, it is a Tag/ServerID of player
 	ServerNick string `json:"server_nick"`
 	// OldNick before renaming.
 	// My implementation of the game assumes bot will change player nicknames to

@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	coreConfigPack "github.com/https-whoyan/MafiaBot/core/config"
@@ -380,7 +381,8 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 	// set empty players to game (to safe it.)
 	startBotPlayers, _ := botMsgPack.GetUsersByEmojiID(
 		s, i.ChannelID, registrationMessageID, botFMTPack.RegistrationPlayerSticker)
-	startGamePlayers := botCnvPack.DiscordUsersToEmptyPlayers(startBotPlayers, false)
+	startGamePlayers := botCnvPack.DiscordUsersToEmptyPlayers(s, i.GuildID,
+		startBotPlayers, false)
 	g.SetStartPlayers(startGamePlayers)
 
 	// And spectators.
@@ -390,7 +392,7 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 	// We need no duplicates in active and spectators.
 	// Then, I get unique Spectators, which not include in active players.
 	uniqueBotSpectators, _ := botUserPack.GetUsersNotInclude(botSpectators, startBotPlayers)
-	spectators := botCnvPack.DiscordUsersToEmptyPlayers(uniqueBotSpectators, true)
+	spectators := botCnvPack.DiscordUsersToEmptyPlayers(s, i.GuildID, uniqueBotSpectators, true)
 	g.SetSpectators(spectators)
 
 	content := "Below is a list of available game configurations. " + f.NL() +
@@ -437,7 +439,7 @@ func NewStartGameCommand() *StartGameCommand {
 	return &StartGameCommand{
 		cmd: &discordgo.ApplicationCommand{
 			Name:        StartGameCommandName,
-			Description: "Start game after game config choosing",
+			Description: "Init game after game config choosing",
 		},
 		isUsedForGame: true,
 		name:          StartGameCommandName,
@@ -489,19 +491,20 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 	winnerConfig := coreConfigPack.GetConfigByPlayersCountAndIndex(playerCount, winner)
 	//TODO!!!!
 	_, _ = sendMessages(s, i.ChannelID, f.InfoSplitter())
-	err = g.Start(winnerConfig)
+	err = g.Init(winnerConfig)
 	if err != nil {
 		_, _ = sendMessages(s, i.ChannelID, f.IU("Can't start game, internal server error!"))
 		log.Println(err)
+		g.SetState(coreGamePack.RegisterState)
 		return
 	}
 	for _, player := range g.StartPlayers {
-		err = SendToUser(s, player.Tag, coreMessagePack.GetStartRoleDefinition(player, f))
+		err = SendToUser(s, player.Tag, coreMessagePack.GetStartPlayerDefinition(player, f))
 		if err != nil {
 			log.Println(err)
 		}
 	}
-	log.Printf("Start Game in %v Guild", i.GuildID)
+	log.Printf("Init Game in %v Guild", i.GuildID)
 	return
 }
 
@@ -544,7 +547,10 @@ func (c YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 
 	// async kick requester
 	guildID := i.GuildID
+	wg := sync.WaitGroup{}
 	go func(sessId, kickedUserID string) {
+		defer wg.Done()
+		wg.Add(1)
 		var kickPing time.Duration = 3
 		time.Sleep(time.Second * kickPing)
 
@@ -553,6 +559,7 @@ func (c YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 			log.Printf("failed kick user, err: %v", err)
 		}
 	}(guildID, i.Member.User.ID)
+	wg.Wait()
 }
 
 // AboutRolesCommand command logic

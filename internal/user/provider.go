@@ -2,9 +2,8 @@ package user
 
 import (
 	"errors"
-	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"log"
+	"github.com/https-whoyan/MafiaBot/internal/wrap"
 )
 
 // BotUserRenameProvider is
@@ -26,23 +25,5 @@ func (p BotUserRenameProvider) RenameUser(_ string, userServerID string, newNick
 		return errors.New("bot User Rename Error, empty fields")
 	}
 	err := p.s.GuildMemberNickname(p.guildID, userServerID, newNick)
-	if err == nil {
-		return nil
-	}
-
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.New(fmt.Sprint("Error renaming user to ", newNick))
-		}
-
-	}()
-
-	var discordGoErr *discordgo.RESTError
-	if errors.As(err, &discordGoErr) {
-		if discordGoErr.Message.Code == discordgo.ErrCodeMissingPermissions {
-			log.Println("User Rename Error, permission denied, but, ok.")
-			return nil
-		}
-	}
-	return err
+	return wrap.UnwrapDiscordRESTErr(err, discordgo.ErrCodeMissingPermissions)
 }

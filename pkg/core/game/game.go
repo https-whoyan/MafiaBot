@@ -7,7 +7,7 @@ import (
 
 	channelPack "github.com/https-whoyan/MafiaBot/core/channel"
 	configPack "github.com/https-whoyan/MafiaBot/core/config"
-	fmtPack "github.com/https-whoyan/MafiaBot/core/message/fmt"
+	fmtPack "github.com/https-whoyan/MafiaBot/core/fmt"
 	playerPack "github.com/https-whoyan/MafiaBot/core/player"
 	rolesPack "github.com/https-whoyan/MafiaBot/core/roles"
 )
@@ -180,15 +180,35 @@ func GetStateDefinition(state State) string {
 }
 
 // ______________
-// Start
+// Init
 // ______________
 
-func (g *Game) Start(cfg *configPack.RolesConfig) error {
-	if err := g.validationStart(cfg); err != nil {
+// Init
+/*
+The Init function is used to generate all players, add all players to channels, and rename all players.
+It is also used to validate all fields of the game.
+This is the penultimate and mandatory function that you must call before starting the game.
+
+Before using it, you must have all options set, all players must have known ServerIDs,
+Tags and serverUsernames (all of which must be in StartPlayers), and all channels,
+both role-based and non-role-based, must be set.
+See the implementation of the validationStart function :
+https://github.com/https-whoyan/MafiaBot/blob/main/pkg/core/game/validator.go line 39.
+
+Also see the file loaders.go in the same package https://github.com/https-whoyan/MafiaBot/blob/main/pkg/core/game/loaders.go.
+
+
+More references:
+https://github.com/https-whoyan/MafiaBot/blob/main/pkg/core/player/loader.go line 50
+
+(DISCORD ONLY): https://github.com/https-whoyan/MafiaBot/blob/main/internal/converter/user.go
+*/
+func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
+	if err = g.validationStart(cfg); err != nil {
 		return err
 	}
-	// Set state, config and players count
-	g.SwitchState()
+	// Set config and players count
+	g.SetState(StartingState)
 	g.Lock()
 	g.RolesConfig = cfg
 	g.PlayersCount = cfg.PlayersCount
@@ -221,7 +241,7 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 		playerChannel := g.RoleChannels[player.Role.Name]
 		err = playerChannel.AddPlayer(player.Tag)
 		if err != nil {
-			return err
+			return
 		}
 	}
 
@@ -301,5 +321,39 @@ func (g *Game) Start(cfg *configPack.RolesConfig) error {
 	default:
 		return errors.New("invalid rename mode")
 	}
+	// Send Message About New Game
+	_, _ = g.MainChannel.Write([]byte(g.GetStartMessage()))
 	return nil
+}
+
+// ********************
+// ____________________
+// Main Cycle in game.
+// ___________________
+// ********************
+
+// Run
+/*
+Is used to start the game.
+
+Runs the run method in its goroutine.
+*/
+func (g *Game) Run() { go g.run() }
+
+func (g *Game) run() {
+	// FinishState will be set when the winner is already clear.
+	// This will be determined after the night and after the day's voting.
+	for g.State != FinishState {
+		// Below is the raw and unfinished code.
+		// TODO!
+		g.SetState(NightState)
+		//g.Night()
+		//log := g.getNightLog()
+		//winnerTeam, err := log.StateWinner()
+		//if err != nil {
+		//	g.SetState(FinishState)
+		//	return
+		//}
+
+	}
 }

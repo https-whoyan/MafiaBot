@@ -281,7 +281,7 @@ func (b *Bot) removeRegisteredCommands() {
 
 // DeleteAllGloballyRegisteredCommands Delete all registered to bot functions. Globally Registered
 func (b *Bot) DeleteAllGloballyRegisteredCommands() {
-	log.Println("Start Delete all globally registered commands.")
+	log.Println("Init Delete all globally registered commands.")
 	userId := b.Session.State.User.ID
 	globallyRegisteredCommands, err := b.Session.ApplicationCommands(userId, "")
 	if err != nil {

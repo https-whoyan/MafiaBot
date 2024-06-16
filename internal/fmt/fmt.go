@@ -16,7 +16,7 @@ func (DiscordFMTer) Block(s string) string     { return "`" + s + "`" }
 func (DiscordFMTer) LineSplitter() string      { return "\n" }
 func (DiscordFMTer) InfoSplitter() string      { return "==============================" }
 func (DiscordFMTer) Tab() string               { return "\t" }
-func (DiscordFMTer) Mention() string           { return "@" }
+func (DiscordFMTer) Mention(s string) string   { return "<@" + s + ">" }
 
 // For less code.
 
@@ -25,7 +25,7 @@ func (f DiscordFMTer) I(s string) string  { return f.Italic(s) }
 func (f DiscordFMTer) U(s string) string  { return f.Underline(s) }
 func (f DiscordFMTer) Bl(s string) string { return f.Block(s) }
 func (f DiscordFMTer) NL() string         { return f.LineSplitter() }
-func (f DiscordFMTer) M() string          { return f.Mention() }
+func (f DiscordFMTer) M(s string) string  { return f.Mention(s) }
 
 // B + U / B + I / I + U
 

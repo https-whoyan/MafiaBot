@@ -20,7 +20,7 @@ func TestTimer(t *testing.T) {
 
 		duration := 5 * time.Second
 		resaverVoteProvider := NewVoteProvider(senderUserFakeID, receiverUserFakeID, senderIDIsServerID)
-		go VoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID)
+		ParalleledVoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID)
 		go func() {
 			ch <- resaverVoteProvider
 			done <- struct{}{}
@@ -38,7 +38,7 @@ func TestTimer(t *testing.T) {
 
 		duration := 5 * time.Second
 		resaverVoteProvider := NewVoteProvider(senderUserFakeID, receiverUserFakeID, senderIDIsServerID)
-		go VoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID)
+		ParalleledVoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID)
 		go func() {
 			time.Sleep(4 * time.Second)
 			ch <- resaverVoteProvider
@@ -57,7 +57,7 @@ func TestTimer(t *testing.T) {
 
 		duration := 5 * time.Second
 		resaverVoteProvider := NewVoteProvider(senderUserFakeID, receiverUserFakeID, senderIDIsServerID)
-		go VoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID)
+		ParalleledVoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID)
 		go func() {
 			time.Sleep(6 * time.Second)
 			ch <- resaverVoteProvider
@@ -76,7 +76,7 @@ func TestTimer(t *testing.T) {
 
 		duration := 2 * time.Second
 		resaverVoteProvider := NewVoteProvider(senderUserFakeID, receiverUserFakeID, senderIDIsServerID)
-		go VoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID)
+		ParalleledVoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID)
 		go func() {
 			time.Sleep(4 * time.Second)
 			ch <- resaverVoteProvider
@@ -96,7 +96,7 @@ func TestFakeTimer(t *testing.T) {
 		ch := make(chan VoteProviderInterface)
 
 		startTime := time.Now()
-		go VoteFakeTimer(ch, senderUserFakeID, senderIDIsServerID)
+		ParalleledFakeTimer(ch, senderUserFakeID, senderIDIsServerID)
 		vote := (<-ch).GetVote()
 		if vote != EmptyVoteStr {
 			t.Errorf("Got Vote %v, expected EmptyVoteStr", vote)

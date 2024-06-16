@@ -1,10 +1,10 @@
 package config
 
 import (
-	"github.com/https-whoyan/MafiaBot/core/converter"
 	"math/rand"
 	"sort"
 
+	"github.com/https-whoyan/MafiaBot/core/converter"
 	"github.com/https-whoyan/MafiaBot/core/roles"
 )
 

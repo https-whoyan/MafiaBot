@@ -1,9 +1,8 @@
 package roles
 
 import (
+	"github.com/https-whoyan/MafiaBot/core/fmt"
 	"strings"
-
-	"github.com/https-whoyan/MafiaBot/core/message/fmt"
 )
 
 // For beauty messaging
