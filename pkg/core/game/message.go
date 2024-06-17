@@ -54,7 +54,7 @@ func (g *Game) GetStartMessage() string {
 		return activePlayers[i].ID < activePlayers[j].ID
 	})
 	for _, player := range activePlayers {
-		messageAboutPlayerID := f.Tab() + f.Bold(sCap(getRandomPlayersCalling())) + " " + f.Mention(player.ServerNick)
+		messageAboutPlayerID := f.Tab() + f.Bold(sCap(getRandomPlayerCalling())) + " " + f.Mention(player.ServerNick)
 		messageAboutPlayerID += " with ID in game " + f.Block(sInt(player.ID))
 
 		aboutIDMessages = append(aboutIDMessages, messageAboutPlayerID)

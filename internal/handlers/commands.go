@@ -542,15 +542,15 @@ func (c YanLohCommand) IsUsedForGame() bool                   { return c.isUsedF
 
 func (c YanLohCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	_ *coreGamePack.Game, _ *botFMTPack.DiscordFMTer) {
-	messageContent := "Возможно, что ян и лох. И древлян. Но что бы его же ботом его обзывать..."
+	messageContent := "Не, лол, что бы его же ботом его обзывать..."
 	Response(s, i, messageContent)
 
 	// async kick requester
 	guildID := i.GuildID
 	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func(sessId, kickedUserID string) {
 		defer wg.Done()
-		wg.Add(1)
 		var kickPing time.Duration = 3
 		time.Sleep(time.Second * kickPing)
 

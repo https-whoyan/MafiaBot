@@ -42,7 +42,6 @@ var (
 )
 
 type Bot struct {
-	sync.RWMutex
 	// DiscordGo token
 	token string
 	// DiscordGo Session
@@ -112,11 +111,9 @@ func DisconnectBot() error {
 }
 
 func (b *Bot) loginAs() {
-	b.Lock()
 	b.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
 	})
-	b.Unlock()
 }
 
 func (b *Bot) Open() error {
@@ -129,8 +126,6 @@ func (b *Bot) Open() error {
 }
 
 func (b *Bot) Close() error {
-	b.Lock()
-	defer b.Unlock()
 	b.DeleteHandlers()
 	b.removeRegisteredCommands()
 	err := b.Session.Close()
@@ -145,8 +140,6 @@ func (b *Bot) Close() error {
 // ____________________________________________________________
 
 func (b *Bot) initCommand(c handlerPack.Command) {
-	b.Lock()
-	defer b.Unlock()
 	commandName := c.GetName()
 	b.Commands[commandName] = c
 }
@@ -175,10 +168,8 @@ func (b *Bot) registerHandlers() {
 		cmdName := newCmd.GetName()
 		log.Printf("Register handler, command name: %v", cmdName)
 		// Lock
-		b.Lock()
 		newHandler := b.getSIHandler(newCmd, cmdName)
 		b.Session.AddHandler(newHandler)
-		b.Unlock()
 	}
 }
 
@@ -261,8 +252,6 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 
 func (b *Bot) registerCommands() {
 	log.Println("Register commands")
-	b.Lock()
-	defer b.Unlock()
 	stateId := b.Session.State.User.ID
 	for _, cmd := range b.Commands {
 		newCmd := cmd

@@ -227,6 +227,9 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	g.StartPlayers = slices.Clone(players)
 	g.Active = slices.Clone(players)
 	g.Unlock()
+
+	g.RLock()
+	defer g.RUnlock()
 	// ________________
 	// Add to channels
 	// ________________
@@ -273,8 +276,6 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	// _______________
 	// Renaming.
 	// _______________
-	g.Lock()
-	defer g.Unlock()
 	switch g.RenameMode {
 	case NotRenameModeMode: // No actions
 	case RenameInGuildMode:
@@ -337,6 +338,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 Is used to start the game.
 
 Runs the run method in its goroutine.
+Used after g.Init()
 */
 func (g *Game) Run() { go g.run() }
 
