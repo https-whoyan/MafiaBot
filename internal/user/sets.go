@@ -9,7 +9,7 @@ func GetUsersOnlyIncludeInTags(users []*discordgo.User, tags []string) ([]*disco
 	}
 	ans := make([]*discordgo.User, 0)
 	for _, user := range users {
-		if mpTags[user.ID] && user.ID != "531094879938281522" {
+		if mpTags[user.ID] {
 			ans = append(ans, user)
 		}
 	}

@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -349,7 +348,7 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 	}
 
 	registrationMessageID, err := currRedisDB.GetInitialGameMessageID(i.GuildID)
-	if (err != nil || registrationMessageID == "") && g.State == coreGamePack.NonDefinedState {
+	if (err != nil || registrationMessageID == "") && g.State == coreGamePack.RegisterState {
 		messageContent := f.U("Registration Deadline passed!") + f.NL() + "Please, " +
 			f.B("use the "+RegisterGameCommandName+" command") + " to register a new game."
 		g.SetState(coreGamePack.NonDefinedState)
@@ -506,9 +505,7 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 		}
 	}
 	log.Printf("Init Game in %v Guild", i.GuildID)
-	// Start The game.
-	ctx := context.Background()
-	g.Run(ctx)
+	_, _ = sendMessages(s, i.ChannelID, g.GetStartMessage())
 }
 
 // ______________

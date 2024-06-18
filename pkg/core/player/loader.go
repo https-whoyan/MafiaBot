@@ -60,8 +60,9 @@ func GenerateEmptyPlayersByTagsAndUsernames(tags []string, usernames []string, s
 		var newPlayer *Player
 		if isAllSpectators {
 			newPlayer = NewSpectator(tag, usernames[i], serverUsernames[i])
+		} else {
+			newPlayer = NewEmptyPlayer(tag, usernames[i], serverUsernames[i])
 		}
-		newPlayer = NewEmptyPlayer(tag, usernames[i], serverUsernames[i])
 		players = append(players, newPlayer)
 	}
 	return players

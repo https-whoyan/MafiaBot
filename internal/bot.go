@@ -126,6 +126,7 @@ func (b *Bot) Open() error {
 }
 
 func (b *Bot) Close() error {
+	b.FinishAllGames()
 	b.DeleteHandlers()
 	b.removeRegisteredCommands()
 	err := b.Session.Close()
@@ -264,9 +265,7 @@ func (b *Bot) registerCommands() {
 	}
 }
 
-func (b *Bot) removeRegisteredCommands() {
-	b.DeleteAllGloballyRegisteredCommands()
-}
+func (b *Bot) removeRegisteredCommands() { b.DeleteAllGloballyRegisteredCommands() }
 
 // DeleteAllGloballyRegisteredCommands Delete all registered to bot functions. Globally Registered
 func (b *Bot) DeleteAllGloballyRegisteredCommands() {
@@ -288,8 +287,23 @@ func (b *Bot) DeleteAllGloballyRegisteredCommands() {
 
 func (b *Bot) DeleteHandlers() {
 	err := b.Session.AddHandler(nil)
-	if err != nil { // :))))
+	if err != nil { // (Code by ChatGPT <3, lol)
 		log.Println("Delete all handlers")
 		return
+	}
+}
+
+func (b *Bot) FinishAllGames() {
+	for _, game := range b.Games {
+		ch := make(chan gamePack.Signal)
+		go game.FinishAnyway(ch)
+
+		for {
+			gSignal, ok := <-ch
+			if !ok {
+				break
+			}
+			log.Println(gSignal.Value)
+		}
 	}
 }

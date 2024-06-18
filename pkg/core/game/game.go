@@ -3,31 +3,21 @@ package game
 import (
 	"context"
 	"errors"
+	"slices"
+	"sync"
+
 	channelPack "github.com/https-whoyan/MafiaBot/core/channel"
 	configPack "github.com/https-whoyan/MafiaBot/core/config"
 	fmtPack "github.com/https-whoyan/MafiaBot/core/fmt"
 	playerPack "github.com/https-whoyan/MafiaBot/core/player"
 	rolesPack "github.com/https-whoyan/MafiaBot/core/roles"
-	"slices"
-	"sync"
 )
+
+// This file describes the structure of the game, as well as the start and end functions of the game.
 
 // ____________________
 // Types and constants
 // ____________________
-
-type State int
-
-const (
-	NonDefinedState State = 1
-	RegisterState   State = 2
-	StartingState   State = 3
-	NightState      State = 4
-	DayState        State = 5
-	VotingState     State = 6
-	PausedState     State = 7
-	FinishState     State = 8
-)
 
 type RenameMode int
 
@@ -78,9 +68,9 @@ type Game struct {
 	Active       []*playerPack.Player `json:"active"`
 	Spectators   []*playerPack.Player `json:"spectators"`
 
-	// keeps what role is voting right now.
+	// Keeps what role is voting (in night) right now.
 	NightVoting *rolesPack.Role `json:"nightVoting"`
-	// presents to the application which chat is used for which role.
+	// Presents to the application which chat is used for which role.
 	// key: str - role name
 	RoleChannels  map[string]channelPack.RoleChannel
 	MainChannel   channelPack.MainChannel
@@ -115,74 +105,83 @@ func GetNewGame(guildID string, opts ...GameOption) *Game {
 	return newGame
 }
 
-// _________________
-// States functions
-// _________________
+// ___________________________
+// Game.Init validator
+// __________________________
+/*
+	After RegisterGame I must have all information about
+		1) Tags and usernames of players
+		2) RoleChannels info
+		3) GuildID (Ok, optional)
+		4) MainChannel implementation
+		5) Spectators
+		6) And chan (See GetNewGame)
+		7) fmtEr
+		8) renameProvider
+		9) RenameMode
 
-func (g *Game) GetNextState() State {
+	Let's validate it.
+*/
+
+// Init validation Errors.
+var (
+	EmptyConfigErr                             = errors.New("empty config")
+	MismatchPlayersCountAndGamePlayersCountErr = errors.New("mismatch config playersCount and game players")
+	NotFullRoleChannelInfoErr                  = errors.New("not full role channel info")
+	NotMainChannelInfoErr                      = errors.New("not main channel info")
+	EmptyChanErr                               = errors.New("empty channel")
+	EmptyFMTerErr                              = errors.New("empty FMTer")
+	EmptyRenameProviderErr                     = errors.New("empty rename provider")
+	EmptyRenameModeErr                         = errors.New("empty rename mode")
+)
+
+// validationStart is used to validate the game before it is fully initialized.
+func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 	g.RLock()
 	defer g.RUnlock()
-	switch g.State {
-	case NonDefinedState:
-		return RegisterState
-	case RegisterState:
-		return StartingState
-	case StartingState:
-		return NightState
-	case NightState:
-		return DayState
-	case DayState:
-		return VotingState
-	case VotingState:
-		return NightState
+
+	joinErr := func(err, addedErr error) {
+		err = errors.Join(err, addedErr)
 	}
 
-	return g.PreviousState
-}
+	var err error
 
-func (g *Game) SetState(state State) {
-	g.Lock()
-	currGState := g.State
-	defer g.Unlock()
-	g.PreviousState = currGState
-	g.State = state
-}
-
-func (g *Game) SwitchState() {
-	nextState := g.GetNextState()
-	g.SetState(nextState)
-}
-
-func (g *Game) ChangeStateToPause() {
-	g.Lock()
-	defer g.Unlock()
-	currGState := g.State
-	g.PreviousState = currGState
-	g.State = PausedState
-}
-
-var StateDefinition = map[State]string{
-	NonDefinedState: "is full raw (nothing is known)",
-	RegisterState:   "is waited for registration",
-	StartingState:   "is prepared for starting",
-	NightState:      "is in night state",
-	DayState:        "is in day state",
-	VotingState:     "is in day voting state",
-	PausedState:     "is in paused state",
-	FinishState:     "is finished",
-}
-
-func GetStateDefinition(state State) string {
-	definition, contains := StateDefinition[state]
-	if !contains {
-		return "is unknown for server"
+	if cfg == nil {
+		return EmptyConfigErr
 	}
-	return definition
-}
 
-// ______________
-// Init
-// ______________
+	if cfg.PlayersCount != len(g.StartPlayers) {
+		joinErr(err, MismatchPlayersCountAndGamePlayersCountErr)
+	}
+	if len(g.RoleChannels) != len(rolesPack.GetAllNightInteractionRolesNames()) {
+		joinErr(err, NotFullRoleChannelInfoErr)
+	}
+	if g.MainChannel == nil {
+		joinErr(err, NotMainChannelInfoErr)
+	}
+	if g.VoteChan == nil {
+		joinErr(err, EmptyChanErr)
+	}
+	if g.fmtEr == nil {
+		joinErr(err, EmptyFMTerErr)
+	}
+	if g.RenameMode == NotRenameModeMode {
+		return err
+	}
+	if g.renameProvider == nil {
+		joinErr(err, EmptyRenameProviderErr)
+	}
+	switch g.RenameMode {
+	case RenameInGuildMode:
+		return err
+	case RenameOnlyInMainChannelMode:
+		return err
+	case RenameInAllChannelsMode:
+		return err
+	}
+	joinErr(err, EmptyRenameModeErr)
+	return err
+}
 
 // Init
 /*
@@ -193,8 +192,7 @@ This is the penultimate and mandatory function that you must call before startin
 Before using it, you must have all options set, all players must have known ServerIDs,
 Tags and serverUsernames (all of which must be in StartPlayers), and all channels,
 both role-based and non-role-based, must be set.
-See the implementation of the validationStart function :
-https://github.com/https-whoyan/MafiaBot/blob/main/pkg/core/game/validator.go line 39.
+See the realization of the ValidationStart function (line 139)
 
 Also see the file loaders.go in the same package https://github.com/https-whoyan/MafiaBot/blob/main/pkg/core/game/loaders.go.
 
@@ -286,6 +284,12 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 				return err
 			}
 		}
+		for _, spectator := range g.Spectators {
+			err = spectator.RenameToSpectator(g.renameProvider, "")
+			if err != nil {
+				return err
+			}
+		}
 	case RenameOnlyInMainChannelMode:
 		mainChannelServerID := g.MainChannel.GetServerID()
 
@@ -323,8 +327,6 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	default:
 		return errors.New("invalid rename mode")
 	}
-	// Send Message About New Game
-	_, _ = g.MainChannel.Write([]byte(g.GetStartMessage()))
 	return nil
 }
 
@@ -333,6 +335,12 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 // Main Cycle in game.
 // ___________________
 // ********************
+// ********************
+
+var (
+	NilContext            = errors.New("nil context")
+	ErrGameAlreadyStarted = errors.New("game already started")
+)
 
 // Run
 /*
@@ -345,53 +353,60 @@ Also call deferred Finish() (or FinishAnyway(), if game was stopped by context)
 
 It is recommended to use context.Background()
 
-Returns an error that occurred after the game finished.
+Return receive chan of Signal type
 */
+func (g *Game) Run(ctx context.Context) <-chan Signal {
+	// Send Message About New Game
+	_, _ = g.MainChannel.Write([]byte(g.GetStartMessage()))
+	var ch chan Signal
 
-var (
-	ErrGameAlreadyStarted = errors.New("game already started")
-)
-
-func (g *Game) Run(ctx context.Context) error {
-	if g.ctx != nil {
-		return ErrGameAlreadyStarted
-	}
-	g.Lock()
-	g.ctx = ctx
-	g.Unlock()
-	var isStoppedByCtx bool
-	var err error
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		isStoppedByCtx = g.run()
-	}()
-	wg.Wait()
 	defer func() {
-		if isStoppedByCtx {
-			g.FinishAnyway(ctx)
-			err = nil
-			return
+		defer close(ch)
+		switch {
+		case ctx == nil:
+			ch <- NewFatalSignal(NilContext)
+		case g.ctx != nil:
+			ch <- NewFatalSignal(ErrGameAlreadyStarted)
+		default:
+			g.Lock()
+			g.ctx = ctx
+			g.Unlock()
+
+			var isStoppedByCtx bool
+
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				isStoppedByCtx = g.run(ch)
+			}()
+			wg.Wait()
+
+			switch isStoppedByCtx {
+			case true:
+				g.FinishAnyway(ch)
+			case false:
+				g.Finish(ch)
+			}
 		}
-		err = g.Finish()
 	}()
-	return err
+
+	ch = make(chan Signal)
+	return ch
 }
 
-func (g *Game) run() (isStoppedByCtx bool) {
+func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 	// FinishState will be set when the winner is already clear.
 	// This will be determined after the night and after the day's voting.
 	for g.State != FinishState {
 		select {
 		case <-g.ctx.Done():
-			return true
+			isStoppedByCtx = true
 		default:
-			// Below is the raw and unfinished code.
-			// TODO!
 			g.SetState(NightState)
-			//g.Night()
-			//log := g.getNightLog()
+			g.night(ch)
+			//log := g.GetNightLog()
+			//log
 			//winnerTeam, err := log.StateWinner()
 			//if err != nil {
 			//	g.SetState(FinishState)
@@ -402,31 +417,103 @@ func (g *Game) run() (isStoppedByCtx bool) {
 	return
 }
 
-// _______________________
+// ********************
+// ____________________
 // Finishing functions
-// _______________________
+// ___________________
+// ********************
+// ********************
 
 // FinishAnyway is used to end the running game anyway.
 //
 // Not recommended for use.
-// Used in Run function, if the game was interrupted using context.
-func (g *Game) FinishAnyway(ctx context.Context) {
+func (g *Game) FinishAnyway(ch chan<- Signal) {
 	content := "The game was suspended."
-	_, _ = g.MainChannel.Write([]byte(g.fmtEr.Bold(content)))
+	_, err := g.MainChannel.Write([]byte(g.fmtEr.Bold(content)))
+	if err != nil {
+		ch <- NewErrSignal(err)
+	}
+	g.SetState(FinishState)
 	g.Lock()
-	g.State = FinishState
+	if g.ctx == nil {
+		g.ctx = context.Background()
+	}
+	newCtx, cancel := context.WithCancel(g.ctx)
+	g.ctx = newCtx
 	g.Unlock()
-	if g.ctx != nil {
-		ctx.Done()
-	}
-	// Else g.Run
-
-	_ = g.Finish()
+	cancel()
+	g.Finish(ch)
 }
-
-func (g *Game) Finish() error {
+func (g *Game) Finish(ch chan<- Signal) {
 	if g.State != FinishState {
-		return errors.New("game is not finished")
+		ch <- NewCloseSignal(errors.New("game is not finished"))
+		return
 	}
-	// Delete From channels
+
+	// Delete from channels
+	for _, player := range g.StartPlayers {
+		if player.Role.NightVoteOrder == -1 {
+			continue
+		}
+
+		playerChannel := g.RoleChannels[player.Role.Name]
+		safeSendErrSignal(ch, playerChannel.RemoveUser(player.Tag))
+	}
+
+	// Then remove spectators from game
+	for _, spectator := range g.Spectators {
+		for _, interactionChannel := range g.RoleChannels {
+			safeSendErrSignal(ch, interactionChannel.RemoveUser(spectator.Tag))
+		}
+	}
+
+	// Then, remove all players of main chat.
+	for _, player := range g.Active {
+		safeSendErrSignal(ch, g.MainChannel.RemoveUser(player.Tag))
+	}
+	// And spectators.
+	for _, spectator := range g.Spectators {
+		safeSendErrSignal(ch, g.MainChannel.RemoveUser(spectator.Tag))
+	}
+
+	// _______________
+	// Renaming.
+	// _______________
+	switch g.RenameMode {
+	case NotRenameModeMode: // No actions
+	case RenameInGuildMode:
+		for _, player := range append(g.StartPlayers, g.Spectators...) {
+			safeSendErrSignal(ch, player.RenameUserAfterGame(g.renameProvider, ""))
+		}
+	case RenameOnlyInMainChannelMode:
+		mainChannelServerID := g.MainChannel.GetServerID()
+
+		for _, player := range g.StartPlayers {
+			err := player.RenameUserAfterGame(g.renameProvider, mainChannelServerID)
+			safeSendErrSignal(ch, err)
+		}
+	case RenameInAllChannelsMode:
+		// Rename from Role Channels.
+		for _, player := range g.StartPlayers {
+			if player.Role.NightVoteOrder == -1 {
+				continue
+			}
+
+			playerRoleName := player.Role.Name
+			playerInteractionChannel := g.RoleChannels[playerRoleName]
+			playerInteractionChannelIID := playerInteractionChannel.GetServerID()
+			err := player.RenameUserAfterGame(g.renameProvider, playerInteractionChannelIID)
+			safeSendErrSignal(ch, err)
+		}
+
+		// Rename from main channel
+		mainChannelServerID := g.MainChannel.GetServerID()
+
+		for _, player := range g.StartPlayers {
+			err := player.RenameUserAfterGame(g.renameProvider, mainChannelServerID)
+			safeSendErrSignal(ch, err)
+		}
+	default:
+		ch <- NewFatalSignal(errors.New("invalid rename mode"))
+	}
 }

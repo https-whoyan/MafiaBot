@@ -2,6 +2,7 @@ package game
 
 import (
 	"errors"
+	"github.com/https-whoyan/MafiaBot/core/converter"
 	"github.com/https-whoyan/MafiaBot/core/roles"
 	"strconv"
 
@@ -104,7 +105,8 @@ func (g *Game) voteProviderValidator(vP VoteProviderInterface) error {
 //
 // Use it, if you want, that day vote should be in a particular channel.
 func (g *Game) nightVoteValidatorByChannelIID(vP VoteProviderInterface, channelIID string) error {
-	foundedChannel := g.searchRoleChannelByIID(channelIID)
+	sliceChannels := converter.GetMapValues(g.RoleChannels)
+	foundedChannel := channel.SearchRoleChannelByID(sliceChannels, channelIID)
 	if foundedChannel == nil {
 		return IncorrectVoteChannel
 	}
@@ -132,10 +134,16 @@ func (g *Game) nightVoteValidator(vP VoteProviderInterface, roleChannel channel.
 	return nil
 }
 
-// dayVoteValidatorByChannelIID performs the same validation as dayVoteValidator.
+// dayVoteValidatorByChannelIID performs the same validation as dayVoteValidator
 func (g *Game) dayVoteValidatorByChannelIID(vP VoteProviderInterface, channelIID string) error {
-	foundChannel := g.searchChannelByID(channelIID)
-	if foundChannel == nil {
+	var allChannels []channel.Channel
+	allRoleChannels := converter.GetMapValues(g.RoleChannels)
+	allChannels = append(allChannels, channel.RoleSliceToChannelSlice(allRoleChannels)...)
+
+	allChannels = append(allChannels, g.MainChannel)
+
+	channelVotedFrom := channel.SearchChannelByGameID(allChannels, channelIID)
+	if channelVotedFrom == nil {
 		return IncorrectVoteChannel
 	}
 	return g.dayVoteValidator(vP)
@@ -226,9 +234,9 @@ func (g *Game) DayVote(vP VoteProviderInterface, opt *OptionalChannelIID) error 
 
 // ResetTheVotes use to reset all player votes
 func (g *Game) ResetTheVotes() {
-	g.RLock()
+	g.Lock()
+	defer g.Unlock()
 	allPlayers := g.Active
-	g.RUnlock()
 
 	for _, activePlayer := range allPlayers {
 		activePlayer.Vote = EmptyVoteInt
@@ -237,9 +245,9 @@ func (g *Game) ResetTheVotes() {
 
 // ResetAllInteractionsStatuses use to reset all player interaction statuses
 func (g *Game) ResetAllInteractionsStatuses() {
-	g.RLock()
+	g.Lock()
 	allPlayers := g.Active
-	g.RUnlock()
+	defer g.Unlock()
 
 	for _, activePlayer := range allPlayers {
 		activePlayer.InteractionStatus = player.Passed

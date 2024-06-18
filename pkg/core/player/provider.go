@@ -22,11 +22,13 @@ type RenameUserProviderInterface interface {
 
 // Yes, edit it
 const (
-	playerPatternWithoutNickname     = "%v"             // ID
-	playerPrefixPattern              = "%v: %v"         // ID, Nick
+	playerPatternWithoutNickname = "%v"     // ID
+	playerPrefixPattern          = "%v: %v" // ID, Nick
+
 	spectatorPrefixPattern           = "(spectator) %v" // Nick
-	deadPrefixPatternWithoutNickname = "(dead) %v"      // ID
-	deadPrefixPattern                = "(dead) %v: %v"  // ID, Nick
+	spectatorWithoutNickname         = "(spectator)"
+	deadPrefixPatternWithoutNickname = "(dead) %v"     // ID
+	deadPrefixPattern                = "(dead) %v: %v" // ID, Nick
 )
 
 var (
