@@ -102,9 +102,9 @@ func (p *Player) RenameToDeadPlayer(provider RenameUserProviderInterface, channe
 	}
 	var newNick string
 	if len(p.OldNick) == 0 {
-		newNick = getNewPlayerNicknameWithoutNick(p.ID)
+		newNick = getNewPlayerDeadNicknameWithoutNickname(p.ID)
 	} else {
-		newNick = getNewPlayerNickname(p.ID, p.OldNick)
+		newNick = getNewPlayerDeadNickname(p.ID, p.OldNick)
 	}
 	p.Nick = newNick
 	if provider == nil {

@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -505,7 +506,9 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 		}
 	}
 	log.Printf("Init Game in %v Guild", i.GuildID)
-	return
+	// Start The game.
+	ctx := context.Background()
+	g.Run(ctx)
 }
 
 // ______________

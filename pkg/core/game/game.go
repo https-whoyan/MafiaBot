@@ -1,15 +1,15 @@
 package game
 
 import (
+	"context"
 	"errors"
-	"slices"
-	"sync"
-
 	channelPack "github.com/https-whoyan/MafiaBot/core/channel"
 	configPack "github.com/https-whoyan/MafiaBot/core/config"
 	fmtPack "github.com/https-whoyan/MafiaBot/core/fmt"
 	playerPack "github.com/https-whoyan/MafiaBot/core/player"
 	rolesPack "github.com/https-whoyan/MafiaBot/core/roles"
+	"slices"
+	"sync"
 )
 
 // ____________________
@@ -92,13 +92,14 @@ type Game struct {
 	// Use to rename user in your interpretation
 	renameProvider playerPack.RenameUserProviderInterface
 	RenameMode     RenameMode `json:"RenameMode"`
+	ctx            context.Context
 }
 
 func GetNewGame(guildID string, opts ...GameOption) *Game {
 	newGame := &Game{
 		GuildID: guildID,
 		State:   NonDefinedState,
-		// Chan create.
+		// Chan s create.
 		VoteChan: make(chan VoteProviderInterface),
 		// Slices.
 		Active:     make([]*playerPack.Player, 0),
@@ -339,23 +340,93 @@ Is used to start the game.
 
 Runs the run method in its goroutine.
 Used after g.Init()
-*/
-func (g *Game) Run() { go g.run() }
 
-func (g *Game) run() {
+Also call deferred Finish() (or FinishAnyway(), if game was stopped by context)
+
+It is recommended to use context.Background()
+
+Returns an error that occurred after the game finished.
+*/
+
+var (
+	ErrGameAlreadyStarted = errors.New("game already started")
+)
+
+func (g *Game) Run(ctx context.Context) error {
+	if g.ctx != nil {
+		return ErrGameAlreadyStarted
+	}
+	g.Lock()
+	g.ctx = ctx
+	g.Unlock()
+	var isStoppedByCtx bool
+	var err error
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		isStoppedByCtx = g.run()
+	}()
+	wg.Wait()
+	defer func() {
+		if isStoppedByCtx {
+			g.FinishAnyway(ctx)
+			err = nil
+			return
+		}
+		err = g.Finish()
+	}()
+	return err
+}
+
+func (g *Game) run() (isStoppedByCtx bool) {
 	// FinishState will be set when the winner is already clear.
 	// This will be determined after the night and after the day's voting.
 	for g.State != FinishState {
-		// Below is the raw and unfinished code.
-		// TODO!
-		g.SetState(NightState)
-		//g.Night()
-		//log := g.getNightLog()
-		//winnerTeam, err := log.StateWinner()
-		//if err != nil {
-		//	g.SetState(FinishState)
-		//	return
-		//}
-
+		select {
+		case <-g.ctx.Done():
+			return true
+		default:
+			// Below is the raw and unfinished code.
+			// TODO!
+			g.SetState(NightState)
+			//g.Night()
+			//log := g.getNightLog()
+			//winnerTeam, err := log.StateWinner()
+			//if err != nil {
+			//	g.SetState(FinishState)
+			//	return
+			//}
+		}
 	}
+	return
+}
+
+// _______________________
+// Finishing functions
+// _______________________
+
+// FinishAnyway is used to end the running game anyway.
+//
+// Not recommended for use.
+// Used in Run function, if the game was interrupted using context.
+func (g *Game) FinishAnyway(ctx context.Context) {
+	content := "The game was suspended."
+	_, _ = g.MainChannel.Write([]byte(g.fmtEr.Bold(content)))
+	g.Lock()
+	g.State = FinishState
+	g.Unlock()
+	if g.ctx != nil {
+		ctx.Done()
+	}
+	// Else g.Run
+
+	_ = g.Finish()
+}
+
+func (g *Game) Finish() error {
+	if g.State != FinishState {
+		return errors.New("game is not finished")
+	}
+	// Delete From channels
 }
