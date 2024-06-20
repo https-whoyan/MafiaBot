@@ -10,7 +10,7 @@ import (
 func ValidateCommandByGameState(commandName string, g *game.Game, fmtEr *fmt.DiscordFMTer) (content string, isOk bool) {
 	gameState := g.State
 
-	gameIn := fmtEr.I("Game" + game.GetStateDefinition(gameState) + ".")
+	gameIn := fmtEr.I("Game" + g.State.String() + ".")
 	cantUse := fmtEr.B("Couldn't use /") + fmtEr.I(commandName+" command")
 	content = gameIn + fmtEr.NL() + cantUse
 

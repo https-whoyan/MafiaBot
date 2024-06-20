@@ -96,7 +96,7 @@ func GetServerNamesByPlayers(players []*Player) []string {
 
 func GenerateEmptyPlayersByFunc(
 	x any,
-	getTagAndUsername func(x any, index int) (string, string, string),
+	getTagUsernameAndServerUsername func(x any, index int) (string, string, string),
 	countOfNewPlayers int, isAllSpectators bool) []*Player {
 
 	isRecovered := false
@@ -111,7 +111,7 @@ func GenerateEmptyPlayersByFunc(
 	players := make([]*Player, countOfNewPlayers)
 
 	for i := 0; i <= countOfNewPlayers-1; i++ {
-		tag, username, serverUsername := getTagAndUsername(x, i)
+		tag, username, serverUsername := getTagUsernameAndServerUsername(x, i)
 		var newPlayer *Player
 		if isAllSpectators {
 			newPlayer = NewSpectator(tag, username, serverUsername)

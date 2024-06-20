@@ -47,6 +47,9 @@ func RenamePrOpt(rP playerPack.RenameUserProviderInterface) GameOption {
 func RenameModeOpt(mode RenameMode) GameOption {
 	return func(g *Game) { g.RenameMode = mode }
 }
+func VotePingOpt(votePing int) GameOption {
+	return func(g *Game) { g.VotePing = votePing }
+}
 
 // __________________
 // Game struct
@@ -68,13 +71,30 @@ type Game struct {
 	Active       []*playerPack.Player `json:"active"`
 	Spectators   []*playerPack.Player `json:"spectators"`
 
-	// Keeps what role is voting (in night) right now.
-	NightVoting *rolesPack.Role `json:"nightVoting"`
 	// Presents to the application which chat is used for which role.
 	// key: str - role name
-	RoleChannels  map[string]channelPack.RoleChannel
-	MainChannel   channelPack.MainChannel
-	VoteChan      chan VoteProviderInterface
+	RoleChannels map[string]channelPack.RoleChannel
+	MainChannel  channelPack.MainChannel
+
+	// Keeps what role is voting (in night) right now.
+	NightVoting *rolesPack.Role `json:"nightVoting"`
+	// Unbuffered Channel.
+	VoteChan chan VoteProviderInterface
+	// Unbuffered Channel.
+	TwoVoteChan chan TwoVoteProviderInterface
+	// Can the player choose himself
+	VoteForYourself bool `json:"voteForYourself"`
+	// VotePing presents a delay number for voting for the same player again.
+	//
+	// Example: A player has voted for players with IDs 5, 4, 3, and VotePing is 2.
+	// So the player will not be able to vote for players 4 and 3 the next night.
+	//
+	// Default value: 1.
+	//
+	// Adjustable by option. Set 0, If you want to keep the mechanic that a player can vote for the same
+	// player every night, put -1 or a very large number if you want all players to have completely different votes.
+	VotePing int `json:"votePing"`
+
 	PreviousState State `json:"previousState"`
 	State         State `json:"state"`
 	// For beautiful messages
@@ -97,6 +117,7 @@ func GetNewGame(guildID string, opts ...GameOption) *Game {
 		Spectators: make([]*playerPack.Player, 0),
 		// Create a map
 		RoleChannels: make(map[string]channelPack.RoleChannel),
+		VotePing:     1,
 	}
 	// Set options
 	for _, opt := range opts {
@@ -161,6 +182,9 @@ func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 	}
 	if g.VoteChan == nil {
 		joinErr(err, EmptyChanErr)
+	}
+	if g.TwoVoteChan == nil {
+		joinErr(err, EmptyFMTerErr)
 	}
 	if g.fmtEr == nil {
 		joinErr(err, EmptyFMTerErr)
@@ -356,17 +380,20 @@ It is recommended to use context.Background()
 Return receive chan of Signal type
 */
 func (g *Game) Run(ctx context.Context) <-chan Signal {
-	// Send Message About New Game
-	_, _ = g.MainChannel.Write([]byte(g.GetStartMessage()))
 	var ch chan Signal
+	ch = make(chan Signal)
 
 	defer func() {
-		defer close(ch)
+		// Send Message About New Game
+		_, err := g.MainChannel.Write([]byte(g.GetStartMessage()))
+		safeSendErrSignal(ch, err)
 		switch {
 		case ctx == nil:
-			ch <- NewFatalSignal(NilContext)
+			sendFatalSignal(ch, NilContext)
 		case g.ctx != nil:
-			ch <- NewFatalSignal(ErrGameAlreadyStarted)
+			sendFatalSignal(ch, NilContext)
+		case g.IsRunning():
+			sendFatalSignal(ch, ErrGameAlreadyStarted)
 		default:
 			g.Lock()
 			g.ctx = ctx
@@ -391,7 +418,6 @@ func (g *Game) Run(ctx context.Context) <-chan Signal {
 		}
 	}()
 
-	ch = make(chan Signal)
 	return ch
 }
 
@@ -404,6 +430,7 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 			isStoppedByCtx = true
 		default:
 			g.SetState(NightState)
+			ch <- g.newSwitchStateSignal()
 			g.night(ch)
 			//log := g.GetNightLog()
 			//log
@@ -425,15 +452,15 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 // ********************
 
 // FinishAnyway is used to end the running game anyway.
-//
-// Not recommended for use.
 func (g *Game) FinishAnyway(ch chan<- Signal) {
-	content := "The game was suspended."
-	_, err := g.MainChannel.Write([]byte(g.fmtEr.Bold(content)))
-	if err != nil {
-		ch <- NewErrSignal(err)
+	if g.IsRunning() {
+		content := "The game was suspended."
+		_, err := g.MainChannel.Write([]byte(g.fmtEr.Bold(content)))
+		safeSendErrSignal(ch, err)
 	}
+
 	g.SetState(FinishState)
+	ch <- g.newSwitchStateSignal()
 	g.Lock()
 	if g.ctx == nil {
 		g.ctx = context.Background()
@@ -444,9 +471,10 @@ func (g *Game) FinishAnyway(ch chan<- Signal) {
 	cancel()
 	g.Finish(ch)
 }
+
 func (g *Game) Finish(ch chan<- Signal) {
-	if g.State != FinishState {
-		ch <- NewCloseSignal(errors.New("game is not finished"))
+	if !g.IsFinished() {
+		sendFatalSignal(ch, errors.New("game is not finished"))
 		return
 	}
 
@@ -479,22 +507,23 @@ func (g *Game) Finish(ch chan<- Signal) {
 	// _______________
 	// Renaming.
 	// _______________
+	activePlayersAndSpectators := append(g.StartPlayers, g.Spectators...)
 	switch g.RenameMode {
 	case NotRenameModeMode: // No actions
 	case RenameInGuildMode:
-		for _, player := range append(g.StartPlayers, g.Spectators...) {
+		for _, player := range activePlayersAndSpectators {
 			safeSendErrSignal(ch, player.RenameUserAfterGame(g.renameProvider, ""))
 		}
 	case RenameOnlyInMainChannelMode:
 		mainChannelServerID := g.MainChannel.GetServerID()
 
-		for _, player := range g.StartPlayers {
+		for _, player := range activePlayersAndSpectators {
 			err := player.RenameUserAfterGame(g.renameProvider, mainChannelServerID)
 			safeSendErrSignal(ch, err)
 		}
 	case RenameInAllChannelsMode:
 		// Rename from Role Channels.
-		for _, player := range g.StartPlayers {
+		for _, player := range activePlayersAndSpectators {
 			if player.Role.NightVoteOrder == -1 {
 				continue
 			}
@@ -509,11 +538,14 @@ func (g *Game) Finish(ch chan<- Signal) {
 		// Rename from main channel
 		mainChannelServerID := g.MainChannel.GetServerID()
 
-		for _, player := range g.StartPlayers {
+		for _, player := range activePlayersAndSpectators {
 			err := player.RenameUserAfterGame(g.renameProvider, mainChannelServerID)
 			safeSendErrSignal(ch, err)
 		}
 	default:
-		ch <- NewFatalSignal(errors.New("invalid rename mode"))
+		sendFatalSignal(ch, errors.New("invalid rename mode"))
+		return
 	}
+	*g = Game{}
+	sendCloseSignal(ch, "the game has been successfully completed.")
 }

@@ -303,7 +303,7 @@ func (b *Bot) FinishAllGames() {
 			if !ok {
 				break
 			}
-			log.Println(gSignal.Value)
+			log.Println(gSignal)
 		}
 	}
 }

@@ -13,11 +13,19 @@ const (
 	FinishState     State = 8
 )
 
+func (g *Game) IsFinished() bool {
+	return g.State == FinishState
+}
+
+func (g *Game) IsRunning() bool {
+	return g.State == NightState || g.State == DayState || g.State == VotingState || g.State == PausedState
+}
+
 // _________________
 // States functions
 // _________________
 
-func (g *Game) GetNextState() State {
+func (g *Game) getNextState() State {
 	g.RLock()
 	defer g.RUnlock()
 	switch g.State {
@@ -47,7 +55,7 @@ func (g *Game) SetState(state State) {
 }
 
 func (g *Game) SwitchState() {
-	nextState := g.GetNextState()
+	nextState := g.getNextState()
 	g.SetState(nextState)
 }
 
@@ -59,9 +67,11 @@ func (g *Game) ChangeStateToPause() {
 	g.State = PausedState
 }
 
-// fmt
+// _______________
+// For format
+// _______________
 
-var StateDefinition = map[State]string{
+var stateDefinition = map[State]string{
 	NonDefinedState: "is full raw (nothing is known)",
 	RegisterState:   "is waited for registration",
 	StartingState:   "is prepared for starting",
@@ -72,10 +82,10 @@ var StateDefinition = map[State]string{
 	FinishState:     "is finished",
 }
 
-func GetStateDefinition(state State) string {
-	definition, contains := StateDefinition[state]
-	if !contains {
-		return "is unknown for server"
+func (s State) String() string {
+	str, ok := stateDefinition[s]
+	if !ok {
+		return "Unknown"
 	}
-	return definition
+	return str
 }

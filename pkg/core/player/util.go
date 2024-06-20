@@ -1,6 +1,7 @@
 package player
 
 import (
+	"github.com/https-whoyan/MafiaBot/core/roles"
 	"slices"
 	"strconv"
 )
@@ -37,4 +38,15 @@ func SearchPlayerByID(players []*Player, ID string, isServerID bool) *Player {
 		return SearchPlayerByServerID(players, ID)
 	}
 	return SearchPlayerByGameID(players, ID)
+}
+
+func SearchAllPlayersWithRole(players []*Player, role *roles.Role) []*Player {
+	var allPlayers []*Player
+	for _, player := range players {
+		if player.Role == role {
+			allPlayers = append(allPlayers, player)
+		}
+	}
+
+	return allPlayers
 }

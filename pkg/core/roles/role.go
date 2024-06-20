@@ -14,7 +14,11 @@ type Role struct {
 	Name           string `json:"name"`
 	Team           Team   `json:"team"`
 	NightVoteOrder int    `json:"nightVoteOrder"`
-	Description    string `json:"description"`
+	// Presents whether to execute immediately, the action of the role.
+	UrgentCalculation bool
+	// Presents whether 2 player IDs are used in night actions of the role at once.
+	IsTwoVotes  bool
+	Description string `json:"description"`
 }
 
 var MappedRoles = map[string]*Role{

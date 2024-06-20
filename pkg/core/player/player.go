@@ -44,8 +44,14 @@ type Player struct {
 	// Nick after renaming.
 	Nick string      `json:"nick"`
 	Role *roles.Role `json:"role"`
-	// Vote which player ID the player is voting for
-	Vote       int         `json:"vote"`
+	// Votes stores all the night votes the player casts.
+	//
+	// NOTE - if the number of players for a role is >2, there will be added voices for these voices will be identical.
+	//
+	// NOTE - For the detective, this array will always be empty.
+	Votes []int `json:"votes"`
+	// DayVote stores the player's vote in the day vote.
+	DayVote    int         `json:"dayVote"`
 	LifeStatus AliveStatus `json:"lifeStatus"`
 	// InteractionStatus What a player should be doing right now
 	InteractionStatus VoteStatus `json:"interactionStatus"`
@@ -87,6 +93,5 @@ func NewSpectator(tag string, username string, serverUsername string) *Player {
 		ServerNick:        serverUsername,
 		LifeStatus:        Spectating,
 		InteractionStatus: Muted,
-		Vote:              -1,
 	}
 }

@@ -3,7 +3,6 @@ package game
 import (
 	"errors"
 	"github.com/https-whoyan/MafiaBot/core/converter"
-	"github.com/https-whoyan/MafiaBot/core/roles"
 	"strconv"
 
 	"github.com/https-whoyan/MafiaBot/core/channel"
@@ -53,10 +52,38 @@ func NewVoteProvider(votedPlayerID string, vote string, isServerUserID bool) *Vo
 func (p *VoteProvider) GetVotedPlayerID() (votedUserID string, isUserServerID bool) {
 	return p.votedPlayerID, p.isServerUserID
 }
+func (p *VoteProvider) GetVote() (ID string) { return p.vote }
 
-func (p *VoteProvider) GetVote() (ID string) {
-	return p.vote
+// TwoVoteProviderInterface A special channel used only  for roles that specify 2 voices rather
+// than one (example: detective)
+//
+// Its peculiarity is that instead of one voice it uses
+// 2 voices - IDs of 2 players it wants to check, so I decided to make a separate interface for it
+type TwoVoteProviderInterface interface {
+	GetVotedPlayerID() (votedUserID string, isUserServerID bool)
+	GetVote() (ID1 string, ID2 string)
 }
+
+// TwoVotesProvider default implementation of TwoVoteProviderInterface
+type TwoVotesProvider struct {
+	votedPlayerID  string
+	vote1, vote2   string
+	isServerUserID bool
+}
+
+func NewTwoVoteProvider(votedPlayerID string, vote1, vote2 string, isServerUserID bool) *TwoVotesProvider {
+	return &TwoVotesProvider{
+		votedPlayerID:  votedPlayerID,
+		vote1:          vote1,
+		vote2:          vote2,
+		isServerUserID: isServerUserID,
+	}
+}
+
+func (p *TwoVotesProvider) GetVotedPlayerID() (votedUserID string, isUserServerID bool) {
+	return p.votedPlayerID, p.isServerUserID
+}
+func (p *TwoVotesProvider) GetVote() (ID1, ID2 string) { return p.vote1, p.vote2 }
 
 // _______________________________
 // Vote Validators
@@ -72,6 +99,10 @@ var (
 	PlayerIsMutedErr     = errors.New("player is muted")
 	VotePlayerIsNotAlive = errors.New("vote player is not alive")
 )
+
+// ________________________
+// VoteProvider
+// ________________________
 
 // voteProviderValidator is validator for VoteProviderInterface
 func (g *Game) voteProviderValidator(vP VoteProviderInterface) error {
@@ -153,6 +184,10 @@ func (g *Game) dayVoteValidator(vP VoteProviderInterface) error {
 	return g.voteProviderValidator(vP)
 }
 
+// ________________________
+// TwoVoteProvider
+// ________________________
+
 // _______________________________
 // Vote Functions
 // _______________________________
@@ -189,13 +224,21 @@ func (g *Game) NightVote(vP VoteProviderInterface, opt *OptionalChannelIID) erro
 	g.Lock()
 	defer g.Lock()
 	if vote == EmptyVoteStr {
-		votedPlayer.Vote = EmptyVoteInt
+		votedPlayer.Votes = append(votedPlayer.Votes, EmptyVoteInt)
+	} else {
+		// validated Before
+		intVote, _ := strconv.Atoi(vote)
+		votedPlayer.Votes = append(votedPlayer.Votes, intVote)
 	}
-	// validated Before
-	votedPlayer.Vote, _ = strconv.Atoi(vote)
-	if votedPlayer.Role == roles.Whore {
-		toVotedPlayer := player.SearchPlayerByID(g.Active, vote, false)
-		toVotedPlayer.InteractionStatus = player.Muted
+	// Set empty votes to same role players
+	sameRolePlayers := player.SearchAllPlayersWithRole(g.Active, votedPlayer.Role)
+	for _, sameRolePlayer := range sameRolePlayers {
+		if sameRolePlayer.ID != votedPlayer.ID {
+			sameRolePlayer.Votes = append(sameRolePlayer.Votes, EmptyVoteInt)
+		}
+	}
+	if votedPlayer.Role.UrgentCalculation {
+		// Todo.
 	}
 	return nil
 }
@@ -225,10 +268,10 @@ func (g *Game) DayVote(vP VoteProviderInterface, opt *OptionalChannelIID) error 
 	g.Lock()
 	defer g.Lock()
 	if vote == EmptyVoteStr {
-		votedPlayer.Vote = EmptyVoteInt
+		votedPlayer.DayVote = EmptyVoteInt
 	}
 	// validated Before
-	votedPlayer.Vote, _ = strconv.Atoi(vote)
+	votedPlayer.DayVote, _ = strconv.Atoi(vote)
 	return nil
 }
 
@@ -239,7 +282,7 @@ func (g *Game) ResetTheVotes() {
 	allPlayers := g.Active
 
 	for _, activePlayer := range allPlayers {
-		activePlayer.Vote = EmptyVoteInt
+		activePlayer.DayVote = EmptyVoteInt
 	}
 }
 
