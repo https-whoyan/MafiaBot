@@ -106,20 +106,19 @@ func (r *RedisDB) GetConfigGameVotingMessageID(guildID string) (*botGame.ConfigM
 	ctx := context.Background()
 	key := configVotingGameTB + ":" + guildID
 
-	defer r.deleteKey(key)
-
 	t := reflect.TypeOf(botGame.ConfigMessages{})
 
 	pipe := r.db.TxPipeline()
 
-	playersCountStr := pipe.HGet(ctx, key, redisNameByFieldName(t, "PlayersCount")).Val()
-	configCountStr := pipe.HGet(ctx, key, redisNameByFieldName(t, "ConfigsCount")).Val()
+	playersCountCmd := pipe.HGet(ctx, key, redisNameByFieldName(t, "PlayersCount"))
+	configCountCmd := pipe.HGet(ctx, key, redisNameByFieldName(t, "ConfigsCount"))
 
 	_, err := pipe.Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	playersCountStr, configCountStr := playersCountCmd.Val(), configCountCmd.Val()
 	var playersCount, configsCount int
 	playersCount, err = strconv.Atoi(playersCountStr)
 	if err != nil {
@@ -138,10 +137,12 @@ func (r *RedisDB) GetConfigGameVotingMessageID(guildID string) (*botGame.ConfigM
 	}
 
 	pipe = r.db.TxPipeline()
-	values := pipe.HMGet(ctx, key, keys...).Val()
+	valuesCmd := pipe.HMGet(ctx, key, keys...)
 	pipe.Del(ctx, key)
 
 	_, err = pipe.Exec(ctx)
+	values := valuesCmd.Val()
+
 	if err != nil {
 		return nil, err
 	}
