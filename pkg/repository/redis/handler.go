@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"strconv"
 	"time"
@@ -14,6 +15,10 @@ const (
 	configVotingGameTB = "configVotingGameTB"
 )
 
+const (
+	nonFound = "non_found"
+)
+
 // Utils
 
 // It can be r.db.Del...
@@ -22,7 +27,7 @@ func (r *RedisDB) deleteKey(key string) { r.db.PExpire(context.Background(), key
 func redisNameByFieldName(t reflect.Type, fieldName string) string {
 	field, isFound := t.FieldByName(fieldName)
 	if !isFound {
-		return "NON_FOUND"
+		return nonFound
 	}
 	return field.Tag.Get("redis")
 }
@@ -37,7 +42,10 @@ func (r *RedisDB) SetInitialGameMessageID(guildID string, messageID string, life
 
 	ctx := context.Background()
 	key := initialGameTB + ":" + guildID
-	err := r.db.Set(ctx, key, messageID, lifeDuration).Err()
+
+	pipe := r.db.TxPipeline()
+	pipe.Set(ctx, key, messageID, lifeDuration)
+	_, err := pipe.Exec(ctx)
 	return err
 }
 
@@ -47,7 +55,14 @@ func (r *RedisDB) GetInitialGameMessageID(guildID string) (string, error) {
 
 	ctx := context.Background()
 	key := initialGameTB + ":" + guildID
-	cmd := r.db.Get(ctx, key)
+
+	pipe := r.db.TxPipeline()
+	cmd := pipe.Get(ctx, key)
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return "", err
+	}
+
 	return cmd.Result()
 }
 
@@ -64,29 +79,23 @@ func (r *RedisDB) SetConfigGameVotingMessages(c *botGame.ConfigMessages, lifeDur
 
 	t := reflect.TypeOf(*c)
 
-	// Set firstValue
-	err = r.db.HSet(ctx, key, redisNameByFieldName(t, "PlayersCount"), c.PlayersCount).Err()
-	if err != nil {
-		return
-	}
-	// Set lifeDuration
-	err = r.db.PExpire(ctx, key, lifeDuration).Err()
-	if err != nil {
-		return
-	}
-	// Set other fields
-	err = r.db.HSet(ctx, key, redisNameByFieldName(t, "ConfigsCount"), c.ConfigsCount).Err()
-	if err != nil {
-		return
-	}
+	pipe := r.db.TxPipeline()
+
+	pipe.HSet(ctx, key, redisNameByFieldName(t, "PlayersCount"), c.PlayersCount)
+	pipe.PExpire(ctx, key, lifeDuration)
+	pipe.HSet(ctx, key, redisNameByFieldName(t, "ConfigsCount"), c.ConfigsCount)
+
 	fieldPrefix := redisNameByFieldName(t, "Messages") + ":"
+	if fieldPrefix == nonFound+":" {
+		pipe.Discard()
+		return errors.New("reflect field error")
+	}
 	for _, message := range c.Messages {
 		fieldName := fieldPrefix + strconv.Itoa(message.ConfigIndex)
-		err = r.db.HSet(ctx, key, fieldName, message.MessageID).Err()
-		if err != nil {
-			return
-		}
+		pipe.HSet(ctx, key, fieldName, message.MessageID)
 	}
+
+	_, err = pipe.Exec(ctx)
 	return err
 }
 
@@ -101,30 +110,44 @@ func (r *RedisDB) GetConfigGameVotingMessageID(guildID string) (*botGame.ConfigM
 
 	t := reflect.TypeOf(botGame.ConfigMessages{})
 
-	playersCountStr, err := r.db.HGet(ctx, key, redisNameByFieldName(t, "PlayersCount")).Result()
-	playersCount, _ := strconv.Atoi(playersCountStr)
+	pipe := r.db.TxPipeline()
+
+	playersCountStr := pipe.HGet(ctx, key, redisNameByFieldName(t, "PlayersCount")).Val()
+	configCountStr := pipe.HGet(ctx, key, redisNameByFieldName(t, "ConfigsCount")).Val()
+
+	_, err := pipe.Exec(ctx)
 	if err != nil {
 		return nil, err
 	}
-	configsCountStr, err := r.db.HGet(ctx, key, redisNameByFieldName(t, "ConfigsCount")).Result()
-	configsCount, _ := strconv.Atoi(configsCountStr)
+
+	var playersCount, configsCount int
+	playersCount, err = strconv.Atoi(playersCountStr)
+	if err != nil {
+		return nil, err
+	}
+	configsCount, err = strconv.Atoi(configCountStr)
 	if err != nil {
 		return nil, err
 	}
 
 	ans := botGame.NewConfigMessages(guildID, playersCount, configsCount)
-
 	fieldPrefix := redisNameByFieldName(t, "Messages") + ":"
 	keys := make([]string, ans.ConfigsCount)
 	for i := 0; i <= ans.ConfigsCount-1; i++ {
 		keys[i] = fieldPrefix + strconv.Itoa(i)
 	}
-	values, err := r.db.HMGet(ctx, key, keys...).Result()
+
+	pipe = r.db.TxPipeline()
+	values := pipe.HMGet(ctx, key, keys...).Val()
+	pipe.Del(ctx, key)
+
+	_, err = pipe.Exec(ctx)
 	if err != nil {
-		return ans, err
+		return nil, err
 	}
 	for i, v := range values {
 		ans.AddNewMessage(i, v.(string))
 	}
+
 	return ans, err
 }
