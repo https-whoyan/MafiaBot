@@ -70,3 +70,18 @@ func (cfg *RolesConfig) HasRole(role *roles.Role) bool {
 func GetConfigByPlayersCountAndIndex(playersCount int, index int) *RolesConfig {
 	return (*Configs[playersCount])[index]
 }
+
+func (cfg *RolesConfig) GetOrderToVote() []*roles.Role {
+	rolesConfigs := converter.GetMapValues(cfg.RolesMp)
+	var rolesArr []*roles.Role
+
+	for _, roleConfig := range rolesConfigs {
+		if roleConfig.Role.NightVoteOrder != -1 {
+			rolesArr = append(rolesArr, roleConfig.Role)
+		}
+	}
+	sort.Slice(rolesArr, func(i, j int) bool {
+		return rolesArr[i].NightVoteOrder < rolesArr[j].NightVoteOrder
+	})
+	return rolesArr
+}

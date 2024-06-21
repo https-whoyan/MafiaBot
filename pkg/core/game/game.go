@@ -65,6 +65,7 @@ type Game struct {
 	GuildID      string                  `json:"guildID"`
 	PlayersCount int                     `json:"playersCount"`
 	RolesConfig  *configPack.RolesConfig `json:"rolesConfig"`
+	NightCounter int                     `json:"nightCounter"`
 
 	StartPlayers []*playerPack.Player `json:"startPlayers"`
 	Dead         []*playerPack.Player `json:"dead"`
@@ -110,7 +111,8 @@ func GetNewGame(guildID string, opts ...GameOption) *Game {
 		GuildID: guildID,
 		State:   NonDefinedState,
 		// Chan s create.
-		VoteChan: make(chan VoteProviderInterface),
+		VoteChan:    make(chan VoteProviderInterface),
+		TwoVoteChan: make(chan TwoVoteProviderInterface),
 		// Slices.
 		Active:     make([]*playerPack.Player, 0),
 		Dead:       make([]*playerPack.Player, 0),
