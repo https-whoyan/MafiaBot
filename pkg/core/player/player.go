@@ -46,9 +46,11 @@ type Player struct {
 	Role *roles.Role `json:"role"`
 	// Votes stores all the night votes the player casts.
 	//
-	// NOTE - if the number of players for a role is >2, there will be added voices for these voices will be identical.
+	// NOTE - if the number of players for a role is >2, there will be added voices (is player not be muted)
+	// for these voices will be identical.
 	//
-	// NOTE - For the detective, this array will always be empty.
+	// NOTE - For the detective, or roles, who used two votes system, this array will be empty after each night.
+	// During the night 2 voices will be recorded here, but after the night they will be deleted immediately.
 	Votes []int `json:"votes"`
 	// DayVote stores the player's vote in the day vote.
 	DayVote    int         `json:"dayVote"`

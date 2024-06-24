@@ -94,7 +94,7 @@ const (
 // Close signal
 // _____________________
 
-type CloseSignal struct {
+type CloseSignal struct { // After a close signal, the channel will close immediately.
 	InitialTime time.Time
 	SignalType  SignalType
 	Message     string

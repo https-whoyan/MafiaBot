@@ -37,7 +37,7 @@ func (g *Game) SetNewRoleChannel(ch channelPack.RoleChannel) error {
 	return nil
 }
 
-func (g *Game) SetRoleChannels(chs []channelPack.RoleChannel) (err error) {
+func (g *Game) SetRoleChannels(chs ...channelPack.RoleChannel) (err error) {
 	for _, ch := range chs {
 		if err = g.tryAddNewRoleChannel(ch); err != nil {
 			return

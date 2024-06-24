@@ -138,7 +138,7 @@ func GetNewGame(guildID string, opts ...GameOption) *Game {
 		3) GuildID (Ok, optional)
 		4) MainChannel implementation
 		5) Spectators
-		6) And chan (See GetNewGame)
+		6) And chan s (See GetNewGame)
 		7) fmtEr
 		8) renameProvider
 		9) RenameMode
@@ -152,7 +152,6 @@ var (
 	MismatchPlayersCountAndGamePlayersCountErr = errors.New("mismatch config playersCount and game players")
 	NotFullRoleChannelInfoErr                  = errors.New("not full role channel info")
 	NotMainChannelInfoErr                      = errors.New("not main channel info")
-	EmptyChanErr                               = errors.New("empty channel")
 	EmptyFMTerErr                              = errors.New("empty FMTer")
 	EmptyRenameProviderErr                     = errors.New("empty rename provider")
 	EmptyRenameModeErr                         = errors.New("empty rename mode")
@@ -163,10 +162,6 @@ func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 	g.RLock()
 	defer g.RUnlock()
 
-	joinErr := func(err, addedErr error) {
-		err = errors.Join(err, addedErr)
-	}
-
 	var err error
 
 	if cfg == nil {
@@ -174,28 +169,22 @@ func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 	}
 
 	if cfg.PlayersCount != len(g.StartPlayers) {
-		joinErr(err, MismatchPlayersCountAndGamePlayersCountErr)
+		err = errors.Join(err, MismatchPlayersCountAndGamePlayersCountErr)
 	}
 	if len(g.RoleChannels) != len(rolesPack.GetAllNightInteractionRolesNames()) {
-		joinErr(err, NotFullRoleChannelInfoErr)
+		err = errors.Join(err, NotFullRoleChannelInfoErr)
 	}
 	if g.MainChannel == nil {
-		joinErr(err, NotMainChannelInfoErr)
-	}
-	if g.VoteChan == nil {
-		joinErr(err, EmptyChanErr)
-	}
-	if g.TwoVoteChan == nil {
-		joinErr(err, EmptyFMTerErr)
+		err = errors.Join(err, NotMainChannelInfoErr)
 	}
 	if g.fmtEr == nil {
-		joinErr(err, EmptyFMTerErr)
+		err = errors.Join(err, EmptyFMTerErr)
 	}
 	if g.RenameMode == NotRenameModeMode {
 		return err
 	}
 	if g.renameProvider == nil {
-		joinErr(err, EmptyRenameProviderErr)
+		err = errors.Join(err, EmptyRenameProviderErr)
 	}
 	switch g.RenameMode {
 	case RenameInGuildMode:
@@ -205,7 +194,7 @@ func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 	case RenameInAllChannelsMode:
 		return err
 	}
-	joinErr(err, EmptyRenameModeErr)
+	err = errors.Join(err, EmptyRenameModeErr)
 	return err
 }
 
@@ -353,6 +342,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	default:
 		return errors.New("invalid rename mode")
 	}
+
 	return nil
 }
 
@@ -431,9 +421,7 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 		case <-g.ctx.Done():
 			isStoppedByCtx = true
 		default:
-			g.SetState(NightState)
-			ch <- g.newSwitchStateSignal()
-			g.night(ch)
+			g.Night(ch)
 			//log := g.GetNightLog()
 			//log
 			//winnerTeam, err := log.StateWinner()

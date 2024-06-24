@@ -98,6 +98,7 @@ var (
 	VotePlayerNotFound   = errors.New("vote player not found")
 	PlayerIsMutedErr     = errors.New("player is muted")
 	VotePlayerIsNotAlive = errors.New("vote player is not alive")
+	VotePingError        = errors.New("player get same vote before")
 )
 
 // _________________________
@@ -162,6 +163,16 @@ func (g *Game) NightVoteValidator(vP VoteProviderInterface, roleChannel channel.
 	if votedPlayer.InteractionStatus == player.Muted {
 		return PlayerIsMutedErr
 	}
+	previousVotesMp := make(map[int]bool)
+	startIndex := max(0, len(votedPlayer.Votes)-g.VotePing)
+	for i := startIndex; i <= len(votedPlayer.Votes)-1; i++ {
+		previousVotesMp[votedPlayer.Votes[i]] = true
+	}
+	// ValidatedBefore
+	vote, _ := strconv.Atoi(vP.GetVote())
+	if previousVotesMp[vote] {
+		return VotePingError
+	}
 	return nil
 }
 
@@ -184,9 +195,10 @@ func (g *Game) DayVoteValidator(vP VoteProviderInterface) error {
 	return g.voteProviderValidator(vP)
 }
 
-// _________________________________________
+// _________________________________________________
 // TwoVote Validators (Only for night interactions)
-// _________________________________________
+// _________________________________________________
+
 func (g *Game) TwoVoteProviderValidator(vP TwoVoteProviderInterface) error {
 	if vP == nil {
 		return NilValidatorErr

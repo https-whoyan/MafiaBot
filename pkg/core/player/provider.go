@@ -20,21 +20,25 @@ type RenameUserProviderInterface interface {
 	RenameUser(channelIID string, userServerID string, newNick string) error
 }
 
-// Yes, edit it
+// Edit it.
 const (
 	playerPatternWithoutNickname = "%v"     // ID
 	playerPrefixPattern          = "%v: %v" // ID, Nick
 
-	spectatorPrefixPattern           = "(spectator) %v" // Nick
-	spectatorWithoutNickname         = "(spectator)"
+	spectatorPrefixPattern   = "(spectator) %v" // Nick
+	spectatorWithoutNickname = "(spectator)"
+
 	deadPrefixPatternWithoutNickname = "(dead) %v"     // ID
 	deadPrefixPattern                = "(dead) %v: %v" // ID, Nick
 )
 
 var (
-	getNewPlayerNickname                    = func(ID int, oldNick string) string { return fmt.Sprintf(playerPrefixPattern, ID, oldNick) }
-	getNewPlayerNicknameWithoutNick         = func(ID int) string { return fmt.Sprintf(playerPatternWithoutNickname, ID) }
-	getNewSpectatorNickname                 = func(oldNick string) string { return fmt.Sprintf(spectatorPrefixPattern, oldNick) }
+	getNewPlayerNickname            = func(ID int, oldNick string) string { return fmt.Sprintf(playerPrefixPattern, ID, oldNick) }
+	getNewPlayerNicknameWithoutNick = func(ID int) string { return fmt.Sprintf(playerPatternWithoutNickname, ID) }
+
+	getNewSpectatorNickname            = func(oldNick string) string { return fmt.Sprintf(spectatorPrefixPattern, oldNick) }
+	getNewSpectatorNicknameWithoutNick = func() string { return fmt.Sprintf(spectatorWithoutNickname) }
+
 	getNewPlayerDeadNicknameWithoutNickname = func(ID int) string { return fmt.Sprintf(deadPrefixPatternWithoutNickname, ID) }
 	getNewPlayerDeadNickname                = func(ID int, oldNick string) string { return fmt.Sprintf(deadPrefixPattern, ID, oldNick) }
 
@@ -83,7 +87,7 @@ func (p *Player) RenameToSpectator(provider RenameUserProviderInterface, channel
 	}
 	var newNick string
 	if len(p.OldNick) == 0 {
-		newNick = getNewPlayerNicknameWithoutNick(p.ID)
+		newNick = getNewSpectatorNicknameWithoutNick()
 	} else {
 		newNick = getNewSpectatorNickname(p.OldNick)
 	}

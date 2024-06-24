@@ -30,3 +30,15 @@ func UnwrapDiscordRESTErr(err error, allowsCodes ...int) error {
 	}
 	return err
 }
+
+func UnwrapErrToErrSlices(err error) []error {
+	var errs []error
+	if unwrappedErrors, ok := err.(interface{ Unwrap() []error }); ok {
+		for _, unwrappedErr := range unwrappedErrors.Unwrap() {
+			errs = append(errs, UnwrapErrToErrSlices(unwrappedErr)...)
+		}
+	} else {
+		errs = append(errs, err)
+	}
+	return errs
+}
