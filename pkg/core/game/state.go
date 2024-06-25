@@ -48,8 +48,8 @@ func (g *Game) getNextState() State {
 
 func (g *Game) SetState(state State) {
 	g.Lock()
-	currGState := g.State
 	defer g.Unlock()
+	currGState := g.State
 	g.PreviousState = currGState
 	g.State = state
 }

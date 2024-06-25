@@ -45,7 +45,7 @@ func RenamePrOpt(rP playerPack.RenameUserProviderInterface) GameOption {
 	return func(g *Game) { g.renameProvider = rP }
 }
 func RenameModeOpt(mode RenameMode) GameOption {
-	return func(g *Game) { g.RenameMode = mode }
+	return func(g *Game) { g.renameMode = mode }
 }
 func VotePingOpt(votePing int) GameOption {
 	return func(g *Game) { g.VotePing = votePing }
@@ -102,7 +102,7 @@ type Game struct {
 	fmtEr fmtPack.FmtInterface
 	// Use to rename user in your interpretation
 	renameProvider playerPack.RenameUserProviderInterface
-	RenameMode     RenameMode `json:"RenameMode"`
+	renameMode     RenameMode
 	ctx            context.Context
 }
 
@@ -120,6 +120,7 @@ func GetNewGame(guildID string, opts ...GameOption) *Game {
 		// Create a map
 		RoleChannels: make(map[string]channelPack.RoleChannel),
 		VotePing:     1,
+		ctx:          context.Background(),
 	}
 	// Set options
 	for _, opt := range opts {
@@ -141,7 +142,7 @@ func GetNewGame(guildID string, opts ...GameOption) *Game {
 		6) And chan s (See GetNewGame)
 		7) fmtEr
 		8) renameProvider
-		9) RenameMode
+		9) renameMode
 
 	Let's validate it.
 */
@@ -180,13 +181,13 @@ func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 	if g.fmtEr == nil {
 		err = errors.Join(err, EmptyFMTerErr)
 	}
-	if g.RenameMode == NotRenameModeMode {
+	if g.renameMode == NotRenameModeMode {
 		return err
 	}
 	if g.renameProvider == nil {
 		err = errors.Join(err, EmptyRenameProviderErr)
 	}
-	switch g.RenameMode {
+	switch g.renameMode {
 	case RenameInGuildMode:
 		return err
 	case RenameOnlyInMainChannelMode:
@@ -290,7 +291,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	// _______________
 	// Renaming.
 	// _______________
-	switch g.RenameMode {
+	switch g.renameMode {
 	case NotRenameModeMode: // No actions
 	case RenameInGuildMode:
 		for _, player := range g.StartPlayers {
@@ -372,10 +373,9 @@ It is recommended to use context.Background()
 Return receive chan of Signal type
 */
 func (g *Game) Run(ctx context.Context) <-chan Signal {
-	var ch chan Signal
-	ch = make(chan Signal)
+	ch := make(chan Signal)
 
-	defer func() {
+	go func() {
 		// Send Message About New Game
 		_, err := g.MainChannel.Write([]byte(g.GetStartMessage()))
 		safeSendErrSignal(ch, err)
@@ -498,7 +498,7 @@ func (g *Game) Finish(ch chan<- Signal) {
 	// Renaming.
 	// _______________
 	activePlayersAndSpectators := append(g.StartPlayers, g.Spectators...)
-	switch g.RenameMode {
+	switch g.renameMode {
 	case NotRenameModeMode: // No actions
 	case RenameInGuildMode:
 		for _, player := range activePlayersAndSpectators {

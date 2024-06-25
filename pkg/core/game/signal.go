@@ -108,11 +108,11 @@ func (c CloseSignal) GetTime() time.Time        { return c.InitialTime }
 //__________________
 
 func (g *Game) newSwitchStateSignal() Signal {
-	return &SwitchStateSignal{
+	return SwitchStateSignal{
 		SignalType:       SwitchStateSignalType,
 		InitialTime:      time.Now(),
 		SwitchSignalType: SwitchStateSwitchStateType,
-		Value: &SwitchStateValue{
+		Value: SwitchStateValue{
 			CurrentState:  g.State,
 			PreviousValue: g.PreviousState,
 		},
@@ -120,11 +120,11 @@ func (g *Game) newSwitchStateSignal() Signal {
 }
 
 func (g *Game) newSwitchVoteSignal() Signal {
-	return &SwitchStateSignal{
+	return SwitchStateSignal{
 		SignalType:       SwitchStateSignalType,
 		InitialTime:      time.Now(),
 		SwitchSignalType: SwitchNightVotedRoleSwitchStateType,
-		Value: &SwitchNightVoteRoleSwitchValue{
+		Value: SwitchNightVoteRoleSwitchValue{
 			CurrentVotedRole: g.NightVoting,
 			IsTwoVotes:       g.NightVoting.IsTwoVotes,
 		},
@@ -158,7 +158,7 @@ func newCloseSignal(msg string) Signal {
 }
 
 func safeSendErrSignal(ch chan<- Signal, err error) {
-	if err != nil {
+	if err == nil {
 		return
 	}
 	ch <- newErrSignal(err)

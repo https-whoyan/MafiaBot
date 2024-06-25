@@ -1,4 +1,4 @@
-package bot
+package handlers
 
 import (
 	"errors"
@@ -141,7 +141,7 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *coreGamePack.Game
 		InterfaceRoleChannelSlice := botConvertedPack.ConvertRoleChannelsSliceToIChannelSlice(sliceMappedRoles)
 
 		// Save it to g.RoleChannels.
-		err := g.SetRoleChannels(InterfaceRoleChannelSlice)
+		err := g.SetRoleChannels(InterfaceRoleChannelSlice...)
 
 		return []string{}, err
 	}

@@ -1,6 +1,7 @@
-package bot
+package handlers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -41,6 +42,8 @@ const (
 	YanLohCommandName           = "yan_loh"
 	AboutRolesCommandName       = "about_roles"
 	StartGameCommandName        = "start_game"
+	VoteGameCommandName         = "vote"
+	TwoVoteGameCommandName      = "two_vote"
 )
 
 // _______________________
@@ -489,7 +492,6 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 	// Simulation :))))
 	time.Sleep(time.Millisecond * time.Duration(1400))
 	winnerConfig := coreConfigPack.GetConfigByPlayersCountAndIndex(playerCount, winner)
-	//TODO!!!!
 	_, _ = sendMessages(s, i.ChannelID, f.InfoSplitter())
 	err = g.Init(winnerConfig)
 	if err != nil {
@@ -505,14 +507,194 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 		}
 	}
 	log.Printf("Init Game in %v Guild", i.GuildID)
-	_, _ = sendMessages(s, i.ChannelID, g.GetStartMessage())
+
+	gameCh := g.Run(context.Background())
+	for gameLog := range gameCh {
+		log.Println(gameLog)
+	}
 }
 
 // ______________
 // Voting
 // ______________
 
-//TODO!
+type GameVoteCommand struct {
+	cmd           *discordgo.ApplicationCommand
+	isUsedForGame bool
+	name          string
+}
+
+func NewGameVoteCommand() *GameVoteCommand {
+	description := "The command used for voting. Put " + coreGamePack.EmptyVoteStr + " for empty vote."
+	return &GameVoteCommand{
+		cmd: &discordgo.ApplicationCommand{
+			Name:        VoteGameCommandName,
+			Description: description,
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "player_id",
+					Description: "Enter the player's game ID",
+					Required:    true,
+				},
+			},
+		},
+		isUsedForGame: true,
+		name:          VoteGameCommandName,
+	}
+}
+
+func (c GameVoteCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c GameVoteCommand) GetName() string                       { return c.name }
+func (c GameVoteCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
+
+func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
+	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
+	vote := i.ApplicationCommandData().Options[0].Value.(string)
+	vP := coreGamePack.NewVoteProvider(i.User.ID, vote, true)
+	err := g.NightVoteValidator(vP, nil)
+
+	switch {
+	case errors.Is(err, coreGamePack.IncorrectVoteTime):
+		message := f.B("It is not possible to apply a vote not during the night or not during daytime voting.") +
+			f.NL() + f.U("Use the command later.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.IncorrectVoteType):
+		message := f.B("Incorrect format for entering the ID of the player you are voting for.") + f.NL() +
+			"Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
+		var allIDS []string
+		for _, player := range g.Active {
+			allIDS = append(allIDS, fmt.Sprintf("%v", player.ID))
+		}
+		message += strings.Join(allIDS, ", ")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.PlayerIsMutedErr):
+		message := f.B("Oops, you are muted now.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.VotePlayerIsNotAlive):
+		message := f.B("I think the dead  can't vote.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.VotePlayerNotFound):
+		message := f.B(fmt.Sprintf("Player ID %v is not found alive.", vote)) + f.NL()
+		message += f.NL() + "Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
+		var allIDS []string
+		for _, player := range g.Active {
+			allIDS = append(allIDS, fmt.Sprintf("%v", player.ID))
+		}
+		message += strings.Join(allIDS, ", ")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.VotePingError):
+		message := f.BU("You've already voted for this player recently.") + f.NL() + f.Tab()
+		message += f.I(fmt.Sprintf("You cannot vote for the same player 2 times within %v nights.",
+			g.VotePing+1)) + f.NL() + f.NL()
+		message += f.IU("Please, re-vote.")
+		Response(s, i, message)
+		return
+	}
+
+	Response(s, i, f.B("Your voice is being processed."))
+	g.VoteChan <- vP
+}
+
+type GameTwoVoteCommand struct {
+	cmd           *discordgo.ApplicationCommand
+	isUsedForGame bool
+	name          string
+}
+
+func NewGameTwoVoteCommand() *GameTwoVoteCommand {
+	description := "The command used for voting, but only for roles that use 2 voices at once."
+	return &GameTwoVoteCommand{
+		cmd: &discordgo.ApplicationCommand{
+			Name:        TwoVoteGameCommandName,
+			Description: description,
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "player_id_1",
+					Description: "Enter the player's game ID",
+					Required:    true,
+				},
+				{
+					Type:        discordgo.ApplicationCommandOptionInteger,
+					Name:        "player_id_2",
+					Description: "Enter the player's game ID",
+					Required:    true,
+				},
+			},
+		},
+		isUsedForGame: true,
+		name:          TwoVoteGameCommandName,
+	}
+}
+
+func (c GameTwoVoteCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c GameTwoVoteCommand) GetName() string                       { return c.name }
+func (c GameTwoVoteCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
+
+func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
+	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
+	vote1 := i.ApplicationCommandData().Options[0].Value.(string)
+	vote2 := i.ApplicationCommandData().Options[1].Value.(string)
+	vP := coreGamePack.NewTwoVoteProvider(i.User.ID, vote1, vote2, true)
+	err := g.NightTwoVoteValidator(vP, nil)
+
+	switch {
+	case errors.Is(err, coreGamePack.IncorrectVoteTime):
+		message := f.B("It is not possible to apply a vote not during the night or not during daytime voting.") +
+			f.NL() + f.U("Use the command later.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.OneVoteRequiredErr):
+		message := "Your role requires one vote, not 2." + f.NL()
+		message += "Use " + f.B("/"+VoteGameCommandName) + "command"
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.IncorrectVoteType):
+		message := f.B("Incorrect format for entering the ID of the player you are voting for.") + f.NL() +
+			"Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
+		var allIDS []string
+		for _, player := range g.Active {
+			allIDS = append(allIDS, fmt.Sprintf("%v", player.ID))
+		}
+		message += strings.Join(allIDS, ", ")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.PlayerIsMutedErr):
+		message := f.B("Oops, you are muted now.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.VotePlayerIsNotAlive):
+		message := f.B("I think the dead  can't vote.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.VotePlayerNotFound):
+		message := f.B(fmt.Sprintf("Player ID %v or %v is not found alive.", vote1, vote2)) + f.NL()
+		message += f.NL() + "Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
+		var allIDS []string
+		for _, player := range g.Active {
+			allIDS = append(allIDS, fmt.Sprintf("%v", player.ID))
+		}
+		message += strings.Join(allIDS, ", ")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.VotePingError):
+		message := f.BU("You've already voted for this player recently.") + f.NL() + f.Tab()
+		message += f.I(fmt.Sprintf("You cannot vote for the same player 2 times within %v nights.",
+			g.VotePing+1)) + f.NL() + f.NL()
+		message += f.IU("Please, re-vote.")
+		Response(s, i, message)
+		return
+	}
+
+	Response(s, i, f.B("Your voice is being processed."))
+	g.TwoVoteChan <- vP
+}
 
 // ___________
 // Other

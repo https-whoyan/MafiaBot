@@ -2,14 +2,15 @@ package game
 
 import (
 	"fmt"
-	"github.com/https-whoyan/MafiaBot/core/channel"
-	myFMT "github.com/https-whoyan/MafiaBot/core/fmt"
-	"github.com/https-whoyan/MafiaBot/core/player"
-	"github.com/https-whoyan/MafiaBot/core/roles"
-	myTime "github.com/https-whoyan/MafiaBot/core/time"
 	"strconv"
 	"sync"
 	"time"
+
+	channelPack "github.com/https-whoyan/MafiaBot/core/channel"
+	myFMT "github.com/https-whoyan/MafiaBot/core/fmt"
+	playerPack "github.com/https-whoyan/MafiaBot/core/player"
+	rolesPack "github.com/https-whoyan/MafiaBot/core/roles"
+	myTime "github.com/https-whoyan/MafiaBot/core/time"
 )
 
 // Night
@@ -20,9 +21,9 @@ func (g *Game) Night(ch chan<- Signal) {
 	case <-g.ctx.Done():
 		return
 	default:
-		g.Lock()
 		g.SetState(NightState)
 		ch <- g.newSwitchStateSignal()
+		g.Lock()
 		g.NightCounter++
 		g.Unlock()
 
@@ -36,19 +37,20 @@ func (g *Game) Night(ch chan<- Signal) {
 
 		// For each of the votes
 		for _, votedRole := range orderToVote {
-			g.roleNightAction(votedRole, ch)
+			g.RoleNightAction(votedRole, ch)
 		}
+		return
 	}
 
 }
 
 /*
-roleNightAction
+RoleNightAction
 Counting variables, sending messages,
 adding to spectators, and like that.
 A follow-up call to the methods themselves is voice acceptance.
 */
-func (g *Game) roleNightAction(votedRole *roles.Role, ch chan<- Signal) {
+func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 	select {
 	case <-g.ctx.Done():
 		return
@@ -57,13 +59,13 @@ func (g *Game) roleNightAction(votedRole *roles.Role, ch chan<- Signal) {
 
 		g.Lock()
 		g.NightVoting = votedRole
-		ch <- g.newSwitchVoteSignal()
 		g.Unlock()
+		ch <- g.newSwitchVoteSignal()
 		// Finding all the players with that role.
 		// And finding interaction channel
 		g.RLock()
 		interactionChannel := g.RoleChannels[votedRole.Name]
-		allPlayersWithRole := player.SearchAllPlayersWithRole(g.Active, votedRole)
+		allPlayersWithRole := playerPack.SearchAllPlayersWithRole(g.Active, votedRole)
 		g.RUnlock()
 
 		voteDeadlineInt := myTime.VotingDeadline
@@ -74,12 +76,12 @@ func (g *Game) roleNightAction(votedRole *roles.Role, ch chan<- Signal) {
 		// I go through each player and, with a mention, invite them to vote.
 		// And if a player is locked, I tell him about it and add him to spectators for the duration of the vote.
 		for _, voter := range allPlayersWithRole {
-			if voter.InteractionStatus == player.Muted {
+			if voter.InteractionStatus == playerPack.Muted {
 				_, err = interactionChannel.Write([]byte(g.getMessageToPlayerThatIsMuted(voter)))
 				safeSendErrSignal(ch, err)
 
 				// Add to spectator
-				err = channel.FromUserToSpectator(interactionChannel, voter.Tag)
+				err = channelPack.FromUserToSpectator(interactionChannel, voter.Tag)
 				safeSendErrSignal(ch, err)
 
 			} else {
@@ -100,20 +102,41 @@ func (g *Game) roleNightAction(votedRole *roles.Role, ch chan<- Signal) {
 
 		// Putting it back in the channel.
 		for _, voter := range allPlayersWithRole {
-			if voter.InteractionStatus == player.Muted {
-				err = channel.FromUserToSpectator(interactionChannel, voter.Tag)
+			if voter.InteractionStatus == playerPack.Muted {
+				err = channelPack.FromUserToSpectator(interactionChannel, voter.Tag)
 				safeSendErrSignal(ch, err)
 				_, err = interactionChannel.Write([]byte(g.getThanksToMutedPlayerMessage(voter)))
 				safeSendErrSignal(ch, err)
 			}
 		}
+
+		// Case when roles not need to urgent calculation
+		// Return
+		if !votedRole.UrgentCalculation {
+			return
+		}
+
+		// Need to find a not empty vote.
+		for _, voter := range allPlayersWithRole {
+			voterVotesLen := len(voter.Votes)
+			if voter.Votes[voterVotesLen-1] == EmptyVoteInt {
+				continue
+			}
+			message := g.interaction(voter)
+			if message != nil {
+				_, err = interactionChannel.Write([]byte(*message))
+				safeSendErrSignal(ch, err)
+			}
+			return
+		}
+		return
 	}
 
 }
 
 /* The logic of accepting a role's vote, and timers, depending on whether the role votes with 2 votes or one. */
 
-func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*player.Player,
+func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	containsNotMutedPlayers bool, deadline time.Duration, ch chan<- Signal) {
 	// Critic section with WaitGroup, don't use context completion check.
 	var err error
@@ -141,21 +164,17 @@ func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*player.Player,
 	}
 	for voteP := range g.VoteChan {
 		err = g.NightOneVote(voteP, nil)
-		switch err {
-		case nil:
-			for i := 0; i <= len(allPlayersWithRole)-1; i++ {
-				done <- struct{}{}
-			}
-			wg.Wait()
-			close(done)
+		if err == nil {
 			break
-		default:
+		} else {
 			ch <- newErrSignal(err)
 		}
 	}
+	close(done)
+	wg.Wait()
 }
 
-func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*player.Player,
+func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	containsNotMutedPlayers bool, deadline time.Duration, ch chan<- Signal) {
 	// Critic section with WaitGroup, don't use context completion check.
 	var err error
@@ -184,18 +203,14 @@ func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*player.Player,
 	}
 	for voteP := range g.TwoVoteChan {
 		err = g.NightTwoVote(voteP, nil)
-		switch err {
-		case nil:
-			for i := 0; i <= len(allPlayersWithRole)-1; i++ {
-				done <- struct{}{}
-			}
-			wg.Wait()
-			close(done)
+		if err == nil {
 			break
-		default:
+		} else {
 			ch <- newErrSignal(err)
 		}
 	}
+	close(done)
+	wg.Wait()
 }
 
 // _________________
@@ -207,13 +222,11 @@ func (g *Game) getInitialNightMessage() string {
 	defer g.RUnlock()
 	f := g.fmtEr
 	message := f.Bold("Night №") + f.Block(strconv.Itoa(g.NightCounter)) + " is coming." + f.LineSplitter()
-	message += fmt.Sprintf("On this night you are played by %v players.", len(g.Active)) +
-		f.LineSplitter() + f.LineSplitter()
-	message += f.Italic("We wish you the best of luck)")
+	message += fmt.Sprintf("On this night you are played by %v players.", len(g.Active))
 	return message
 }
 
-func (g *Game) getInvitingMessageToVote(p *player.Player, deadlineInSeconds int) string {
+func (g *Game) getInvitingMessageToVote(p *playerPack.Player, deadlineInSeconds int) string {
 	g.RLock()
 	defer g.RUnlock()
 	f := g.fmtEr
@@ -223,7 +236,7 @@ func (g *Game) getInvitingMessageToVote(p *player.Player, deadlineInSeconds int)
 	return message
 }
 
-func (g *Game) getMessageToPlayerThatIsMuted(p *player.Player) string {
+func (g *Game) getMessageToPlayerThatIsMuted(p *playerPack.Player) string {
 	g.RLock()
 	defer g.RUnlock()
 	f := g.fmtEr
@@ -233,7 +246,7 @@ func (g *Game) getMessageToPlayerThatIsMuted(p *player.Player) string {
 	return message
 }
 
-func (g *Game) getThanksToMutedPlayerMessage(p *player.Player) string {
+func (g *Game) getThanksToMutedPlayerMessage(p *playerPack.Player) string {
 	g.RLock()
 	defer g.RUnlock()
 	message := g.fmtEr.Bold(g.fmtEr.Mention(p.ServerNick) + ", always thanks!")

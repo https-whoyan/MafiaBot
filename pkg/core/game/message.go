@@ -86,7 +86,7 @@ func (g *Game) GetStartMessage() string {
 		message += f.Italic(" (but there's no hiding from observers))))")
 	}
 	message += "." + nl
-	if g.RenameMode != NotRenameModeMode {
+	if g.renameMode != NotRenameModeMode {
 		message += nl
 		message += "Also, all participants have been prefixed with their IDs to make it more convenient for you."
 	}

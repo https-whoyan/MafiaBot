@@ -1,4 +1,4 @@
-package bot
+package handlers
 
 import (
 	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"

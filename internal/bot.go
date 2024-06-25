@@ -155,6 +155,10 @@ func (b *Bot) initBotCommands() {
 	b.initCommand(handlerPack.NewChoiceGameConfigCommand())
 	b.initCommand(handlerPack.NewStartGameCommand())
 
+	// Vote
+	b.initCommand(handlerPack.NewGameVoteCommand())
+	b.initCommand(handlerPack.NewGameTwoVoteCommand())
+
 	// Other
 	b.initCommand(handlerPack.NewYanLohCommand())
 	b.initCommand(handlerPack.NewAboutRolesCommand())

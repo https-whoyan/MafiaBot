@@ -10,36 +10,36 @@ import (
 
 type Message string
 
-func (g *Game) interaction(p *player.Player) Message {
+func (g *Game) interaction(p *player.Player) *Message {
 	if p.Role.NightVoteOrder == -1 {
-		return ""
+		return nil
 	}
 	switch p.Role {
 	case roles.Peaceful:
-		return ""
+		return nil
 	case roles.Fool:
-		return ""
+		return nil
 	case roles.Mafia:
 		g.mafiaInteraction(p)
-		return ""
+		return nil
 	case roles.Doctor:
 		g.doctorInteraction(p)
-		return ""
+		return nil
 	case roles.Don:
 		return g.donInteraction(p)
 	case roles.Detective:
 		return g.detectiveInteraction(p)
 	case roles.Whore:
 		g.whoreInteraction(p)
-		return ""
+		return nil
 	case roles.Maniac:
 		// Same action with mafia
 		g.mafiaInteraction(p)
-		return ""
+		return nil
 	case roles.Citizen:
 		g.citizenInteraction(p)
 	}
-	return ""
+	return nil
 }
 
 // ________________
@@ -70,24 +70,24 @@ func (g *Game) doctorInteraction(doctor *player.Player) {
 	}
 }
 
-func (g *Game) donInteraction(don *player.Player) Message {
+func (g *Game) donInteraction(don *player.Player) *Message {
 	g.Lock()
 	defer g.Unlock()
 	f := g.fmtEr
 
 	checkedPlayer, isEmpty := g.interactionHelper(don)
 	if isEmpty {
-		return ""
+		return nil
 	}
 
 	checkedPlayerRoleName := checkedPlayer.Role.Name
 
-	message := "Checked player " + f.Block(strconv.Itoa(checkedPlayer.ID)) + ", role: " +
-		g.fmtEr.Block(checkedPlayerRoleName)
-	return Message(message)
+	message := Message("Checked player " + f.Block(strconv.Itoa(checkedPlayer.ID)) + ", role: " +
+		g.fmtEr.Block(checkedPlayerRoleName))
+	return &message
 }
 
-func (g *Game) detectiveInteraction(detective *player.Player) Message {
+func (g *Game) detectiveInteraction(detective *player.Player) *Message {
 	g.Lock()
 	defer g.Unlock()
 
@@ -95,7 +95,7 @@ func (g *Game) detectiveInteraction(detective *player.Player) Message {
 	checkedID2 := detective.Votes[len(detective.Votes)-2]
 
 	if checkedID1 == EmptyVoteInt && checkedID2 == EmptyVoteInt {
-		return ""
+		return nil
 	}
 
 	f := g.fmtEr
@@ -107,13 +107,14 @@ func (g *Game) detectiveInteraction(detective *player.Player) Message {
 	var message string
 
 	if isEqualsTeams {
-		message = "Youu, players with id's " + f.Block(strconv.Itoa(checkedPlayer1.ID)) + ", " +
+		message = "Players with id's " + f.Block(strconv.Itoa(checkedPlayer1.ID)) + ", " +
 			f.Block(strconv.Itoa(checkedPlayer2.ID)) + f.Bold(" in one team.")
 	} else {
 		message = "Players with id's " + f.Block(strconv.Itoa(checkedPlayer1.ID)) + ", " +
 			f.Block(strconv.Itoa(checkedPlayer2.ID)) + f.Bold(" in different team.")
 	}
-	return Message(message)
+	typedMessage := Message(message)
+	return &typedMessage
 }
 
 func (g *Game) whoreInteraction(whore *player.Player) {
