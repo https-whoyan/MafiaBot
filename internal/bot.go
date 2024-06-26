@@ -42,6 +42,7 @@ var (
 )
 
 type Bot struct {
+	sync.Mutex
 	// DiscordGo token
 	token string
 	// DiscordGo Session
@@ -159,6 +160,9 @@ func (b *Bot) initBotCommands() {
 	b.initCommand(handlerPack.NewGameVoteCommand())
 	b.initCommand(handlerPack.NewGameTwoVoteCommand())
 
+	// Finish game
+	b.initCommand(handlerPack.NewFinishGameCommand())
+
 	// Other
 	b.initCommand(handlerPack.NewYanLohCommand())
 	b.initCommand(handlerPack.NewAboutRolesCommand())
@@ -183,6 +187,13 @@ func (b *Bot) registerHandlers() {
 func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 	s *discordgo.Session, i *discordgo.InteractionCreate) {
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic: %v", r)
+				handlerPack.Response(s, i.Interaction, "Internal Server Error!")
+				return
+			}
+		}()
 		// I recognize the name of the team
 		executedCommandName := i.ApplicationCommandData().Name
 
@@ -224,6 +235,12 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 			}
 			// If ok, I call the Execute method of the command
 			cmd.Execute(s, i.Interaction, currGame, b.FMTer)
+			// If command is (finishGame), delete game from map
+			if executedCommandName == handlerPack.FinishGameCommandName {
+				b.Lock()
+				delete(b.Games, i.GuildID)
+				b.Unlock()
+			}
 			return
 		}
 

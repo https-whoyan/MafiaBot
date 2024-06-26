@@ -208,7 +208,7 @@ func HandleExample() {
 				switchVoteRoleValue := switchSignal.Value.(SwitchNightVoteRoleSwitchValue)
 				currVotedRole, isTwoVotes := switchVoteRoleValue.CurrentVotedRole, switchVoteRoleValue.IsTwoVotes
 				log.Println(currVotedRole, isTwoVotes) // For no errors
-				// currVotedRole now indicates which role should vote now.
+				// currVotedRole now indicates which role should Vote now.
 				// isTwoVotes indicates whether 2 voices for a role are used at once or not.
 				// This will help you understand which channel you need to send voice data to.
 				//

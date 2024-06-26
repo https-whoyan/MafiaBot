@@ -35,19 +35,6 @@ var (
 		{
 			PlayersCount: 2,
 			RolesMp: map[string]*RoleConfig{
-				"Peaceful": {
-					Role:  roles.Peaceful,
-					Count: 1,
-				},
-				"Doctor": {
-					Role:  roles.Doctor,
-					Count: 1,
-				},
-			},
-		},
-		{
-			PlayersCount: 2,
-			RolesMp: map[string]*RoleConfig{
 				"Mafia": {
 					Role:  roles.Mafia,
 					Count: 1,
@@ -67,6 +54,19 @@ var (
 				},
 				"Maniac": {
 					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+		{
+			PlayersCount: 2,
+			RolesMp: map[string]*RoleConfig{
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
 					Count: 1,
 				},
 			},

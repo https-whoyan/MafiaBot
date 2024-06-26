@@ -121,7 +121,7 @@ func (g *Game) whoreInteraction(whore *player.Player) {
 	g.Lock()
 	defer g.Unlock()
 	mutedPlayer, isEmpty := g.interactionHelper(whore)
-	if !isEmpty {
+	if isEmpty {
 		return
 	}
 	mutedPlayer.InteractionStatus = player.Muted
@@ -131,7 +131,7 @@ func (g *Game) citizenInteraction(citizen *player.Player) {
 	g.Lock()
 	defer g.Unlock()
 	defendedPlayer, isEmpty := g.interactionHelper(citizen)
-	if !isEmpty {
+	if isEmpty {
 		return
 	}
 

@@ -73,8 +73,8 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 
 		containsNotMutedPlayers := false
 
-		// I go through each player and, with a mention, invite them to vote.
-		// And if a player is locked, I tell him about it and add him to spectators for the duration of the vote.
+		// I go through each player and, with a mention, invite them to Vote.
+		// And if a player is locked, I tell him about it and add him to spectators for the duration of the Vote.
 		for _, voter := range allPlayersWithRole {
 			if voter.InteractionStatus == playerPack.Muted {
 				_, err = interactionChannel.Write([]byte(g.getMessageToPlayerThatIsMuted(voter)))
@@ -116,7 +116,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 			return
 		}
 
-		// Need to find a not empty vote.
+		// Need to find a not empty Vote.
 		for _, voter := range allPlayersWithRole {
 			voterVotesLen := len(voter.Votes)
 			if voter.Votes[voterVotesLen-1] == EmptyVoteInt {
@@ -134,7 +134,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 
 }
 
-/* The logic of accepting a role's vote, and timers, depending on whether the role votes with 2 votes or one. */
+/* The logic of accepting a role's Vote, and timers, depending on whether the role votes with 2 votes or one. */
 
 func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	containsNotMutedPlayers bool, deadline time.Duration, ch chan<- Signal) {
@@ -142,16 +142,15 @@ func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	var err error
 
 	if !containsNotMutedPlayers {
-		switch len(allPlayersWithRole) {
-		case 0:
+		if len(allPlayersWithRole) == 0 {
 			ParralelierFullFakeVoteTimer(g.VoteChan)
 			<-g.TwoVoteChan
-		case 1:
-			user := allPlayersWithRole[0]
-			ParalleledFakeTimer(g.VoteChan, strconv.Itoa(user.ID), false)
-			fakeVote := <-g.TwoVoteChan
-			_ = g.NightTwoVote(fakeVote, nil)
+			return
 		}
+		user := allPlayersWithRole[0]
+		ParalleledFakeTimer(g.VoteChan, strconv.Itoa(user.ID), false)
+		fakeVote := <-g.VoteChan
+		_ = g.NightOneVote(fakeVote, nil)
 		return
 	}
 
@@ -230,7 +229,7 @@ func (g *Game) getInvitingMessageToVote(p *playerPack.Player, deadlineInSeconds 
 	g.RLock()
 	defer g.RUnlock()
 	f := g.fmtEr
-	message := f.Bold("Hello, " + f.Mention(p.ServerNick) + ". It's your turn to vote.")
+	message := f.Bold("Hello, " + f.Mention(p.ServerNick) + ". It's your turn to Vote.")
 	message += f.LineSplitter()
 	message += myFMT.BoldUnderline(f, fmt.Sprintf("Deadline: %v seconds.", deadlineInSeconds))
 	return message

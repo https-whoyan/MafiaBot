@@ -10,8 +10,8 @@ import (
 func ValidateCommandByGameState(commandName string, g *game.Game, fmtEr *fmt.DiscordFMTer) (content string, isOk bool) {
 	gameState := g.State
 
-	gameIn := fmtEr.I("Game" + g.State.String() + ".")
-	cantUse := fmtEr.B("Couldn't use /") + fmtEr.I(commandName+" command")
+	gameIn := "Game " + g.State.String() + "."
+	cantUse := fmtEr.B("Couldn't use /" + commandName + " command")
 	content = gameIn + fmtEr.NL() + cantUse
 
 	switch commandName {
@@ -32,6 +32,16 @@ func ValidateCommandByGameState(commandName string, g *game.Game, fmtEr *fmt.Dis
 		case game.RegisterState:
 			return "", true
 		}
+	case VoteGameCommandName:
+		if g.IsRunning() {
+			return "", true
+		}
+	case TwoVoteGameCommandName:
+		if g.IsRunning() {
+			return "", true
+		}
+	case FinishGameCommandName:
+		return "", true
 	}
 
 	return content, false

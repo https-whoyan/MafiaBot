@@ -5,6 +5,7 @@ import (
 	"errors"
 	"slices"
 	"sync"
+	"time"
 
 	channelPack "github.com/https-whoyan/MafiaBot/core/channel"
 	configPack "github.com/https-whoyan/MafiaBot/core/config"
@@ -88,11 +89,11 @@ type Game struct {
 	// VotePing presents a delay number for voting for the same player again.
 	//
 	// Example: A player has voted for players with IDs 5, 4, 3, and VotePing is 2.
-	// So the player will not be able to vote for players 4 and 3 the next night.
+	// So the player will not be able to Vote for players 4 and 3 the next night.
 	//
 	// Default value: 1.
 	//
-	// Adjustable by option. Set 0, If you want to keep the mechanic that a player can vote for the same
+	// Adjustable by option. Set 0, If you want to keep the mechanic that a player can Vote for the same
 	// player every night, put -1 or a very large number if you want all players to have completely different votes.
 	VotePing int `json:"votePing"`
 
@@ -378,11 +379,11 @@ func (g *Game) Run(ctx context.Context) <-chan Signal {
 	go func() {
 		// Send Message About New Game
 		_, err := g.MainChannel.Write([]byte(g.GetStartMessage()))
+		// Used for participants to familiarize themselves with their roles, and so on.
+		time.Sleep(25 * time.Second)
 		safeSendErrSignal(ch, err)
 		switch {
 		case ctx == nil:
-			sendFatalSignal(ch, NilContext)
-		case g.ctx != nil:
 			sendFatalSignal(ch, NilContext)
 		case g.IsRunning():
 			sendFatalSignal(ch, ErrGameAlreadyStarted)
