@@ -125,6 +125,9 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 				safeSendErrSignal(ch, err)
 				_, err = interactionChannel.Write([]byte(g.getThanksToMutedPlayerMessage(voter)))
 				safeSendErrSignal(ch, err)
+				g.Lock()
+				voter.Votes = append(voter.Votes, EmptyVoteInt)
+				g.Unlock()
 			}
 		}
 
@@ -230,6 +233,65 @@ func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	wg.Wait()
 }
 
-// _________________
-// Messages
-// _________________
+// AffectNight changes players according to the night's actions.
+// Errors during execution are sent to the channel
+func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
+	// Clearing all statuses
+	if !g.IsRunning() {
+		panic("Game is not running")
+	}
+	if g.ctx == nil {
+		panic("Game context is nil, then, don't initialed")
+	}
+	select {
+	case <-g.ctx.Done():
+		return
+	default:
+		g.ResetAllInteractionsStatuses()
+		g.Lock()
+		defer g.Unlock()
+
+		// Splitting arrays.
+		var newActivePlayers []*playerPack.Player
+		var newDeadPersons []*playerPack.Player
+
+		for _, p := range g.Active {
+			if p.LifeStatus == playerPack.Dead {
+				newDeadPersons = append(newDeadPersons, p)
+			} else {
+				newActivePlayers = append(newActivePlayers, p)
+			}
+		}
+
+		// I will add add add all killed players after a minute of players after a minute of
+		// players after a minute, so, using goroutine.
+		go func(newDeadPersons []*playerPack.Player) {
+			duration := myTime.LastWordDeadline * time.Second
+			time.Sleep(duration)
+			if g.TryLock() {
+				defer g.Unlock()
+			}
+			// I'm adding new dead players to the spectators in the channels (so they won't be so bored)
+			for _, p := range newDeadPersons {
+				for _, interactionChannel := range g.RoleChannels {
+					safeSendErrSignal(ch, channelPack.FromUserToSpectator(interactionChannel, p.Tag))
+				}
+				safeSendErrSignal(ch, channelPack.FromUserToSpectator(g.MainChannel, p.Tag))
+			}
+		}(newDeadPersons)
+
+		// Changing arrays according to the night
+		g.Active = newActivePlayers
+		g.Dead = append(g.Dead, newDeadPersons...)
+
+		// Sending a message about who died today.
+		message := g.GetAfterNightMessage(l)
+		_, err := g.MainChannel.Write([]byte(message))
+		safeSendErrSignal(ch, err)
+		// Then, for each person try to do his reincarnation
+		for _, p := range g.Active {
+			g.reincarnation(ch, p)
+		}
+		return
+	}
+}

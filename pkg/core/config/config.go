@@ -31,6 +31,7 @@ type ConfigsByPlayerCount []*RolesConfig
 // Yes, edit it.
 
 var (
+	// TwoTestConfigs Test
 	TwoTestConfigs = &ConfigsByPlayerCount{
 		{
 			PlayersCount: 2,
@@ -72,6 +73,7 @@ var (
 			},
 		},
 	}
+
 	// FivePlayersConfigs represent configs with 5 players
 	FivePlayersConfigs = &ConfigsByPlayerCount{
 		{
@@ -491,7 +493,11 @@ var (
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
 					Role:  roles.Peaceful,
-					Count: 4,
+					Count: 3,
+				},
+				"Citizen": {
+					Role:  roles.Citizen,
+					Count: 1,
 				},
 				"Doctor": {
 					Role:  roles.Doctor,
@@ -522,16 +528,645 @@ var (
 	}
 
 	// ElevenPlayersConfigs represent configs with 11 players
-	ElevenPlayersConfigs = &ConfigsByPlayerCount{}
+	ElevenPlayersConfigs = &ConfigsByPlayerCount{
+		// Without Maniac
+		{
+			PlayersCount: 11,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 5,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+			},
+		},
+		{
+			PlayersCount: 11,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 4,
+				},
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+			},
+		},
+		{
+			PlayersCount: 11,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 4,
+				},
+				"Citizen": {
+					Role:  roles.Citizen,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+			},
+		},
+		// With Maniac
+		{
+			PlayersCount: 11,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 4,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+	}
 
 	// TwelvePlayersConfigs represent configs with 12 players
-	TwelvePlayersConfigs = &ConfigsByPlayerCount{}
+	TwelvePlayersConfigs = &ConfigsByPlayerCount{
+		// Same as eleven, but +1 peaceful
+		// Without Maniac
+		{
+			PlayersCount: 12,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 6,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+			},
+		},
+		{
+			PlayersCount: 12,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 5,
+				},
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+			},
+		},
+		{
+			PlayersCount: 12,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 5,
+				},
+				"Citizen": {
+					Role:  roles.Citizen,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+			},
+		},
+		// With Maniac
+		{
+			PlayersCount: 12,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 5,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+	}
 
 	// ThirteenPlayersConfigs represent configs with 13 players
-	ThirteenPlayersConfigs = &ConfigsByPlayerCount{}
+	ThirteenPlayersConfigs = &ConfigsByPlayerCount{
+		// Without Maniac
+		{
+			PlayersCount: 13,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 5,
+				},
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+			},
+		},
+		// With Maniac
+		// With Fool
+		{
+			PlayersCount: 13,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 5,
+				},
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+		{
+			PlayersCount: 13,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 4,
+				},
+				"Citizen": {
+					Role:  roles.Citizen,
+					Count: 1,
+				},
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+		// Without Fool
+		{
+			PlayersCount: 13,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 5,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 3,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+		{
+			PlayersCount: 13,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 4,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Citizen": {
+					Role:  roles.Citizen,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+	}
 
 	// FourteenPlayersConfigs represent configs with 14 players
-	FourteenPlayersConfigs = &ConfigsByPlayerCount{}
+	FourteenPlayersConfigs = &ConfigsByPlayerCount{
+		// Same as 13
+		// But +1 for peaceful
+		// Without Maniac
+		{
+			PlayersCount: 14,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 6,
+				},
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+			},
+		},
+		// With Maniac
+		// With Fool
+		{
+			PlayersCount: 14,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 6,
+				},
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+		{
+			PlayersCount: 14,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 5,
+				},
+				"Citizen": {
+					Role:  roles.Citizen,
+					Count: 1,
+				},
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+		// Without Fool
+		{
+			PlayersCount: 14,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 6,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 3,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+		{
+			PlayersCount: 14,
+			RolesMp: map[string]*RoleConfig{
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 5,
+				},
+				"Doctor": {
+					Role:  roles.Doctor,
+					Count: 1,
+				},
+				"Citizen": {
+					Role:  roles.Citizen,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 2,
+				},
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+			},
+		},
+	}
 )
 
 var (

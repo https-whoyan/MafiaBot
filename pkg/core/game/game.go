@@ -449,12 +449,12 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 
 // FinishAnyway is used to end the running game anyway.
 func (g *Game) FinishAnyway(ch chan<- Signal) {
-	if g.IsRunning() {
-		content := "The game was suspended."
-		_, err := g.MainChannel.Write([]byte(g.fmtEr.Bold(content)))
-		safeSendErrSignal(ch, err)
+	if !g.IsRunning() {
+		return
 	}
-
+	content := "The game was suspended."
+	_, err := g.MainChannel.Write([]byte(g.fmtEr.Bold(content)))
+	safeSendErrSignal(ch, err)
 	g.SetState(FinishState)
 	ch <- g.newSwitchStateSignal()
 	g.Lock()
@@ -475,7 +475,7 @@ func (g *Game) Finish(ch chan<- Signal) {
 	}
 
 	// Delete from channels
-	for _, player := range g.StartPlayers {
+	for _, player := range g.Active {
 		if player.Role.NightVoteOrder == -1 {
 			continue
 		}
@@ -485,7 +485,7 @@ func (g *Game) Finish(ch chan<- Signal) {
 	}
 
 	// Then remove spectators from game
-	for _, spectator := range g.Spectators {
+	for _, spectator := range append(g.Dead, g.Spectators...) {
 		for _, interactionChannel := range g.RoleChannels {
 			safeSendErrSignal(ch, interactionChannel.RemoveUser(spectator.Tag))
 		}
