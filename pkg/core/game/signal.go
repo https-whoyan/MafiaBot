@@ -17,7 +17,7 @@ type Signal interface {
 	GetTime() time.Time
 }
 
-type SignalType int
+type SignalType int8
 
 const (
 	SwitchStateSignalType SignalType = 0
@@ -42,7 +42,7 @@ type SwitchStateSignal struct {
 func (s SwitchStateSignal) GetSignalType() SignalType { return s.SignalType }
 func (s SwitchStateSignal) GetTime() time.Time        { return s.InitialTime }
 
-type SwitchStateType int
+type SwitchStateType int8
 
 const (
 	SwitchStateSwitchStateType          SwitchStateType = 0

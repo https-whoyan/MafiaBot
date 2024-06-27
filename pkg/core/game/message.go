@@ -1,12 +1,16 @@
 package game
 
 import (
+	"fmt"
 	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/https-whoyan/MafiaBot/core/fmt"
+	cnvPack "github.com/https-whoyan/MafiaBot/core/converter"
+	myFMT "github.com/https-whoyan/MafiaBot/core/fmt"
+	playerPack "github.com/https-whoyan/MafiaBot/core/player"
+	myTime "github.com/https-whoyan/MafiaBot/core/time"
 )
 
 // !!!!!!!!!!!!!!!!!!
@@ -15,7 +19,7 @@ import (
 // !!!!!!!!!!!!!!!!!!
 
 var (
-	playersCalling = []string{"poopsies", "players", "ladies and gentlemen"}
+	playersCalling = []string{"poopsies", "players", "ladies and gentlemen", "citizens"}
 	playerCalling  = []string{"poops", "ancient", "modern", "member"}
 )
 
@@ -46,7 +50,7 @@ func (g *Game) GetStartMessage() string {
 
 	message = f.Bold("Have a good day, " + getRandomPlayersCalling() + "!")
 	message += dNl
-	message += fmt.BoldUnderline(f, "Today, our players:") + nl
+	message += myFMT.BoldUnderline(f, "Today, our players:") + nl
 
 	var aboutIDMessages []string
 	activePlayers := g.Active
@@ -73,7 +77,7 @@ func (g *Game) GetStartMessage() string {
 	}
 
 	message += nl + iL + nl
-	message += fmt.ItalicUnderline(f, "Selected game configuration:") + nl
+	message += myFMT.ItalicUnderline(f, "Selected game configuration:") + nl
 	message += g.RolesConfig.GetMessageAboutConfig(f)
 	message += nl + iL + nl
 
@@ -94,5 +98,75 @@ func (g *Game) GetStartMessage() string {
 	message += f.Bold("Welcome, welcome, welcome... Happy hunger games and the odds be ever in your favor! ") +
 		f.Italic("(Or just have a good game!) 🍀")
 
+	return message
+}
+
+// ____________
+// Night
+// ____________
+
+func (g *Game) getInitialNightMessage() string {
+	g.RLock()
+	defer g.RUnlock()
+	f := g.fmtEr
+	message := f.Bold("Night №") + f.Block(strconv.Itoa(g.NightCounter)) + " is coming." + f.LineSplitter()
+	message += fmt.Sprintf("On this night you are played by %v players.", len(g.Active))
+	return message
+}
+
+func (g *Game) getInvitingMessageToVote(p *playerPack.Player, deadlineInSeconds int) string {
+	g.RLock()
+	defer g.RUnlock()
+	f := g.fmtEr
+	message := f.Bold("Hello, " + f.Mention(p.ServerNick) + ". It's your turn to Vote.")
+	message += f.LineSplitter()
+	message += myFMT.BoldUnderline(f, fmt.Sprintf("Deadline: %v seconds.", deadlineInSeconds))
+	return message
+}
+
+func (g *Game) getMessageToPlayerThatIsMuted(p *playerPack.Player) string {
+	g.RLock()
+	defer g.RUnlock()
+	f := g.fmtEr
+
+	message := "Oops.... someone was muted today!" + f.Mention(p.ServerNick) +
+		" , just chill, bro."
+	return message
+}
+
+func (g *Game) getThanksToMutedPlayerMessage(p *playerPack.Player) string {
+	g.RLock()
+	defer g.RUnlock()
+	message := g.fmtEr.Bold(g.fmtEr.Mention(p.ServerNick) + ", always thanks!")
+	return message
+}
+
+// ____________
+// AfterNight
+// ____________
+
+// GetAfterNightMessage provide a message to main chat after game.
+func (g *Game) GetAfterNightMessage(l NightLog) string {
+	f := g.fmtEr
+	message := myFMT.BoldItalic(f, "Dear citizens!") + f.LineSplitter()
+	message += f.Bold("Today, we're losing")
+	if len(l.Dead) == 0 {
+		message += "....  " + myFMT.BoldUnderline(f, "Just our nerve cells...") + f.LineSplitter()
+		message += f.Bold("Everyone survived.")
+		return message
+	}
+	message += " " + f.Block(strconv.Itoa(len(l.Dead))) +
+		f.Bold(" people")
+	var mentions []string
+	idsSet := cnvPack.SliceToSet(l.Dead)
+	for _, p := range g.StartPlayers {
+		if idsSet[p.ID] {
+			mentions = append(mentions, f.Mention(p.ServerNick))
+		}
+	}
+	message += " which is to say: " + strings.Join(mentions, ", ")
+	message += f.LineSplitter() + f.LineSplitter()
+	message += f.Bold("Dear victims, you have " +
+		strconv.Itoa(myTime.LastWordDeadlineMinutes) + " minute to say your angry.")
 	return message
 }

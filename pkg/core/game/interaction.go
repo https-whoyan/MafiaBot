@@ -1,16 +1,17 @@
 package game
 
 import (
+	"strconv"
+
 	"github.com/https-whoyan/MafiaBot/core/player"
 	"github.com/https-whoyan/MafiaBot/core/roles"
-	"strconv"
 )
 
 // All interactions for roles are declared here to avoid cyclic import.
 
-type Message string
+type InteractionMessage string
 
-func (g *Game) interaction(p *player.Player) *Message {
+func (g *Game) nightInteraction(p *player.Player) *InteractionMessage {
 	if p.Role.NightVoteOrder == -1 {
 		return nil
 	}
@@ -33,8 +34,7 @@ func (g *Game) interaction(p *player.Player) *Message {
 		g.whoreInteraction(p)
 		return nil
 	case roles.Maniac:
-		// Same action with mafia
-		g.mafiaInteraction(p)
+		g.maniacInteraction(p)
 		return nil
 	case roles.Citizen:
 		g.citizenInteraction(p)
@@ -42,9 +42,7 @@ func (g *Game) interaction(p *player.Player) *Message {
 	return nil
 }
 
-// ________________
-// Mafia
-// ________________
+/* Mafia */
 
 func (g *Game) mafiaInteraction(mafia *player.Player) {
 	g.Lock()
@@ -56,6 +54,38 @@ func (g *Game) mafiaInteraction(mafia *player.Player) {
 
 	nextDeadPlayer.LifeStatus = player.Dead
 }
+func (g *Game) donInteraction(don *player.Player) *InteractionMessage {
+	g.Lock()
+	defer g.Unlock()
+	f := g.fmtEr
+
+	checkedPlayer, isEmpty := g.interactionHelper(don)
+	if isEmpty {
+		return nil
+	}
+
+	checkedPlayerRoleName := checkedPlayer.Role.Name
+
+	message := InteractionMessage("Checked player " + f.Block(strconv.Itoa(checkedPlayer.ID)) + ", role: " +
+		g.fmtEr.Block(checkedPlayerRoleName))
+	return &message
+}
+
+/* Maniac */
+
+func (g *Game) maniacInteraction(maniac *player.Player) {
+	// Same as mafia
+	g.Lock()
+	defer g.Unlock()
+	nextDeadPlayer, isEmpty := g.interactionHelper(maniac)
+	if isEmpty {
+		return
+	}
+
+	nextDeadPlayer.LifeStatus = player.Dead
+}
+
+/* Peaceful */
 
 func (g *Game) doctorInteraction(doctor *player.Player) {
 	g.Lock()
@@ -69,25 +99,7 @@ func (g *Game) doctorInteraction(doctor *player.Player) {
 		toVotedPlayer.LifeStatus = player.Alive
 	}
 }
-
-func (g *Game) donInteraction(don *player.Player) *Message {
-	g.Lock()
-	defer g.Unlock()
-	f := g.fmtEr
-
-	checkedPlayer, isEmpty := g.interactionHelper(don)
-	if isEmpty {
-		return nil
-	}
-
-	checkedPlayerRoleName := checkedPlayer.Role.Name
-
-	message := Message("Checked player " + f.Block(strconv.Itoa(checkedPlayer.ID)) + ", role: " +
-		g.fmtEr.Block(checkedPlayerRoleName))
-	return &message
-}
-
-func (g *Game) detectiveInteraction(detective *player.Player) *Message {
+func (g *Game) detectiveInteraction(detective *player.Player) *InteractionMessage {
 	g.Lock()
 	defer g.Unlock()
 
@@ -113,10 +125,9 @@ func (g *Game) detectiveInteraction(detective *player.Player) *Message {
 		message = "Players with id's " + f.Block(strconv.Itoa(checkedPlayer1.ID)) + ", " +
 			f.Block(strconv.Itoa(checkedPlayer2.ID)) + f.Bold(" in different team.")
 	}
-	typedMessage := Message(message)
+	typedMessage := InteractionMessage(message)
 	return &typedMessage
 }
-
 func (g *Game) whoreInteraction(whore *player.Player) {
 	g.Lock()
 	defer g.Unlock()
@@ -126,7 +137,6 @@ func (g *Game) whoreInteraction(whore *player.Player) {
 	}
 	mutedPlayer.InteractionStatus = player.Muted
 }
-
 func (g *Game) citizenInteraction(citizen *player.Player) {
 	g.Lock()
 	defer g.Unlock()
@@ -143,7 +153,8 @@ func (g *Game) citizenInteraction(citizen *player.Player) {
 	}
 }
 
-// Helper
+/* Helper */
+
 func (g *Game) interactionHelper(p *player.Player) (toVoted *player.Player, isEmpty bool) {
 	lastVote := p.Votes[len(p.Votes)-1]
 

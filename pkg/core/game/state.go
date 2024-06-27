@@ -1,6 +1,6 @@
 package game
 
-type State int
+type State int8
 
 const (
 	NonDefinedState State = 1
@@ -9,8 +9,7 @@ const (
 	NightState      State = 4
 	DayState        State = 5
 	VotingState     State = 6
-	PausedState     State = 7
-	FinishState     State = 8
+	FinishState     State = 7
 )
 
 func (g *Game) IsFinished() bool {
@@ -18,7 +17,7 @@ func (g *Game) IsFinished() bool {
 }
 
 func (g *Game) IsRunning() bool {
-	return g.State == NightState || g.State == DayState || g.State == VotingState || g.State == PausedState
+	return g.State == NightState || g.State == DayState || g.State == VotingState
 }
 
 // _________________
@@ -59,14 +58,6 @@ func (g *Game) SwitchState() {
 	g.SetState(nextState)
 }
 
-func (g *Game) ChangeStateToPause() {
-	g.Lock()
-	defer g.Unlock()
-	currGState := g.State
-	g.PreviousState = currGState
-	g.State = PausedState
-}
-
 // _______________
 // For format
 // _______________
@@ -78,7 +69,6 @@ var stateDefinition = map[State]string{
 	NightState:      "is in night state",
 	DayState:        "is in day state",
 	VotingState:     "is in day voting state",
-	PausedState:     "is in paused state",
 	FinishState:     "is finished",
 }
 

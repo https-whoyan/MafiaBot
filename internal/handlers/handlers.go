@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	coreMessagePack "github.com/https-whoyan/MafiaBot/core/message"
 	"log"
 	"strconv"
 	"strings"
@@ -13,6 +12,7 @@ import (
 
 	coreConfigPack "github.com/https-whoyan/MafiaBot/core/config"
 	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
+	coreMessagePack "github.com/https-whoyan/MafiaBot/core/message"
 	corePlayerPack "github.com/https-whoyan/MafiaBot/core/player"
 	coreRolesPack "github.com/https-whoyan/MafiaBot/core/roles"
 	botCnvPack "github.com/https-whoyan/MafiaBot/internal/converter"
@@ -20,11 +20,18 @@ import (
 	botGameCfgPack "github.com/https-whoyan/MafiaBot/internal/game"
 	botMsgPack "github.com/https-whoyan/MafiaBot/internal/message"
 	botTimeConstsPack "github.com/https-whoyan/MafiaBot/internal/time"
+
 	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 	"github.com/https-whoyan/MafiaBot/pkg/repository/redis"
 
 	"github.com/bwmarrin/discordgo"
 )
+
+// _________________________________
+// ********************************
+// This contains all bot handlers.
+//********************************
+// _________________________________
 
 // __________________
 // Channels
@@ -177,7 +184,7 @@ func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interact
 	}
 
 	// Send message.
-	Response(s, i, "Ok. Message below.")
+	Response(s, i, "Ok. InteractionMessage below.")
 
 	// Send additional message and save it ID
 	deadlineStr := strconv.Itoa(botTimeConstsPack.RegistrationDeadlineMinutes)

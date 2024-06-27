@@ -1,13 +1,12 @@
 package game
 
 import (
-	"fmt"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
 
 	channelPack "github.com/https-whoyan/MafiaBot/core/channel"
-	myFMT "github.com/https-whoyan/MafiaBot/core/fmt"
 	playerPack "github.com/https-whoyan/MafiaBot/core/player"
 	rolesPack "github.com/https-whoyan/MafiaBot/core/roles"
 	myTime "github.com/https-whoyan/MafiaBot/core/time"
@@ -39,6 +38,23 @@ func (g *Game) Night(ch chan<- Signal) {
 		for _, votedRole := range orderToVote {
 			g.RoleNightAction(votedRole, ch)
 		}
+		g.RLock()
+		// I do the rest of the interactions that come after the vote.
+		var needToProcessPlayers []*playerPack.Player
+		for _, p := range g.Active {
+			if p.Role.CalculationOrder > 0 {
+				needToProcessPlayers = append(needToProcessPlayers, p)
+			}
+		}
+		g.RUnlock()
+		sort.Slice(needToProcessPlayers, func(i, j int) bool {
+			return needToProcessPlayers[i].Role.CalculationOrder < needToProcessPlayers[j].Role.CalculationOrder
+		})
+		for _, p := range needToProcessPlayers {
+			g.nightInteraction(p)
+		}
+		// I hereby signify that the voting is over.
+		g.NightVoting = nil
 		return
 	}
 
@@ -46,9 +62,11 @@ func (g *Game) Night(ch chan<- Signal) {
 
 /*
 RoleNightAction
-Counting variables, sending messages,
-adding to spectators, and like that.
-A follow-up call to the methods themselves is voice acceptance.
+
+	Counting variables, sending messages,
+	adding to spectators, and like that.
+
+	A follow-up call to the methods themselves is voice acceptance.
 */
 func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 	select {
@@ -62,7 +80,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 		g.Unlock()
 		ch <- g.newSwitchVoteSignal()
 		// Finding all the players with that role.
-		// And finding interaction channel
+		// And finding nightInteraction channel
 		g.RLock()
 		interactionChannel := g.RoleChannels[votedRole.Name]
 		allPlayersWithRole := playerPack.SearchAllPlayersWithRole(g.Active, votedRole)
@@ -122,7 +140,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 			if voter.Votes[voterVotesLen-1] == EmptyVoteInt {
 				continue
 			}
-			message := g.interaction(voter)
+			message := g.nightInteraction(voter)
 			if message != nil {
 				_, err = interactionChannel.Write([]byte(*message))
 				safeSendErrSignal(ch, err)
@@ -143,7 +161,7 @@ func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 
 	if !containsNotMutedPlayers {
 		if len(allPlayersWithRole) == 0 {
-			ParralelierFullFakeVoteTimer(g.VoteChan)
+			FullFakeVoteTimer(g.VoteChan)
 			<-g.TwoVoteChan
 			return
 		}
@@ -181,11 +199,11 @@ func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	if !containsNotMutedPlayers {
 		switch len(allPlayersWithRole) {
 		case 0:
-			ParralelierFullFakeTwoVotesTimer(g.TwoVoteChan)
+			FullFakeTwoVotesTimer(g.TwoVoteChan)
 			<-g.TwoVoteChan
 		case 1:
 			user := allPlayersWithRole[0]
-			ParalleledTwoFakeTimer(g.TwoVoteChan, strconv.Itoa(user.ID), false)
+			TwoVoteFakeTimer(g.TwoVoteChan, strconv.Itoa(user.ID), false)
 			fakeVote := <-g.TwoVoteChan
 			_ = g.NightTwoVote(fakeVote, nil)
 		}
@@ -197,7 +215,7 @@ func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	wg := &sync.WaitGroup{}
 	for _, voter := range allPlayersWithRole {
 		wg.Add(1)
-		ParalleledTwoVoteTimer(g.TwoVoteChan, done, deadline,
+		TwoVoteTimer(g.TwoVoteChan, done, deadline,
 			strconv.Itoa(voter.ID), false, wg)
 	}
 	for voteP := range g.TwoVoteChan {
@@ -215,39 +233,3 @@ func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 // _________________
 // Messages
 // _________________
-
-func (g *Game) getInitialNightMessage() string {
-	g.RLock()
-	defer g.RUnlock()
-	f := g.fmtEr
-	message := f.Bold("Night №") + f.Block(strconv.Itoa(g.NightCounter)) + " is coming." + f.LineSplitter()
-	message += fmt.Sprintf("On this night you are played by %v players.", len(g.Active))
-	return message
-}
-
-func (g *Game) getInvitingMessageToVote(p *playerPack.Player, deadlineInSeconds int) string {
-	g.RLock()
-	defer g.RUnlock()
-	f := g.fmtEr
-	message := f.Bold("Hello, " + f.Mention(p.ServerNick) + ". It's your turn to Vote.")
-	message += f.LineSplitter()
-	message += myFMT.BoldUnderline(f, fmt.Sprintf("Deadline: %v seconds.", deadlineInSeconds))
-	return message
-}
-
-func (g *Game) getMessageToPlayerThatIsMuted(p *playerPack.Player) string {
-	g.RLock()
-	defer g.RUnlock()
-	f := g.fmtEr
-
-	message := "Oops.... someone was muted today!" + f.Mention(p.ServerNick) +
-		" , just chill, bro."
-	return message
-}
-
-func (g *Game) getThanksToMutedPlayerMessage(p *playerPack.Player) string {
-	g.RLock()
-	defer g.RUnlock()
-	message := g.fmtEr.Bold(g.fmtEr.Mention(p.ServerNick) + ", always thanks!")
-	return message
-}

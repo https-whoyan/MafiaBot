@@ -28,7 +28,7 @@ func isCorrectChatID(s *discordgo.Session, chatID string) bool {
 
 // Send message to chatID
 func sendMessages(s *discordgo.Session, chatID string, content ...string) (map[string]*discordgo.Message, error) {
-	// Represent Message by their content.
+	// Represent InteractionMessage by their content.
 	messages := make(map[string]*discordgo.Message)
 	for _, onceContent := range content {
 		message, err := s.ChannelMessageSend(chatID, onceContent)

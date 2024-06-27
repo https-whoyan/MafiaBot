@@ -90,8 +90,8 @@ func twoVoteTimer(ch chan<- TwoVoteProviderInterface, done <-chan struct{},
 	}
 }
 
-// ParalleledTwoVoteTimer Init twoVoteTimer in own goroutine
-func ParalleledTwoVoteTimer(ch chan<- TwoVoteProviderInterface, done <-chan struct{},
+// TwoVoteTimer Init twoVoteTimer in own goroutine
+func TwoVoteTimer(ch chan<- TwoVoteProviderInterface, done <-chan struct{},
 	duration time.Duration, votingUserID string, isServerUserID bool, wg *sync.WaitGroup) {
 	go twoVoteTimer(ch, done, duration, votingUserID, isServerUserID, wg)
 }
@@ -115,8 +115,8 @@ func voteTwoFakeTimer(ch chan<- TwoVoteProviderInterface, votingUserID string, i
 	}
 }
 
-// ParalleledTwoFakeTimer start voteTwoFakeTimer in own goroutine
-func ParalleledTwoFakeTimer(ch chan<- TwoVoteProviderInterface, votingUserID string, isServerUserID bool) {
+// TwoVoteFakeTimer start voteTwoFakeTimer in own goroutine
+func TwoVoteFakeTimer(ch chan<- TwoVoteProviderInterface, votingUserID string, isServerUserID bool) {
 	go voteTwoFakeTimer(ch, votingUserID, isServerUserID)
 }
 
@@ -124,12 +124,12 @@ func ParalleledTwoFakeTimer(ch chan<- TwoVoteProviderInterface, votingUserID str
 // Used to simulates that the role is alive.
 // _____________________________________________
 
-func ParralelierFullFakeVoteTimer(ch chan<- VoteProviderInterface) {
+func FullFakeVoteTimer(ch chan<- VoteProviderInterface) {
 	sleepRandomSecond()
 	ch <- nil
 }
 
-func ParralelierFullFakeTwoVotesTimer(ch chan<- TwoVoteProviderInterface) {
+func FullFakeTwoVotesTimer(ch chan<- TwoVoteProviderInterface) {
 	sleepRandomSecond()
 	ch <- nil
 }

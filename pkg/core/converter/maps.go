@@ -2,8 +2,8 @@ package converter
 
 import "cmp"
 
-// Same as /internal/bot/converter/maps.go
-// To avoid import /internal/bot/*
+// Same as /internal/converter/maps.go
+// To avoid import /internal/*
 
 func GetMapKeys[K cmp.Ordered, E any](mp map[K]E) []K {
 	var keys []K

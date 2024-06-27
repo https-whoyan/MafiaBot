@@ -20,7 +20,7 @@ import (
 // Types and constants
 // ____________________
 
-type RenameMode int
+type RenameMode int8
 
 const (
 	// NotRenameModeMode used if you not want to rename users in your implementations
@@ -51,6 +51,9 @@ func RenameModeOpt(mode RenameMode) GameOption {
 func VotePingOpt(votePing int) GameOption {
 	return func(g *Game) { g.VotePing = votePing }
 }
+func LoggerOpt(logger GameLogger) GameOption {
+	return func(g *Game) { g.logger = logger }
+}
 
 // __________________
 // Game struct
@@ -67,6 +70,7 @@ type Game struct {
 	PlayersCount int                     `json:"playersCount"`
 	RolesConfig  *configPack.RolesConfig `json:"rolesConfig"`
 	NightCounter int                     `json:"nightCounter"`
+	TimeStart    time.Time               `json:"timeStart"`
 
 	StartPlayers []*playerPack.Player `json:"startPlayers"`
 	Dead         []*playerPack.Player `json:"dead"`
@@ -104,6 +108,7 @@ type Game struct {
 	// Use to rename user in your interpretation
 	renameProvider playerPack.RenameUserProviderInterface
 	renameMode     RenameMode
+	logger         GameLogger
 	ctx            context.Context
 }
 
@@ -228,6 +233,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	g.Lock()
 	g.RolesConfig = cfg
 	g.PlayersCount = cfg.PlayersCount
+	g.TimeStart = time.Now()
 	g.Unlock()
 
 	// Get Players
@@ -377,7 +383,7 @@ func (g *Game) Run(ctx context.Context) <-chan Signal {
 	ch := make(chan Signal)
 
 	go func() {
-		// Send Message About New Game
+		// Send InteractionMessage About New Game
 		_, err := g.MainChannel.Write([]byte(g.GetStartMessage()))
 		// Used for participants to familiarize themselves with their roles, and so on.
 		time.Sleep(25 * time.Second)
@@ -423,13 +429,12 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 			isStoppedByCtx = true
 		default:
 			g.Night(ch)
-			//log := g.GetNightLog()
-			//log
-			//winnerTeam, err := log.StateWinner()
-			//if err != nil {
-			//	g.SetState(FinishState)
-			//	return
-			//}
+			nightLog := g.NewNightLog()
+			g.AffectNight(nightLog, ch)
+			if g.logger != nil {
+				err := g.logger.SaveNightLog(g, nightLog)
+				safeSendErrSignal(ch, err)
+			}
 		}
 	}
 	return
@@ -487,7 +492,7 @@ func (g *Game) Finish(ch chan<- Signal) {
 	}
 
 	// Then, remove all players of main chat.
-	for _, player := range g.Active {
+	for _, player := range g.StartPlayers {
 		safeSendErrSignal(ch, g.MainChannel.RemoveUser(player.Tag))
 	}
 	// And spectators.
@@ -537,6 +542,5 @@ func (g *Game) Finish(ch chan<- Signal) {
 		sendFatalSignal(ch, errors.New("invalid rename mode"))
 		return
 	}
-	*g = Game{}
 	sendCloseSignal(ch, "the game has been successfully completed.")
 }

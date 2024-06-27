@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
+	"strings"
+
 	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
 	coreRolesPack "github.com/https-whoyan/MafiaBot/core/roles"
-	"strings"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 // _________________________________

@@ -402,25 +402,3 @@ func (g *Game) DayVote(vP VoteProviderInterface, opt *OptionalChannelIID) error 
 	votedPlayer.DayVote, _ = strconv.Atoi(vote)
 	return nil
 }
-
-// ResetTheVotes use to reset all player votes
-func (g *Game) ResetTheVotes() {
-	g.Lock()
-	defer g.Unlock()
-	allPlayers := g.Active
-
-	for _, activePlayer := range allPlayers {
-		activePlayer.DayVote = EmptyVoteInt
-	}
-}
-
-// ResetAllInteractionsStatuses use to reset all player interaction statuses
-func (g *Game) ResetAllInteractionsStatuses() {
-	g.Lock()
-	allPlayers := g.Active
-	defer g.Unlock()
-
-	for _, activePlayer := range allPlayers {
-		activePlayer.InteractionStatus = player.Passed
-	}
-}

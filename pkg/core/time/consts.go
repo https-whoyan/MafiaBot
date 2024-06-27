@@ -6,7 +6,11 @@ const (
 
 	FakeVotingMinSeconds = 5
 	FakeVotingMaxSeconds = 25
+
+	LastWordDeadline = 60
 )
 
 // Everything below is automatically calculated
-const ()
+const (
+	LastWordDeadlineMinutes = LastWordDeadline / 60
+)
