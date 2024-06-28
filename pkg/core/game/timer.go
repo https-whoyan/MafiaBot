@@ -34,34 +34,11 @@ func voteTimer(ch chan<- VoteProviderInterface, done <-chan struct{},
 	}
 }
 
-// ParalleledVoteTimer Init voteTimer in own goroutine
-func ParalleledVoteTimer(ch chan<- VoteProviderInterface, done <-chan struct{},
+// VoteTimer Init voteTimer in own goroutine
+func VoteTimer(ch chan<- VoteProviderInterface, done <-chan struct{},
 	duration time.Duration, votingUserID string, isServerUserID bool, wg *sync.WaitGroup) {
+	wg.Add(1)
 	go voteTimer(ch, done, duration, votingUserID, isServerUserID, wg)
-}
-
-// VoteFakeTimer is used to simulate the operation of a timer.
-// Selects a random time from the Range and sends an empty voice after it has passed
-func voteFakeTimer(ch chan<- VoteProviderInterface, votingUserID string, isServerUserID bool) {
-	minMilliSecond := myTime.FakeVotingMinSeconds * 1000
-	maxMilliSecond := myTime.FakeVotingMaxSeconds * 1000
-	randMilliSecondDuration := rand.Intn(maxMilliSecond-minMilliSecond+1) + minMilliSecond
-	duration := time.Duration(randMilliSecondDuration) * time.Millisecond
-
-	voteProvider := NewVoteProvider(votingUserID, EmptyVoteStr, isServerUserID)
-
-	ticker := time.NewTicker(duration)
-	defer ticker.Stop()
-
-	select {
-	case <-ticker.C:
-		ch <- voteProvider
-	}
-}
-
-// ParalleledFakeTimer start voteFakeTimer in own goroutine
-func ParalleledFakeTimer(ch chan<- VoteProviderInterface, votingUserID string, isServerUserID bool) {
-	go voteFakeTimer(ch, votingUserID, isServerUserID)
 }
 
 // _______________________
@@ -93,45 +70,19 @@ func twoVoteTimer(ch chan<- TwoVoteProviderInterface, done <-chan struct{},
 // TwoVoteTimer Init twoVoteTimer in own goroutine
 func TwoVoteTimer(ch chan<- TwoVoteProviderInterface, done <-chan struct{},
 	duration time.Duration, votingUserID string, isServerUserID bool, wg *sync.WaitGroup) {
+	wg.Add(1)
 	go twoVoteTimer(ch, done, duration, votingUserID, isServerUserID, wg)
 }
 
-// voteTwoFakeTimer is used to simulate the operation of a timer.
-// Selects a random time from the Range and sends an empty voices after it has passed
-func voteTwoFakeTimer(ch chan<- TwoVoteProviderInterface, votingUserID string, isServerUserID bool) {
-	minMilliSecond := myTime.FakeVotingMinSeconds * 1000
-	maxMilliSecond := myTime.FakeVotingMaxSeconds * 1000
-	randMilliSecondDuration := rand.Intn(maxMilliSecond-minMilliSecond+1) + minMilliSecond
-	duration := time.Duration(randMilliSecondDuration) * time.Millisecond
-
-	voteProvider := NewTwoVoteProvider(votingUserID, EmptyVoteStr, EmptyVoteStr, isServerUserID)
-
-	ticker := time.NewTicker(duration)
-	defer ticker.Stop()
-
-	select {
-	case <-ticker.C:
-		ch <- voteProvider
-	}
-}
-
-// TwoVoteFakeTimer start voteTwoFakeTimer in own goroutine
-func TwoVoteFakeTimer(ch chan<- TwoVoteProviderInterface, votingUserID string, isServerUserID bool) {
-	go voteTwoFakeTimer(ch, votingUserID, isServerUserID)
-}
-
 // ____________________________________________
-// Used to simulates that the role is alive.
+// Used to simulate.
 // _____________________________________________
 
-func FullFakeVoteTimer(ch chan<- VoteProviderInterface) {
-	sleepRandomSecond()
-	ch <- nil
-}
+func FakeTimer(done chan<- struct{}) { go fakeTimer(done) }
 
-func FullFakeTwoVotesTimer(ch chan<- TwoVoteProviderInterface) {
+func fakeTimer(done chan<- struct{}) {
 	sleepRandomSecond()
-	ch <- nil
+	done <- struct{}{}
 }
 
 func sleepRandomSecond() {

@@ -26,7 +26,7 @@ func TestTimer(t *testing.T) {
 		wg.Add(2)
 
 		resaverVoteProvider := NewVoteProvider(senderUserFakeID, receiverUserFakeID, senderIDIsServerID)
-		ParalleledVoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID, wg)
+		VoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID, wg)
 		go func() {
 			defer wg.Done()
 			ch <- resaverVoteProvider
@@ -49,7 +49,7 @@ func TestTimer(t *testing.T) {
 		wg.Add(2)
 
 		resaverVoteProvider := NewVoteProvider(senderUserFakeID, receiverUserFakeID, senderIDIsServerID)
-		ParalleledVoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID, wg)
+		VoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID, wg)
 		go func() {
 			defer wg.Done()
 			time.Sleep(4 * time.Second)
@@ -73,7 +73,7 @@ func TestTimer(t *testing.T) {
 		wg.Add(2)
 
 		resaverVoteProvider := NewVoteProvider(senderUserFakeID, receiverUserFakeID, senderIDIsServerID)
-		ParalleledVoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID, wg)
+		VoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID, wg)
 		go func() {
 			defer wg.Done()
 			time.Sleep(6 * time.Second)
@@ -97,7 +97,7 @@ func TestTimer(t *testing.T) {
 		wg.Add(2)
 
 		resaverVoteProvider := NewVoteProvider(senderUserFakeID, receiverUserFakeID, senderIDIsServerID)
-		ParalleledVoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID, wg)
+		VoteTimer(ch, done, duration, senderUserFakeID, senderIDIsServerID, wg)
 		go func() {
 			defer wg.Done()
 			time.Sleep(4 * time.Second)
@@ -216,14 +216,11 @@ func TestFakeTimer(t *testing.T) {
 	t.Parallel()
 	t.Run("Test1", func(t *testing.T) {
 		t.Parallel()
-		ch := make(chan VoteProviderInterface)
-
 		startTime := time.Now()
-		ParalleledFakeTimer(ch, senderUserFakeID, senderIDIsServerID)
-		vote := (<-ch).GetVote()
-		if vote != EmptyVoteStr {
-			t.Errorf("Got Vote %v, expected EmptyVoteStr", vote)
-		}
+		done := make(chan struct{})
+		FakeTimer(done)
+		<-done
+		close(done)
 		endTime := time.Now()
 		log.Print(
 			"Fake timer runs: ",

@@ -13,6 +13,7 @@ import (
 var (
 	FMTer           = botFMT.DiscordFMTInstance // Same once struct
 	ConstRenameMode = coreGamePack.RenameInGuildMode
+	VotePing        = 1
 )
 
 func GetNewGameConfig(renameProvider *coreUserPack.BotUserRenameProvider) []coreGamePack.GameOption {
@@ -20,6 +21,7 @@ func GetNewGameConfig(renameProvider *coreUserPack.BotUserRenameProvider) []core
 		coreGamePack.FMTerOpt(FMTer),
 		coreGamePack.RenameModeOpt(ConstRenameMode),
 		coreGamePack.RenamePrOpt(renameProvider),
+		coreGamePack.VotePingOpt(VotePing),
 	}
 	return options
 }

@@ -804,7 +804,7 @@ var (
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
 					Role:  roles.Peaceful,
-					Count: 5,
+					Count: 6,
 				},
 				"Fool": {
 					Role:  roles.Fool,
@@ -924,6 +924,10 @@ var (
 					Role:  roles.Doctor,
 					Count: 1,
 				},
+				"Citizen": {
+					Role:  roles.Citizen,
+					Count: 1,
+				},
 				"Whore": {
 					Role:  roles.Whore,
 					Count: 1,
@@ -947,7 +951,7 @@ var (
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
 					Role:  roles.Peaceful,
-					Count: 4,
+					Count: 5,
 				},
 				"Doctor": {
 					Role:  roles.Doctor,
@@ -991,7 +995,7 @@ var (
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
 					Role:  roles.Peaceful,
-					Count: 6,
+					Count: 7,
 				},
 				"Fool": {
 					Role:  roles.Fool,
@@ -1111,6 +1115,10 @@ var (
 					Role:  roles.Doctor,
 					Count: 1,
 				},
+				"Citizen": {
+					Role:  roles.Citizen,
+					Count: 1,
+				},
 				"Whore": {
 					Role:  roles.Whore,
 					Count: 1,
@@ -1134,7 +1142,7 @@ var (
 			RolesMp: map[string]*RoleConfig{
 				"Peaceful": {
 					Role:  roles.Peaceful,
-					Count: 5,
+					Count: 6,
 				},
 				"Doctor": {
 					Role:  roles.Doctor,

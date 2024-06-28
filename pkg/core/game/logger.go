@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"github.com/https-whoyan/MafiaBot/core/player"
 	"github.com/https-whoyan/MafiaBot/core/roles"
 )
@@ -58,8 +59,9 @@ func (g *Game) NewNightLog() NightLog {
 				continue
 			}
 
-			votes := []int{}
+			var votes []int
 			n := len(p.Votes)
+			fmt.Println(p.Role.Name, p.Votes)
 			if p.Role.IsTwoVotes {
 				votes = []int{p.Votes[n-2], p.Votes[n-1]}
 			} else {
