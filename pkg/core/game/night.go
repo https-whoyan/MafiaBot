@@ -336,9 +336,8 @@ func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
 		go func(newDeadPersons []*playerPack.Player) {
 			duration := myTime.LastWordDeadline * time.Second
 			time.Sleep(duration)
-			if g.TryLock() {
-				defer g.Unlock()
-			}
+			g.Lock()
+			defer g.Unlock()
 			// I'm adding new dead players to the spectators in the channels (so they won't be so bored)
 			for _, p := range newDeadPersons {
 				for _, interactionChannel := range g.RoleChannels {
