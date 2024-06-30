@@ -8,5 +8,6 @@ func (g *Game) Day(ch chan<- Signal) {
 		g.Lock()
 		g.SetState(DayState)
 		g.Unlock()
+
 	}
 }

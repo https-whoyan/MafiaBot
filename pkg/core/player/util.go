@@ -3,6 +3,7 @@ package player
 import (
 	"github.com/https-whoyan/MafiaBot/core/roles"
 	"slices"
+	"sort"
 	"strconv"
 )
 
@@ -49,4 +50,34 @@ func SearchAllPlayersWithRole(players []*Player, role *roles.Role) []*Player {
 	}
 
 	return allPlayers
+}
+
+// DeadPlayersToPlayers convert slice of DeadPlayer's To Player's
+func DeadPlayersToPlayers(deadPlayers []*DeadPlayer) []*Player {
+	var players []*Player
+	for _, deadPlayer := range deadPlayers {
+		players = append(players, deadPlayer.P)
+	}
+	return players
+}
+
+// SortPlayersByTeamAndDead used for messaging after game.
+func SortPlayersByTeamAndDead(players []*Player) []*Player {
+	sort.Slice(players, func(i, j int) bool {
+		playerI, playerJ := players[i], players[j]
+		if playerI.Role.Team != playerJ.Role.Team {
+			return playerI.Role.Team < playerJ.Role.Team
+		}
+
+		if playerI.LifeStatus != playerJ.LifeStatus {
+			if playerI.LifeStatus == Alive {
+				return true
+			}
+			return false
+		}
+
+		return playerI.ID < playerJ.ID
+	})
+
+	return players
 }

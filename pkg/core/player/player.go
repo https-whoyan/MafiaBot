@@ -59,6 +59,29 @@ type Player struct {
 	InteractionStatus VoteStatus `json:"interactionStatus"`
 }
 
+// DeadPlayer superstructure on top of the player.
+// Shows more additional fields.
+type DeadPlayer struct {
+	P          *Player    `json:"p"`
+	DeadReason DeadReason `json:"deadReason"`
+	LivedDays  int        `json:"livedDays"`
+}
+
+type DeadReason string
+
+const (
+	KilledAtNight     DeadReason = "KilledAtNight"
+	KilledByDayVoting DeadReason = "KilledByDayVoting"
+)
+
+func NewDeadPlayer(p *Player, reason DeadReason, dayLived int) *DeadPlayer {
+	return &DeadPlayer{
+		P:          p,
+		DeadReason: reason,
+		LivedDays:  dayLived,
+	}
+}
+
 // ________________________________________________
 // Functions to get new players (or Spectating)
 // ________________________________________________

@@ -97,6 +97,44 @@ type DayLog struct {
 }
 
 type FinishLog struct {
-	WinnerTeam  roles.Team `json:"winnerTeam"`
-	TotalNights int        `json:"totalNights"`
+	WinnerTeam  *roles.Team `json:"winnerTeam"`
+	IsFool      bool        `json:"isFool"`
+	TotalNights int         `json:"totalNights"`
+}
+
+func (g *Game) NewFinishLog(winnerTeam *roles.Team, isFool bool) FinishLog {
+	if isFool {
+		// Validation
+
+		g.RLock()
+		defer g.RUnlock()
+
+		containsFool := false
+		for _, p := range g.Dead {
+			if p.Role == roles.Fool {
+				containsFool = true
+			}
+		}
+
+		if !containsFool {
+			panic("Fool is not killed!")
+		}
+
+		return FinishLog{
+			WinnerTeam:  nil,
+			IsFool:      isFool,
+			TotalNights: g.NightCounter,
+		}
+	}
+
+	trueWinnerTeam := g.UnderstandWinnerTeam()
+	if *trueWinnerTeam != *winnerTeam {
+		panic("WinnerTeam is not determined! The game can still turn around!!")
+	}
+
+	return FinishLog{
+		WinnerTeam:  winnerTeam,
+		IsFool:      false,
+		TotalNights: g.NightCounter,
+	}
 }

@@ -170,3 +170,26 @@ func (g *Game) GetAfterNightMessage(l NightLog) string {
 		strconv.Itoa(myTime.LastWordDeadlineMinutes) + " minute to say your angry.")
 	return message
 }
+
+// _____________________
+// Team victory message
+// _____________________
+
+func (g *Game) GetMessageAboutWinner(l FinishLog) string {
+	if l.IsFool {
+		return g.getFoolWinnerMessage()
+	}
+
+}
+
+func (g *Game) getTeamWinnerMessage()
+
+func (g *Game) getFoolWinnerMessage() string {
+
+}
+
+func (g *Game) getParticipantAboutMessage() string {
+	f := g.fmtEr
+	var message string
+	message := myFMT.BoldUnderline(f, "And the roles of the participants were:")
+}

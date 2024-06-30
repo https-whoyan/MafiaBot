@@ -72,10 +72,10 @@ type Game struct {
 	NightCounter int                     `json:"nightCounter"`
 	TimeStart    time.Time               `json:"timeStart"`
 
-	StartPlayers []*playerPack.Player `json:"startPlayers"`
-	Dead         []*playerPack.Player `json:"dead"`
-	Active       []*playerPack.Player `json:"active"`
-	Spectators   []*playerPack.Player `json:"spectators"`
+	StartPlayers []*playerPack.Player     `json:"startPlayers"`
+	Dead         []*playerPack.DeadPlayer `json:"dead"`
+	Active       []*playerPack.Player     `json:"active"`
+	Spectators   []*playerPack.Player     `json:"spectators"`
 
 	// Presents to the application which chat is used for which role.
 	// key: str - role name
@@ -121,7 +121,7 @@ func GetNewGame(guildID string, opts ...GameOption) *Game {
 		TwoVoteChan: make(chan TwoVoteProviderInterface),
 		// Slices.
 		Active:     make([]*playerPack.Player, 0),
-		Dead:       make([]*playerPack.Player, 0),
+		Dead:       make([]*playerPack.DeadPlayer, 0),
 		Spectators: make([]*playerPack.Player, 0),
 		// Create a map
 		RoleChannels: make(map[string]channelPack.RoleChannel),
@@ -435,6 +435,10 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 				err := g.logger.SaveNightLog(g, nightLog)
 				safeSendErrSignal(ch, err)
 			}
+			winnerTeam := g.UnderstandWinnerTeam()
+			if winnerTeam != nil {
+
+			}
 		}
 	}
 	return
@@ -447,6 +451,25 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 // ********************
 // ********************
 
+func (g *Game) FinishByFinishLog(ch chan<- Signal, l FinishLog) {
+	_, err := g.MainChannel.Write([]byte(g.GetMessageAboutWinner(l)))
+	safeSendErrSignal(ch, err)
+	g.SetState(FinishState)
+	g.replaceCtx()
+	g.Finish(ch)
+}
+
+func (g *Game) replaceCtx() {
+	g.Lock()
+	if g.ctx == nil {
+		g.ctx = context.Background()
+	}
+	newCtx, cancel := context.WithCancel(g.ctx)
+	g.ctx = newCtx
+	g.Unlock()
+	cancel()
+}
+
 // FinishAnyway is used to end the running game anyway.
 func (g *Game) FinishAnyway(ch chan<- Signal) {
 	if !g.IsRunning() {
@@ -457,14 +480,7 @@ func (g *Game) FinishAnyway(ch chan<- Signal) {
 	safeSendErrSignal(ch, err)
 	g.SetState(FinishState)
 	ch <- g.newSwitchStateSignal()
-	g.Lock()
-	if g.ctx == nil {
-		g.ctx = context.Background()
-	}
-	newCtx, cancel := context.WithCancel(g.ctx)
-	g.ctx = newCtx
-	g.Unlock()
-	cancel()
+	g.replaceCtx()
 	g.Finish(ch)
 }
 
@@ -485,7 +501,7 @@ func (g *Game) Finish(ch chan<- Signal) {
 	}
 
 	// Then remove spectators from game
-	for _, spectator := range append(g.Dead, g.Spectators...) {
+	for _, spectator := range append(playerPack.DeadPlayersToPlayers(g.Dead), g.Spectators...) {
 		for _, interactionChannel := range g.RoleChannels {
 			safeSendErrSignal(ch, interactionChannel.RemoveUser(spectator.Tag))
 		}
