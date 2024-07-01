@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"github.com/https-whoyan/MafiaBot/core/roles"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -55,11 +56,11 @@ func (g *Game) GetStartMessage() string {
 	var aboutIDMessages []string
 	activePlayers := g.Active
 	sort.Slice(activePlayers, func(i, j int) bool {
-		return activePlayers[i].ID < activePlayers[j].ID
+		return activePlayers[playerPack.IDType(j)].ID < activePlayers[playerPack.IDType(j)].ID
 	})
 	for _, player := range activePlayers {
 		messageAboutPlayerID := f.Tab() + f.Bold(sCap(getRandomPlayerCalling())) + " " + f.Mention(player.ServerNick)
-		messageAboutPlayerID += " with ID in game " + f.Block(sInt(player.ID))
+		messageAboutPlayerID += " with IDType in game " + f.Block(sInt(int(player.ID)))
 
 		aboutIDMessages = append(aboutIDMessages, messageAboutPlayerID)
 	}
@@ -82,7 +83,7 @@ func (g *Game) GetStartMessage() string {
 	message += nl + iL + nl
 
 	// Redo it if it false!!!!
-	message += "A private message has been sent to each of you, you can find your ID and role in it."
+	message += "A private message has been sent to each of you, you can find your IDType and role in it."
 	message += nl
 	message += "Also, " + f.Bold("if you have an active night role, you have been added to special channels, where "+
 		"you can send commands to the bot anonymously")
@@ -159,8 +160,8 @@ func (g *Game) GetAfterNightMessage(l NightLog) string {
 		f.Bold(" people")
 	var mentions []string
 	idsSet := cnvPack.SliceToSet(l.Dead)
-	for _, p := range g.StartPlayers {
-		if idsSet[p.ID] {
+	for _, p := range g.Active {
+		if idsSet[int(p.ID)] {
 			mentions = append(mentions, f.Mention(p.ServerNick))
 		}
 	}
@@ -176,20 +177,38 @@ func (g *Game) GetAfterNightMessage(l NightLog) string {
 // _____________________
 
 func (g *Game) GetMessageAboutWinner(l FinishLog) string {
+	var message string
+	f := g.fmtEr
+	message = f.Bold("Our game has come to an end.") + f.LineSplitter()
 	if l.IsFool {
-		return g.getFoolWinnerMessage()
+		message += g.getFoolWinnerMessage()
+	} else {
+		message += g.getTeamWinnerMessage(*l.WinnerTeam)
 	}
-
+	message += f.LineSplitter() + f.InfoSplitter() + f.LineSplitter()
+	message += g.getAfterGameParticipantAboutMessage()
+	//Todo
+	return ""
 }
 
-func (g *Game) getTeamWinnerMessage()
+func (g *Game) getTeamWinnerMessage(team roles.Team) string {
+	//Todo
+	return ""
+}
 
 func (g *Game) getFoolWinnerMessage() string {
-
+	//Todo
+	return ""
 }
 
-func (g *Game) getParticipantAboutMessage() string {
+// Todo
+func (g *Game) getAfterGameParticipantAboutMessage() string {
 	f := g.fmtEr
 	var message string
-	message := myFMT.BoldUnderline(f, "And the roles of the participants were:")
+	message = myFMT.BoldUnderline(f, "And the roles of the participants were:")
+
+	// allPartitians := g.StartPlayers
+	//todo
+
+	return message
 }

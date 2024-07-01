@@ -98,7 +98,7 @@ func takeANight(g *game.Game, c votesCfg) {
 	wg.Wait()
 }
 
-func (v voteCfg) toTwoVotePr(players []*player.Player) *game.TwoVotesProvider {
+func (v voteCfg) toTwoVotePr(players player.Players) *game.TwoVotesProvider {
 	return &game.TwoVotesProvider{
 		VotedPlayerID:  strconv.Itoa(player.SearchAllPlayersWithRole(players, v.role)[0].ID),
 		Vote1:          strconv.Itoa(v.votes[0]),

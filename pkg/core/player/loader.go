@@ -21,75 +21,46 @@ func generateListToN(n int) []int {
 }
 
 func GeneratePlayers(tags []string, oldUsernames []string,
-	serverUsernames []string, cfg *config.RolesConfig) ([]*Player, error) {
+	serverUsernames []string, cfg *config.RolesConfig) (Players, error) {
 	if len(tags) != cfg.PlayersCount {
-		return []*Player{}, errors.New("unexpected mismatch of playing participants and configs")
+		return nil, errors.New("unexpected mismatch of playing participants and configs")
 	}
 	if len(tags) != len(oldUsernames) {
-		return []*Player{}, errors.New("unexpected mismatch of playing participants and nicknames")
+		return nil, errors.New("unexpected mismatch of playing participants and nicknames")
 	}
 
 	n := len(tags)
 	IDs := generateListToN(n)
 	rolesArr := cfg.GetShuffledRolesConfig()
 
-	players := make([]*Player, n)
+	players := make(Players)
 
 	for i := 0; i <= n-1; i++ {
-		players[i] = NewPlayer(IDs[i], tags[i], oldUsernames[i], serverUsernames[i], rolesArr[i])
+		newPlayer := NewPlayer(IDType(IDs[i]), tags[i], oldUsernames[i], serverUsernames[i], rolesArr[i])
+		players[IDType(IDs[i])] = newPlayer
 	}
 
 	return players, nil
 }
 
 // _____________________________________________________________
-// Load Players
+// Load NonPlayingPlayers
 // 2 different player loading options for your convenience
 // _____________________________________________________________
 
 // First
 
-func GenerateEmptyPlayersByTagsAndUsernames(tags []string, usernames []string, serverUsernames []string,
-	isAllSpectators bool) []*Player {
+func GenerateNonPlayingPLayers(tags []string, usernames []string, serverUsernames []string) NonPlayingPlayers {
 	if len(tags) != len(usernames) {
 		log.Println("Unexpected mismatch of playing participants and nicknames")
-		return []*Player{}
+		return nil
 	}
-	var players []*Player
+	var players []*NonPlayingPlayer
 	for i, tag := range tags {
-		var newPlayer *Player
-		if isAllSpectators {
-			newPlayer = NewSpectator(tag, usernames[i], serverUsernames[i])
-		} else {
-			newPlayer = NewEmptyPlayer(tag, usernames[i], serverUsernames[i])
-		}
+		newPlayer := NewNonPlayingPlayer(tag, usernames[i], serverUsernames[i])
 		players = append(players, newPlayer)
 	}
 	return players
-}
-
-func GetTagsByPlayers(players []*Player) []string {
-	var tags []string
-	for _, player := range players {
-		tags = append(tags, player.Tag)
-	}
-	return tags
-}
-
-func GetUsernamesByPlayers(players []*Player) []string {
-	names := make([]string, len(players))
-	for i, player := range players {
-		names[i] = player.OldNick
-	}
-	return names
-}
-
-func GetServerNamesByPlayers(players []*Player) []string {
-	names := make([]string, len(players))
-	for i, player := range players {
-		names[i] = player.ServerNick
-	}
-	return names
 }
 
 // Second
@@ -97,7 +68,7 @@ func GetServerNamesByPlayers(players []*Player) []string {
 func GenerateEmptyPlayersByFunc(
 	x any,
 	getTagUsernameAndServerUsername func(x any, index int) (string, string, string),
-	countOfNewPlayers int, isAllSpectators bool) []*Player {
+	countOfNewPlayers int) NonPlayingPlayers {
 
 	isRecovered := false
 	defer func() {
@@ -108,21 +79,17 @@ func GenerateEmptyPlayersByFunc(
 		}
 	}()
 
-	players := make([]*Player, countOfNewPlayers)
+	var players NonPlayingPlayers
 
 	for i := 0; i <= countOfNewPlayers-1; i++ {
 		tag, username, serverUsername := getTagUsernameAndServerUsername(x, i)
-		var newPlayer *Player
-		if isAllSpectators {
-			newPlayer = NewSpectator(tag, username, serverUsername)
-		} else {
-			newPlayer = NewEmptyPlayer(tag, username, serverUsername)
-		}
+		var newPlayer *NonPlayingPlayer
+		NewNonPlayingPlayer(tag, username, serverUsername)
 		players[i] = newPlayer
 	}
 
 	if isRecovered {
-		return []*Player{}
+		return []*NonPlayingPlayer{}
 	}
 	return players
 }

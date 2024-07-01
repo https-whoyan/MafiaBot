@@ -26,10 +26,10 @@ const (
 type VoteProviderInterface interface {
 	// GetVotedPlayerID Provides 2 fields: information about the voting player.
 	//
-	// The 1st field provides the ID of the player who voted,
-	// the second field is whether this ID is your server ID or in-game ID.
+	// The 1st field provides the IDType of the player who voted,
+	// the second field is whether this IDType is your server IDType or in-game IDType.
 	GetVotedPlayerID() (votedUserID string, isUserServerID bool)
-	// GetVote provide one field: ID of the player being voted for.
+	// GetVote provide one field: IDType of the player being voted for.
 	// If you need empty Vote, use the EmptyVoteStr constant.
 	GetVote() (ID string)
 }
@@ -114,7 +114,7 @@ func (g *Game) voteProviderValidator(vP VoteProviderInterface) error {
 		return NilValidatorErr
 	}
 	votedPlayerID, isServerID := vP.GetVotedPlayerID()
-	votedPlayer := player.SearchPlayerByID(g.Active, votedPlayerID, isServerID)
+	votedPlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
 	if votedPlayer == nil {
 		return InVotePlayerNotFound
 	}
@@ -129,7 +129,7 @@ func (g *Game) voteProviderValidator(vP VoteProviderInterface) error {
 	if votedPlayer.LifeStatus != player.Alive {
 		return VotePlayerIsNotAlive
 	}
-	toVotePlayer := player.SearchPlayerByID(g.Active, vote, false)
+	toVotePlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
 	if toVotePlayer == nil {
 		return VotePlayerNotFound
 	}
@@ -160,7 +160,7 @@ func (g *Game) NightVoteValidator(vP VoteProviderInterface, roleChannel channel.
 	}
 
 	votedPlayerID, isServerID := vP.GetVotedPlayerID()
-	votedPlayer := player.SearchPlayerByID(g.Active, votedPlayerID, isServerID)
+	votedPlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
 	if g.NightVoting != votedPlayer.Role {
 		return IncorrectVotedPlayer
 	}
@@ -210,7 +210,7 @@ func (g *Game) twoVoteProviderValidator(vP TwoVoteProviderInterface) error {
 		return NilValidatorErr
 	}
 	votedPlayerID, isServerID := vP.GetVotedPlayerID()
-	votedPlayer := player.SearchPlayerByID(g.Active, votedPlayerID, isServerID)
+	votedPlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
 	if votedPlayer == nil {
 		return InVotePlayerNotFound
 	}
@@ -231,8 +231,8 @@ func (g *Game) twoVoteProviderValidator(vP TwoVoteProviderInterface) error {
 	if votedPlayer.LifeStatus != player.Alive {
 		return VotePlayerIsNotAlive
 	}
-	toVotePlayer1 := player.SearchPlayerByID(g.Active, vote1, false)
-	toVotePlayer2 := player.SearchPlayerByID(g.Active, vote2, false)
+	toVotePlayer1 := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
+	toVotePlayer2 := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
 	if toVotePlayer1 == nil || toVotePlayer2 == nil {
 		return VotePlayerNotFound
 	}
@@ -263,7 +263,7 @@ func (g *Game) NightTwoVoteValidator(vP TwoVoteProviderInterface, roleChannel ch
 	}
 
 	votedPlayerID, isServerID := vP.GetVotedPlayerID()
-	votedPlayer := player.SearchPlayerByID(g.Active, votedPlayerID, isServerID)
+	votedPlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
 	if g.NightVoting != votedPlayer.Role {
 		return IncorrectVotedPlayer
 	}
@@ -306,7 +306,7 @@ func (g *Game) NightOneVote(vP VoteProviderInterface, opt *OptionalChannelIID) e
 
 	votedPlayerID, isServerID := vP.GetVotedPlayerID()
 	g.RLock()
-	votedPlayer := player.SearchPlayerByID(g.Active, votedPlayerID, isServerID)
+	votedPlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
 	g.RUnlock()
 	vote := vP.GetVote()
 	g.Lock()
@@ -318,7 +318,7 @@ func (g *Game) NightOneVote(vP VoteProviderInterface, opt *OptionalChannelIID) e
 		votedPlayer.Votes = append(votedPlayer.Votes, intVote)
 	}
 	// Set empty votes to same role players
-	sameRolePlayers := player.SearchAllPlayersWithRole(g.Active, votedPlayer.Role)
+	sameRolePlayers := g.Active.SearchAllPlayersWithRole(votedPlayer.Role)
 	for _, sameRolePlayer := range sameRolePlayers {
 		if sameRolePlayer.ID != votedPlayer.ID {
 			sameRolePlayer.Votes = append(sameRolePlayer.Votes, EmptyVoteInt)
@@ -347,7 +347,7 @@ func (g *Game) NightTwoVote(vP TwoVoteProviderInterface, opt *OptionalChannelIID
 
 	votedPlayerID, isServerID := vP.GetVotedPlayerID()
 	g.RLock()
-	votedPlayer := player.SearchPlayerByID(g.Active, votedPlayerID, isServerID)
+	votedPlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
 	g.RUnlock()
 	vote1, vote2 := vP.GetVote()
 	if vote1 == EmptyVoteStr && vote2 != EmptyVoteStr {
@@ -363,7 +363,7 @@ func (g *Game) NightTwoVote(vP TwoVoteProviderInterface, opt *OptionalChannelIID
 		votedPlayer.Votes = append(votedPlayer.Votes, intVote1, intVote2)
 	}
 	// Set empty votes to same role players
-	sameRolePlayers := player.SearchAllPlayersWithRole(g.Active, votedPlayer.Role)
+	sameRolePlayers := g.Active.SearchAllPlayersWithRole(votedPlayer.Role)
 	for _, sameRolePlayer := range sameRolePlayers {
 		if sameRolePlayer.ID != votedPlayer.ID {
 			sameRolePlayer.Votes = append(sameRolePlayer.Votes, EmptyVoteInt, EmptyVoteInt)
@@ -392,7 +392,7 @@ func (g *Game) DayVote(vP VoteProviderInterface, opt *OptionalChannelIID) error 
 
 	votedPlayerID, isServerID := vP.GetVotedPlayerID()
 	g.RLock()
-	votedPlayer := player.SearchPlayerByID(g.Active, votedPlayerID, isServerID)
+	votedPlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
 	g.RUnlock()
 	vote := vP.GetVote()
 	if vote == EmptyVoteStr {

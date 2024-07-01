@@ -66,7 +66,7 @@ func (g *Game) donInteraction(don *player.Player) *InteractionMessage {
 
 	checkedPlayerRoleName := checkedPlayer.Role.Name
 
-	message := InteractionMessage("Checked player " + f.Block(strconv.Itoa(checkedPlayer.ID)) + ", role: " +
+	message := InteractionMessage("Checked player " + f.Block(strconv.Itoa(int(checkedPlayer.ID))) + ", role: " +
 		g.fmtEr.Block(checkedPlayerRoleName))
 	return &message
 }
@@ -111,19 +111,19 @@ func (g *Game) detectiveInteraction(detective *player.Player) *InteractionMessag
 	}
 
 	f := g.fmtEr
-	checkedPlayer1 := player.SearchPlayerByGameID(g.Active, strconv.Itoa(checkedID1))
-	checkedPlayer2 := player.SearchPlayerByGameID(g.Active, strconv.Itoa(checkedID2))
+	checkedPlayer1 := g.Active.SearchPlayerByGameID(strconv.Itoa(checkedID1))
+	checkedPlayer2 := g.Active.SearchPlayerByGameID(strconv.Itoa(checkedID2))
 
 	isEqualsTeams := checkedPlayer1.Role.Team == checkedPlayer2.Role.Team
 
 	var message string
 
 	if isEqualsTeams {
-		message = "Players with id's " + f.Block(strconv.Itoa(checkedPlayer1.ID)) + ", " +
-			f.Block(strconv.Itoa(checkedPlayer2.ID)) + f.Bold(" in one team.")
+		message = "Players with id's " + f.Block(strconv.Itoa(int(checkedPlayer1.ID))) + ", " +
+			f.Block(strconv.Itoa(int(checkedPlayer2.ID))) + f.Bold(" in one team.")
 	} else {
-		message = "Players with id's " + f.Block(strconv.Itoa(checkedPlayer1.ID)) + ", " +
-			f.Block(strconv.Itoa(checkedPlayer2.ID)) + f.Bold(" in different team.")
+		message = "Players with id's " + f.Block(strconv.Itoa(int(checkedPlayer1.ID))) + ", " +
+			f.Block(strconv.Itoa(int(checkedPlayer2.ID))) + f.Bold(" in different team.")
 	}
 	typedMessage := InteractionMessage(message)
 	return &typedMessage
@@ -162,6 +162,6 @@ func (g *Game) interactionHelper(p *player.Player) (toVoted *player.Player, isEm
 		isEmpty = true
 		return
 	}
-	toVoted = player.SearchPlayerByGameID(g.Active, strconv.Itoa(lastVote))
+	toVoted = g.Active[player.IDType(lastVote)]
 	return
 }

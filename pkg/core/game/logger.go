@@ -26,7 +26,7 @@ type GameLogger interface {
 // players who turned out to be dead based on the results of the night.
 type NightLog struct {
 	NightNumber int `json:"number"`
-	// Key - ID of the voted player
+	// Key - IDType of the voted player
 	// Value - usually a vote, but in case the role uses 2 votes - 2 votes at once.
 	NightVotes map[int][]int `json:"votes"`
 	Dead       []int         `json:"dead"`
@@ -67,12 +67,12 @@ func (g *Game) NewNightLog() NightLog {
 			} else {
 				votes = []int{p.Votes[n-1]}
 			}
-			nightVotes[p.ID] = votes
+			nightVotes[int(p.ID)] = votes
 		}
 		var dead []int
 		for _, p := range g.Active {
 			if p.LifeStatus == player.Dead {
-				dead = append(dead, p.ID)
+				dead = append(dead, int(p.ID))
 			}
 		}
 		return NightLog{
@@ -89,7 +89,7 @@ func (g *Game) NewNightLog() NightLog {
 
 type DayLog struct {
 	DayNumber int `json:"number"`
-	// Key - ID of the player who was voted for during the day to be excluded from the game
+	// Key - IDType of the player who was voted for during the day to be excluded from the game
 	// Value - number of votes.
 	DayVotes map[int]int `json:"votes"`
 	Kicked   int         `json:"kicked"`
@@ -110,9 +110,11 @@ func (g *Game) NewFinishLog(winnerTeam *roles.Team, isFool bool) FinishLog {
 		defer g.RUnlock()
 
 		containsFool := false
-		for _, p := range g.Dead {
-			if p.Role == roles.Fool {
-				containsFool = true
+		for _, players := range g.Dead {
+			for _, p := range players {
+				if p.Role == roles.Fool {
+					containsFool = true
+				}
 			}
 		}
 

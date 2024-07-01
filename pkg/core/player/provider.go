@@ -13,7 +13,7 @@ import (
 // RenameUserProviderInterface
 //
 // Need to rename people at game startup by adding prefixes to them,
-// like “<ID in game>: <old nickname>”
+// like “<IDType in game>: <old nickname>”
 //
 // See below
 type RenameUserProviderInterface interface {
@@ -22,14 +22,14 @@ type RenameUserProviderInterface interface {
 
 // Edit it.
 const (
-	playerPatternWithoutNickname = "%v"     // ID
-	playerPrefixPattern          = "%v: %v" // ID, Nick
+	playerPatternWithoutNickname = "%v"     // IDType
+	playerPrefixPattern          = "%v: %v" // IDType, Nick
 
 	spectatorPrefixPattern   = "(spectator) %v" // Nick
 	spectatorWithoutNickname = "(spectator)"
 
-	deadPrefixPatternWithoutNickname = "(dead) %v"     // ID
-	deadPrefixPattern                = "(dead) %v: %v" // ID, Nick
+	deadPrefixPatternWithoutNickname = "(dead) %v"     // IDType
+	deadPrefixPattern                = "(dead) %v: %v" // IDType, Nick
 )
 
 var (
@@ -50,7 +50,7 @@ var (
 )
 
 var (
-	InvalidID          = errors.New("invalid ID")
+	InvalidID          = errors.New("invalid IDType")
 	UserIsNotActive    = errors.New("user is not a active user")
 	UserIsNotDead      = errors.New("user is not a dead user")
 	UserIsNotSpectator = errors.New("user is not spectator")
@@ -69,9 +69,9 @@ func (p *Player) RenameAfterGettingID(provider RenameUserProviderInterface, chan
 	}
 	var newNick string
 	if len(p.OldNick) == 0 {
-		newNick = getNewPlayerNicknameWithoutNick(p.ID)
+		newNick = getNewPlayerNicknameWithoutNick(int(p.ID))
 	} else {
-		newNick = getNewPlayerNickname(p.ID, p.OldNick)
+		newNick = getNewPlayerNickname(int(p.ID), p.OldNick)
 	}
 	p.Nick = newNick
 	if provider == nil {
@@ -81,25 +81,22 @@ func (p *Player) RenameAfterGettingID(provider RenameUserProviderInterface, chan
 	return provider.RenameUser(channelIID, p.Tag, newNick)
 }
 
-func (p *Player) RenameToSpectator(provider RenameUserProviderInterface, channelIID string) error {
-	if p.LifeStatus != Spectating {
-		return UserIsNotSpectator
-	}
+func (n *NonPlayingPlayer) RenameToSpectator(provider RenameUserProviderInterface, channelIID string) error {
 	var newNick string
-	if len(p.OldNick) == 0 {
+	if len(n.OldNick) == 0 {
 		newNick = getNewSpectatorNicknameWithoutNick()
 	} else {
-		newNick = getNewSpectatorNickname(p.OldNick)
+		newNick = getNewSpectatorNickname(n.OldNick)
 	}
-	p.Nick = newNick
+	n.Nick = newNick
 	if provider == nil {
-		logIsEmptyProvider(p.Tag, p.OldNick, newNick, channelIID)
+		logIsEmptyProvider(n.Tag, n.OldNick, newNick, channelIID)
 		return nil
 	}
-	return provider.RenameUser(channelIID, p.Tag, newNick)
+	return provider.RenameUser(channelIID, n.Tag, newNick)
 }
 
-func (p *Player) RenameToDeadPlayer(provider RenameUserProviderInterface, channelIID string) error {
+func (p *DeadPlayer) RenameToDeadPlayer(provider RenameUserProviderInterface, channelIID string) error {
 	if p.ID <= 0 {
 		return InvalidID
 	}
@@ -108,9 +105,9 @@ func (p *Player) RenameToDeadPlayer(provider RenameUserProviderInterface, channe
 	}
 	var newNick string
 	if len(p.OldNick) == 0 {
-		newNick = getNewPlayerDeadNicknameWithoutNickname(p.ID)
+		newNick = getNewPlayerDeadNicknameWithoutNickname(int(p.ID))
 	} else {
-		newNick = getNewPlayerDeadNickname(p.ID, p.OldNick)
+		newNick = getNewPlayerDeadNickname(int(p.ID), p.OldNick)
 	}
 	p.Nick = newNick
 	if provider == nil {
@@ -121,14 +118,11 @@ func (p *Player) RenameToDeadPlayer(provider RenameUserProviderInterface, channe
 	return provider.RenameUser(channelIID, p.Tag, newNick)
 }
 
-func (p *Player) RenameUserAfterGame(provider RenameUserProviderInterface, channelIID string) error {
-	newNick := p.OldNick
-	oldNick := getNewPlayerNickname(p.ID, p.OldNick)
-	p.Nick = newNick
-	p.OldNick = newNick
+func (n *NonPlayingPlayer) RenameUserAfterGame(provider RenameUserProviderInterface, channelIID string) error {
+	newNick := n.OldNick
 	if provider == nil {
-		logIsEmptyProvider(p.Tag, oldNick, newNick, channelIID)
+		logIsEmptyProvider(n.Tag, n.OldNick, newNick, channelIID)
 		return nil
 	}
-	return provider.RenameUser(channelIID, p.Tag, newNick)
+	return provider.RenameUser(channelIID, n.Tag, newNick)
 }

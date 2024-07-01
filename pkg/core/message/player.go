@@ -13,7 +13,7 @@ import (
 func GetStartPlayerDefinition(p *playerPack.Player, f fmt.FmtInterface) string {
 	message := f.Bold("Hello, "+f.Mention(p.ServerNick)+"!") + f.LineSplitter()
 	message += "Today, in game you play in " + f.Bold(roles.StringTeam[p.Role.Team]) +
-		" , your role is " + f.Block(p.Role.Name) + " and your ID is " + f.Block(strconv.Itoa(p.ID))
+		" , your role is " + f.Block(p.Role.Name) + " and your IDType is " + f.Block(strconv.Itoa(int(p.ID)))
 	message += f.LineSplitter() + f.InfoSplitter() + f.LineSplitter()
 	message += f.Italic("Let me remind you of your role description.") + f.LineSplitter()
 	message += roles.FixDescription(p.Role.Description)

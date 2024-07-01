@@ -19,18 +19,20 @@ const (
 type VoteStatus int
 
 const (
-	Chooses VoteStatus = 1
-	Passed  VoteStatus = 2
-	Muted   VoteStatus = 3
+	Passed VoteStatus = 1
+	Muted  VoteStatus = 2
 )
 
+type IDType int
+
 // _______________
-// Player Struct
+// Structs
 // _______________
 
-type Player struct {
-	ID int `json:"id"`
-	// Tag Represent account ID on the presentation platform
+// NonPlayingPlayer
+// Used for peoples, are used for people who do not have their IDType in the game, i.e. are not participating in it.
+type NonPlayingPlayer struct {
+	// Tag Represent account IDType on the presentation platform
 	Tag string `json:"tag"`
 	// Represent Server nick in your implementation
 	// Using ONLY for Mentions.
@@ -42,7 +44,19 @@ type Player struct {
 	// their IDs for easier recognition (1, 2, 3...)
 	OldNick string `json:"oldNick"`
 	// Nick after renaming.
-	Nick string      `json:"nick"`
+	Nick string `json:"nick"`
+}
+
+// For interfacing all structs
+
+func (n NonPlayingPlayer) GetTag() string        { return n.Tag }
+func (n NonPlayingPlayer) GetServerNick() string { return n.ServerNick }
+func (n NonPlayingPlayer) GetOldNick() string    { return n.OldNick }
+func (n NonPlayingPlayer) GetNick() string       { return n.Nick }
+
+type Player struct {
+	NonPlayingPlayer
+	ID   IDType      `json:"id"`
 	Role *roles.Role `json:"role"`
 	// Votes stores all the night votes the player casts.
 	//
@@ -62,7 +76,7 @@ type Player struct {
 // DeadPlayer superstructure on top of the player.
 // Shows more additional fields.
 type DeadPlayer struct {
-	P          *Player    `json:"p"`
+	Player
 	DeadReason DeadReason `json:"deadReason"`
 	LivedDays  int        `json:"livedDays"`
 }
@@ -76,7 +90,7 @@ const (
 
 func NewDeadPlayer(p *Player, reason DeadReason, dayLived int) *DeadPlayer {
 	return &DeadPlayer{
-		P:          p,
+		Player:     *p,
 		DeadReason: reason,
 		LivedDays:  dayLived,
 	}
@@ -86,37 +100,26 @@ func NewDeadPlayer(p *Player, reason DeadReason, dayLived int) *DeadPlayer {
 // Functions to get new players (or Spectating)
 // ________________________________________________
 
-func NewEmptyPlayer(tag string, username string, serverUsername string) *Player {
-	return &Player{
-		Tag:               tag,
-		Nick:              username,
-		OldNick:           username,
-		ServerNick:        serverUsername,
-		LifeStatus:        Alive,
-		InteractionStatus: Passed,
+func NewNonPlayingPlayer(tag string, username string, serverUsername string) *NonPlayingPlayer {
+	return &NonPlayingPlayer{
+		Tag:        tag,
+		Nick:       username,
+		OldNick:    username,
+		ServerNick: serverUsername,
 	}
 }
 
-func NewPlayer(id int, tag string, username string, serverUsername string, role *roles.Role) *Player {
+func NewPlayer(id IDType, tag string, username string, serverUsername string, role *roles.Role) *Player {
 	return &Player{
+		NonPlayingPlayer: NonPlayingPlayer{
+			Tag:        tag,
+			ServerNick: serverUsername,
+			OldNick:    username,
+			Nick:       username,
+		},
 		ID:                id,
-		OldNick:           username,
-		Nick:              username,
-		Tag:               tag,
-		ServerNick:        serverUsername,
 		Role:              role,
 		LifeStatus:        Alive,
 		InteractionStatus: Passed,
-	}
-}
-
-func NewSpectator(tag string, username string, serverUsername string) *Player {
-	return &Player{
-		Tag:               tag,
-		OldNick:           username,
-		Nick:              username,
-		ServerNick:        serverUsername,
-		LifeStatus:        Spectating,
-		InteractionStatus: Muted,
 	}
 }

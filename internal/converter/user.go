@@ -41,13 +41,13 @@ func DiscordUsersToEmptyPlayers(s *discordgo.Session, guildID string,
 		serverUsernames = append(serverUsernames, user.ID)
 	}
 
-	return corePlayerPack.GenerateEmptyPlayersByTagsAndUsernames(tags, usernames, serverUsernames, isSpectators)
+	return corePlayerPack.GenerateNonPlayingPLayers(tags, usernames, serverUsernames, isSpectators)
 
 	//Second Realization
 	/*
 		getTagAndUsernameFunc := func(u any, index int) (string, string, string) {
 			iUser := u.([]*discordgo.User)[index]
-			return iUser.ID, SafeGetUserUsernameInGuild(s, guildID, iUser), iUser.ID
+			return iUser.IDType, SafeGetUserUsernameInGuild(s, guildID, iUser), iUser.IDType
 		}
 		return corePlayerPack.GenerateEmptyPlayersByFunc(users, getTagAndUsernameFunc, len(users), isSpectators)
 	*/

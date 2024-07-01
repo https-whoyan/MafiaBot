@@ -64,7 +64,7 @@ func (c AddChannelRoleCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 	}
 
 	if !isCorrectChatID(s, requestedChatID) {
-		content := "Invalid Chat ID!"
+		content := "Invalid Chat IDType!"
 		Response(s, i, content)
 		return
 	}
@@ -114,7 +114,7 @@ func (c AddMainChannelCommand) Execute(s *discordgo.Session, i *discordgo.Intera
 	}
 
 	if !isCorrectChatID(s, newChatID) {
-		content := "Invalid Chat ID!"
+		content := "Invalid Chat IDType!"
 		Response(s, i, content)
 		return
 	}
@@ -186,7 +186,7 @@ func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interact
 	// Send message.
 	Response(s, i, "Ok. InteractionMessage below.")
 
-	// Send additional message and save it ID
+	// Send additional message and save it IDType
 	deadlineStr := strconv.Itoa(botTimeConstsPack.RegistrationDeadlineMinutes)
 	responseMessageText := "Registration has begun." + f.NL() +
 		f.B("Post "+botFMTPack.RegistrationPlayerSticker+" reaction below.") + f.I(" If you want to be a spectator, "+
@@ -402,7 +402,7 @@ func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.IncorrectVoteType):
-		message := f.B("Incorrect format for entering the ID of the player you are voting for.") + f.NL() +
+		message := f.B("Incorrect format for entering the IDType of the player you are voting for.") + f.NL() +
 			"Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
 		var allIDS []string
 		for _, player := range g.Active {
@@ -420,7 +420,7 @@ func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.VotePlayerNotFound):
-		message := f.B(fmt.Sprintf("Player ID %v is not found alive.", vote)) + f.NL()
+		message := f.B(fmt.Sprintf("Player IDType %v is not found alive.", vote)) + f.NL()
 		message += f.NL() + "Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
 		var allIDS []string
 		for _, player := range g.Active {
@@ -468,7 +468,7 @@ func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.IncorrectVoteType):
-		message := f.B("Incorrect format for entering the ID of the player you are voting for.") + f.NL() +
+		message := f.B("Incorrect format for entering the IDType of the player you are voting for.") + f.NL() +
 			"Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
 		var allIDS []string
 		for _, player := range g.Active {
@@ -486,7 +486,7 @@ func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.VotePlayerNotFound):
-		message := f.B(fmt.Sprintf("Player ID %v or %v is not found alive.", vote1, vote2)) + f.NL()
+		message := f.B(fmt.Sprintf("Player IDType %v or %v is not found alive.", vote1, vote2)) + f.NL()
 		message += f.NL() + "Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
 		var allIDS []string
 		for _, player := range g.Active {

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"github.com/https-whoyan/MafiaBot/core/converter"
 	"sort"
 	"strconv"
 	"sync"
@@ -86,7 +87,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 		// And finding nightInteraction channel
 		g.RLock()
 		interactionChannel := g.RoleChannels[votedRole.Name]
-		allPlayersWithRole := playerPack.SearchAllPlayersWithRole(g.Active, votedRole)
+		allPlayersWithRole := g.Active.SearchAllPlayersWithRole(votedRole)
 		g.RUnlock()
 
 		voteDeadlineInt := myTime.VotingDeadline
@@ -114,11 +115,12 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 
 		// From this differs in which channel the game will wait for the voice,
 		//as well as the difference in the voice itself.
+		slicePlayers := converter.GetMapValues(allPlayersWithRole)
 		switch votedRole.IsTwoVotes {
 		case true:
-			g.twoVoterRoleNightVoting(allPlayersWithRole, containsNotMutedPlayers, voteDeadline, ch)
+			g.twoVoterRoleNightVoting(slicePlayers, containsNotMutedPlayers, voteDeadline, ch)
 		case false:
-			g.oneVoteRoleNightVoting(allPlayersWithRole, containsNotMutedPlayers, voteDeadline, ch)
+			g.oneVoteRoleNightVoting(slicePlayers, containsNotMutedPlayers, voteDeadline, ch)
 		}
 
 		// Putting it back in the channel.
@@ -201,7 +203,7 @@ func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	wg := &sync.WaitGroup{}
 	for _, voter := range allPlayersWithRole {
 		VoteTimer(g.VoteChan, done, deadline,
-			strconv.Itoa(voter.ID), false, wg)
+			strconv.Itoa(int(voter.ID)), false, wg)
 	}
 	for voteP := range g.VoteChan {
 		err = g.NightOneVote(voteP, nil)
@@ -287,7 +289,7 @@ func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	wg := &sync.WaitGroup{}
 	for _, voter := range allPlayersWithRole {
 		TwoVoteTimer(g.TwoVoteChan, done, deadline,
-			strconv.Itoa(voter.ID), false, wg)
+			strconv.Itoa(int(voter.ID)), false, wg)
 	}
 	for voteP := range g.TwoVoteChan {
 		err = g.NightTwoVote(voteP, nil)
@@ -320,20 +322,21 @@ func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
 		defer g.Unlock()
 
 		// Splitting arrays.
-		var newActivePlayers []*playerPack.Player
-		var newDeadPersons []*playerPack.Player
+		newActivePlayers := make(playerPack.Players)
+		var newDeadPersons []*playerPack.DeadPlayer
 
 		for _, p := range g.Active {
 			if p.LifeStatus == playerPack.Dead {
-				newDeadPersons = append(newDeadPersons, p)
+				newDeadPlayer := playerPack.NewDeadPlayer(p, playerPack.KilledAtNight, g.NightCounter)
+				newDeadPersons = append(newDeadPersons, newDeadPlayer)
 			} else {
-				newActivePlayers = append(newActivePlayers, p)
+				newActivePlayers[p.ID] = p
 			}
 		}
 
 		// I will add add add all killed players after a minute of players after a minute of
 		// players after a minute, so, using goroutine.
-		go func(newDeadPersons []*playerPack.Player) {
+		go func(newDeadPersons []*playerPack.DeadPlayer) {
 			duration := myTime.LastWordDeadline * time.Second
 			time.Sleep(duration)
 			g.Lock()
@@ -349,7 +352,7 @@ func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
 
 		// Changing arrays according to the night
 		g.Active = newActivePlayers
-		g.Dead = append(g.Dead, newDeadPersons...)
+		g.Dead.Add(newDeadPersons...)
 
 		// Sending a message about who died today.
 		message := g.GetAfterNightMessage(l)

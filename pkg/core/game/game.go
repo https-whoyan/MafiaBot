@@ -3,7 +3,6 @@ package game
 import (
 	"context"
 	"errors"
-	"slices"
 	"sync"
 	"time"
 
@@ -72,10 +71,10 @@ type Game struct {
 	NightCounter int                     `json:"nightCounter"`
 	TimeStart    time.Time               `json:"timeStart"`
 
-	StartPlayers []*playerPack.Player     `json:"startPlayers"`
-	Dead         []*playerPack.DeadPlayer `json:"dead"`
-	Active       []*playerPack.Player     `json:"active"`
-	Spectators   []*playerPack.Player     `json:"spectators"`
+	StartPlayers playerPack.NonPlayingPlayers `json:"startPlayers"`
+	Active       playerPack.Players           `json:"active"`
+	Dead         playerPack.DeadPlayers       `json:"dead"`
+	Spectators   playerPack.NonPlayingPlayers `json:"spectators"`
 
 	// Presents to the application which chat is used for which role.
 	// key: str - role name
@@ -120,9 +119,9 @@ func GetNewGame(guildID string, opts ...GameOption) *Game {
 		VoteChan:    make(chan VoteProviderInterface),
 		TwoVoteChan: make(chan TwoVoteProviderInterface),
 		// Slices.
-		Active:     make([]*playerPack.Player, 0),
-		Dead:       make([]*playerPack.DeadPlayer, 0),
-		Spectators: make([]*playerPack.Player, 0),
+		Active:     make(playerPack.Players),
+		Dead:       make(playerPack.DeadPlayers),
+		Spectators: playerPack.NonPlayingPlayers{},
 		// Create a map
 		RoleChannels: make(map[string]channelPack.RoleChannel),
 		VotePing:     1,
@@ -228,6 +227,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	if err = g.validationStart(cfg); err != nil {
 		return err
 	}
+	// Set fmtEr
 	// Set config and players count
 	g.SetState(StartingState)
 	g.Lock()
@@ -237,17 +237,16 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	g.Unlock()
 
 	// Get Players
-	tags := playerPack.GetTagsByPlayers(g.StartPlayers)
-	oldNicknames := playerPack.GetUsernamesByPlayers(g.StartPlayers)
-	serverUsernames := playerPack.GetServerNamesByPlayers(g.StartPlayers)
+	tags := g.StartPlayers.GetTags()
+	oldNicknames := g.StartPlayers.GetUsernames()
+	serverUsernames := g.StartPlayers.GetServerNicknames()
 	players, err := playerPack.GeneratePlayers(tags, oldNicknames, serverUsernames, cfg)
 	if err != nil {
 		return err
 	}
-	// And state it to active and startPlayers fields
+	// And state it to active field
 	g.Lock()
-	g.StartPlayers = slices.Clone(players)
-	g.Active = slices.Clone(players)
+	g.Active = players
 	g.Unlock()
 
 	g.RLock()
@@ -258,7 +257,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 
 	// We need to add spectators and players to channel.
 	// First, add users to role channels.
-	for _, player := range g.StartPlayers {
+	for _, player := range g.Active {
 		if player.Role.NightVoteOrder == -1 {
 			continue
 		}
@@ -301,7 +300,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	switch g.renameMode {
 	case NotRenameModeMode: // No actions
 	case RenameInGuildMode:
-		for _, player := range g.StartPlayers {
+		for _, player := range g.Active {
 			err = player.RenameAfterGettingID(g.renameProvider, "")
 			if err != nil {
 				return err
@@ -316,7 +315,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	case RenameOnlyInMainChannelMode:
 		mainChannelServerID := g.MainChannel.GetServerID()
 
-		for _, player := range g.StartPlayers {
+		for _, player := range g.Active {
 			err = player.RenameAfterGettingID(g.renameProvider, mainChannelServerID)
 			if err != nil {
 				return err
@@ -324,7 +323,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 		}
 	case RenameInAllChannelsMode:
 		// Add to Role Channels.
-		for _, player := range g.StartPlayers {
+		for _, player := range g.Active {
 			if player.Role.NightVoteOrder == -1 {
 				continue
 			}
@@ -341,7 +340,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 		// Add to main channel
 		mainChannelServerID := g.MainChannel.GetServerID()
 
-		for _, player := range g.StartPlayers {
+		for _, player := range g.Active {
 			err = player.RenameAfterGettingID(g.renameProvider, mainChannelServerID)
 			if err != nil {
 				return err
@@ -501,9 +500,9 @@ func (g *Game) Finish(ch chan<- Signal) {
 	}
 
 	// Then remove spectators from game
-	for _, spectator := range append(playerPack.DeadPlayersToPlayers(g.Dead), g.Spectators...) {
+	for _, tag := range playerPack.GetTags(g.Dead, g.Spectators) {
 		for _, interactionChannel := range g.RoleChannels {
-			safeSendErrSignal(ch, interactionChannel.RemoveUser(spectator.Tag))
+			safeSendErrSignal(ch, interactionChannel.RemoveUser(tag))
 		}
 	}
 
