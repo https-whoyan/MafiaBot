@@ -97,7 +97,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 
 		// I go through each player and, with a mention, invite them to Vote.
 		// And if a player is locked, I tell him about it and add him to spectators for the duration of the Vote.
-		for _, voter := range allPlayersWithRole {
+		for _, voter := range *allPlayersWithRole {
 			if voter.InteractionStatus == playerPack.Muted {
 				err = g.messenger.Night.SendToPlayerThatIsMutedMessage(voter, interactionChannel)
 				safeSendErrSignal(ch, err)
@@ -115,7 +115,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 
 		// From this differs in which channel the game will wait for the voice,
 		//as well as the difference in the voice itself.
-		slicePlayers := converter.GetMapValues(allPlayersWithRole)
+		slicePlayers := converter.GetMapValues(*allPlayersWithRole)
 		switch votedRole.IsTwoVotes {
 		case true:
 			g.twoVoterRoleNightVoting(slicePlayers, containsNotMutedPlayers, voteDeadline, ch)
@@ -124,7 +124,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 		}
 
 		// Putting it back in the channel.
-		for _, voter := range allPlayersWithRole {
+		for _, voter := range *allPlayersWithRole {
 			if voter.InteractionStatus == playerPack.Muted {
 				err = channelPack.FromUserToSpectator(interactionChannel, voter.Tag)
 				safeSendErrSignal(ch, err)
@@ -141,7 +141,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 		}
 
 		// Need to find a not empty Vote.
-		for _, voter := range allPlayersWithRole {
+		for _, voter := range *allPlayersWithRole {
 			voterVotesLen := len(voter.Votes)
 			if voter.Votes[voterVotesLen-1] == EmptyVoteInt {
 				continue

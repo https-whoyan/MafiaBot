@@ -21,7 +21,7 @@ func GetTestPlayer(i int) *player.NonPlayingPlayer {
 func GetTestPlayers(cnt int) *player.NonPlayingPlayers {
 	var players = &player.NonPlayingPlayers{}
 	for i := 1; i <= cnt; i++ {
-		(*players)[i-1] = GetTestPlayer(i)
+		players.Append(GetTestPlayer(i))
 	}
 	return players
 }

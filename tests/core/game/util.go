@@ -86,11 +86,11 @@ func takeANight(g *game.Game, c votesCfg) {
 					continue
 				}
 				if votedRole.IsTwoVotes {
-					vP := c[votedRole].toTwoVotePr(*g.Active)
+					vP := c[votedRole].toTwoVotePr(g.Active)
 					g.TwoVoteChan <- vP
 					continue
 				}
-				vP := c[votedRole].toVotePr(*g.Active)
+				vP := c[votedRole].toVotePr(g.Active)
 				g.VoteChan <- vP
 			}
 		}
@@ -98,21 +98,40 @@ func takeANight(g *game.Game, c votesCfg) {
 	wg.Wait()
 }
 
-func (v voteCfg) toTwoVotePr(players player.Players) *game.TwoVotesProvider {
+func (v voteCfg) toTwoVotePr(players *player.Players) *game.TwoVotesProvider {
+	votedPlayers := *(players.SearchAllPlayersWithRole(v.role))
+	var votedPlayer = &player.Player{}
+	for _, p := range votedPlayers {
+		votedPlayer = p
+	}
 	return &game.TwoVotesProvider{
-		VotedPlayerID:  strconv.Itoa(int(players.SearchAllPlayersWithRole(v.role)[0].ID)),
+		VotedPlayerID:  strconv.Itoa(int(votedPlayer.ID)),
 		Vote1:          strconv.Itoa(int(v.votes[0])),
 		Vote2:          strconv.Itoa(int(v.votes[1])),
 		IsServerUserID: false,
 	}
 }
 
-func (v voteCfg) toVotePr(players player.Players) *game.VoteProvider {
+// :nolint
+func (v voteCfg) toVotePr(players *player.Players) *game.VoteProvider {
+	votedPlayers := *(players.SearchAllPlayersWithRole(v.role))
+	var votedPlayer = &player.Player{}
+	for _, p := range votedPlayers {
+		votedPlayer = p
+	}
 	return &game.VoteProvider{
-		VotedPlayerID:  strconv.Itoa(int(players.SearchAllPlayersWithRole(v.role)[0].ID)),
+		VotedPlayerID:  strconv.Itoa(int(votedPlayer.ID)),
 		Vote:           strconv.Itoa(int(v.votes[0])),
 		IsServerUserID: false,
 	}
 }
 
 type votesCfg map[*roles.Role]voteCfg
+
+func convertIntMpToIDTypeMp(m map[int]bool) map[player.IDType]bool {
+	ans := make(map[player.IDType]bool)
+	for k, v := range m {
+		ans[player.IDType(k)] = v
+	}
+	return ans
+}

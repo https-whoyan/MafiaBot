@@ -102,15 +102,14 @@ func (s *Players) GetServerNicknames() []string {
 	return usernames
 }
 
-func (s *Players) SearchAllPlayersWithRole(role *roles.Role) Players {
+func (s *Players) SearchAllPlayersWithRole(role *roles.Role) *Players {
 	allPlayers := make(Players)
 	for _, player := range *s {
 		if player.Role == role {
 			allPlayers[player.ID] = player
 		}
 	}
-
-	return allPlayers
+	return &allPlayers
 }
 
 func (s *Players) Append(players ...*Players) {

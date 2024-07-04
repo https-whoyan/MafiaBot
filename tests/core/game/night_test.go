@@ -19,6 +19,7 @@ const (
 )
 
 func TestNightCheckDeadlock_EmptyVotes(t *testing.T) {
+	t.Parallel()
 	deadlockCheckerHelper := func(cfg *config.RolesConfig) {
 		g, err := initHelper(cfg)
 		if err != nil {
@@ -157,7 +158,7 @@ func TestNightConfig7_3(t *testing.T) {
 		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 	t.Run("Excepted No dies, 2", func(t *testing.T) {
 		t.Parallel()
@@ -190,7 +191,7 @@ func TestNightConfig7_3(t *testing.T) {
 		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 	t.Run("Excepted No dies, 3", func(t *testing.T) {
 		t.Parallel()
@@ -224,7 +225,7 @@ func TestNightConfig7_3(t *testing.T) {
 		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 
 	t.Run("Excepted Detective die", func(t *testing.T) {
@@ -261,7 +262,7 @@ func TestNightConfig7_3(t *testing.T) {
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 
 	t.Run("Excepted Doctor die", func(t *testing.T) {
@@ -298,7 +299,7 @@ func TestNightConfig7_3(t *testing.T) {
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 }
 
@@ -393,7 +394,7 @@ func TestNightConfig10_2(t *testing.T) {
 		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 	t.Run("Excepted No dies, 2", func(t *testing.T) {
 		t.Parallel()
@@ -437,7 +438,7 @@ func TestNightConfig10_2(t *testing.T) {
 		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 
 	t.Run("Excepted one peaceful die", func(t *testing.T) {
@@ -490,7 +491,7 @@ func TestNightConfig10_2(t *testing.T) {
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 
 	t.Run("Excepted two peaceful dies", func(t *testing.T) {
@@ -548,7 +549,7 @@ func TestNightConfig10_2(t *testing.T) {
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 
 	// Citizen test
@@ -597,7 +598,7 @@ func TestNightConfig10_2(t *testing.T) {
 		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 	t.Run("Citizen test: Excepted No dies, 2; all voted to detective))", func(t *testing.T) {
 		t.Parallel()
@@ -645,7 +646,7 @@ func TestNightConfig10_2(t *testing.T) {
 		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 	t.Run("Citizen test: Excepted no dies, 3; doctor saved citizen, citizen saved peaceful", func(t *testing.T) {
 		t.Parallel()
@@ -695,7 +696,7 @@ func TestNightConfig10_2(t *testing.T) {
 		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 
 	t.Run("Citizen test: Excepted one die: doctor", func(t *testing.T) {
@@ -747,7 +748,7 @@ func TestNightConfig10_2(t *testing.T) {
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 	t.Run("Citizen test: Excepted one die: citizen, citizen muted", func(t *testing.T) {
 		t.Parallel()
@@ -798,7 +799,7 @@ func TestNightConfig10_2(t *testing.T) {
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 
 	t.Run("Citizen test: Excepted two die: one peaceful and and citizen", func(t *testing.T) {
@@ -852,7 +853,7 @@ func TestNightConfig10_2(t *testing.T) {
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 
 	t.Run("Citizen test: Excepted three dies: two peaceful dies and citizen (lol)", func(t *testing.T) {
@@ -909,6 +910,6 @@ func TestNightConfig10_2(t *testing.T) {
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
-		assert.Equal(t, exceptedDead, actualDead)
+		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 }

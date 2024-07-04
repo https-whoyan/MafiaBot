@@ -179,7 +179,7 @@ func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 		return EmptyConfigErr
 	}
 
-	if cfg.PlayersCount != len(*g.StartPlayers) {
+	if cfg.PlayersCount != len(*(g.StartPlayers)) {
 		err = errors.Join(err, MismatchPlayersCountAndGamePlayersCountErr)
 	}
 	if len(g.RoleChannels) != len(rolesPack.GetAllNightInteractionRolesNames()) {

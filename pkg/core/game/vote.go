@@ -319,7 +319,7 @@ func (g *Game) NightOneVote(vP VoteProviderInterface, opt *OptionalChannelIID) e
 	}
 	// Set empty votes to same role players
 	sameRolePlayers := g.Active.SearchAllPlayersWithRole(votedPlayer.Role)
-	for _, sameRolePlayer := range sameRolePlayers {
+	for _, sameRolePlayer := range *sameRolePlayers {
 		if sameRolePlayer.ID != votedPlayer.ID {
 			sameRolePlayer.Votes = append(sameRolePlayer.Votes, EmptyVoteInt)
 		}
@@ -364,7 +364,7 @@ func (g *Game) NightTwoVote(vP TwoVoteProviderInterface, opt *OptionalChannelIID
 	}
 	// Set empty votes to same role players
 	sameRolePlayers := g.Active.SearchAllPlayersWithRole(votedPlayer.Role)
-	for _, sameRolePlayer := range sameRolePlayers {
+	for _, sameRolePlayer := range *sameRolePlayers {
 		if sameRolePlayer.ID != votedPlayer.ID {
 			sameRolePlayer.Votes = append(sameRolePlayer.Votes, EmptyVoteInt, EmptyVoteInt)
 		}
