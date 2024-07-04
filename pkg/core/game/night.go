@@ -27,7 +27,7 @@ func (g *Game) Night(ch chan<- Signal) {
 		g.NightCounter++
 		g.Unlock()
 
-		_, err := g.MainChannel.Write([]byte(g.getInitialNightMessage()))
+		err := g.messenger.Night.SendInitialNightMessage(g.MainChannel)
 		safeSendErrSignal(ch, err)
 
 		// I'm getting the voting order
@@ -47,7 +47,7 @@ func (g *Game) Night(ch chan<- Signal) {
 		g.RLock()
 		// I do the rest of the interactions that come after the vote.
 		var needToProcessPlayers []*playerPack.Player
-		for _, p := range g.Active {
+		for _, p := range *g.Active {
 			if p.Role.CalculationOrder > 0 {
 				needToProcessPlayers = append(needToProcessPlayers, p)
 			}
@@ -99,7 +99,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 		// And if a player is locked, I tell him about it and add him to spectators for the duration of the Vote.
 		for _, voter := range allPlayersWithRole {
 			if voter.InteractionStatus == playerPack.Muted {
-				_, err = interactionChannel.Write([]byte(g.getMessageToPlayerThatIsMuted(voter)))
+				err = g.messenger.Night.SendToPlayerThatIsMutedMessage(voter, interactionChannel)
 				safeSendErrSignal(ch, err)
 
 				// Add to spectator
@@ -108,7 +108,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 
 			} else {
 				containsNotMutedPlayers = true
-				_, err = interactionChannel.Write([]byte(g.getInvitingMessageToVote(voter, voteDeadlineInt)))
+				err = g.messenger.Night.SendInvitingToVoteMessage(voter, voteDeadlineInt, interactionChannel)
 				safeSendErrSignal(ch, err)
 			}
 		}
@@ -128,7 +128,8 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 			if voter.InteractionStatus == playerPack.Muted {
 				err = channelPack.FromUserToSpectator(interactionChannel, voter.Tag)
 				safeSendErrSignal(ch, err)
-				_, err = interactionChannel.Write([]byte(g.getThanksToMutedPlayerMessage(voter)))
+
+				err = g.messenger.Night.SendThanksToMutedPlayerMessage(voter, interactionChannel)
 				safeSendErrSignal(ch, err)
 			}
 		}
@@ -325,7 +326,7 @@ func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
 		newActivePlayers := make(playerPack.Players)
 		var newDeadPersons []*playerPack.DeadPlayer
 
-		for _, p := range g.Active {
+		for _, p := range *g.Active {
 			if p.LifeStatus == playerPack.Dead {
 				newDeadPlayer := playerPack.NewDeadPlayer(p, playerPack.KilledAtNight, g.NightCounter)
 				newDeadPersons = append(newDeadPersons, newDeadPlayer)
@@ -351,15 +352,14 @@ func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
 		}(newDeadPersons)
 
 		// Changing arrays according to the night
-		g.Active = newActivePlayers
+		g.Active = &newActivePlayers
 		g.Dead.Add(newDeadPersons...)
 
 		// Sending a message about who died today.
-		message := g.GetAfterNightMessage(l)
-		_, err := g.MainChannel.Write([]byte(message))
+		err := g.messenger.AfterNight.SendAfterNightMessage(l, g.MainChannel)
 		safeSendErrSignal(ch, err)
 		// Then, for each person try to do his reincarnation
-		for _, p := range g.Active {
+		for _, p := range *g.Active {
 			g.reincarnation(ch, p)
 		}
 		return

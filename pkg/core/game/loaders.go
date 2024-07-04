@@ -77,13 +77,13 @@ func (g *Game) SetMainChannel(ch channelPack.MainChannel) error {
 // Players
 // ___________________
 
-func (g *Game) SetStartPlayers(players playerPack.NonPlayingPlayers) {
+func (g *Game) SetStartPlayers(players *playerPack.NonPlayingPlayers) {
 	g.Lock()
 	defer g.Unlock()
 	g.StartPlayers = players
 }
 
-func (g *Game) SetSpectators(spectators playerPack.NonPlayingPlayers) {
+func (g *Game) SetSpectators(spectators *playerPack.NonPlayingPlayers) {
 	g.Lock()
 	defer g.Unlock()
 	g.Spectators = spectators

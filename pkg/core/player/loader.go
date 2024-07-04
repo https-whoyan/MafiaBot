@@ -50,15 +50,15 @@ func GeneratePlayers(tags []string, oldUsernames []string,
 
 // First
 
-func GenerateNonPlayingPLayers(tags []string, usernames []string, serverUsernames []string) NonPlayingPlayers {
+func GenerateNonPlayingPLayers(tags []string, usernames []string, serverUsernames []string) *NonPlayingPlayers {
 	if len(tags) != len(usernames) {
 		log.Println("Unexpected mismatch of playing participants and nicknames")
 		return nil
 	}
-	var players []*NonPlayingPlayer
+	var players = &NonPlayingPlayers{}
 	for i, tag := range tags {
 		newPlayer := NewNonPlayingPlayer(tag, usernames[i], serverUsernames[i])
-		players = append(players, newPlayer)
+		players.Append(newPlayer)
 	}
 	return players
 }
@@ -68,7 +68,7 @@ func GenerateNonPlayingPLayers(tags []string, usernames []string, serverUsername
 func GenerateEmptyPlayersByFunc(
 	x any,
 	getTagUsernameAndServerUsername func(x any, index int) (string, string, string),
-	countOfNewPlayers int) NonPlayingPlayers {
+	countOfNewPlayers int) *NonPlayingPlayers {
 
 	isRecovered := false
 	defer func() {
@@ -87,9 +87,8 @@ func GenerateEmptyPlayersByFunc(
 		NewNonPlayingPlayer(tag, username, serverUsername)
 		players[i] = newPlayer
 	}
-
 	if isRecovered {
-		return []*NonPlayingPlayer{}
+		return nil
 	}
-	return players
+	return &players
 }

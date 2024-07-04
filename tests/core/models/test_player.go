@@ -11,17 +11,17 @@ const (
 	testServerUsernamePrefix = "SERVER_USERNAME"
 )
 
-func GetTestPlayer(i int) *player.Player {
+func GetTestPlayer(i int) *player.NonPlayingPlayer {
 	tag := testTagPrefix + ":" + strconv.Itoa(i)
 	username := testUsernamePrefix + ":" + strconv.Itoa(i)
 	serverUsername := testServerUsernamePrefix + ":" + strconv.Itoa(i)
-	return player.NewEmptyPlayer(tag, username, serverUsername)
+	return player.NewNonPlayingPlayer(tag, username, serverUsername)
 }
 
-func GetTestPlayers(cnt int) []*player.Player {
-	players := make([]*player.Player, cnt)
+func GetTestPlayers(cnt int) *player.NonPlayingPlayers {
+	var players = &player.NonPlayingPlayers{}
 	for i := 1; i <= cnt; i++ {
-		players[i-1] = GetTestPlayer(i)
+		(*players)[i-1] = GetTestPlayer(i)
 	}
 	return players
 }

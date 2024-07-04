@@ -51,12 +51,18 @@ func (s NonPlayingPlayers) GetServerNicknames() []string {
 	return serverNames
 }
 
+func (s *NonPlayingPlayers) Append(nonPlayingPlayers ...*NonPlayingPlayer) {
+	for _, nonPlayingPlayer := range nonPlayingPlayers {
+		*s = append(*s, nonPlayingPlayer)
+	}
+}
+
 // ______________________________
 // Methods for Players
 // ______________________________
 
-func (s Players) SearchPlayerByServerID(ID string) *Player {
-	for _, p := range s {
+func (s *Players) SearchPlayerByServerID(ID string) *Player {
+	for _, p := range *s {
 		if p.Tag == ID {
 			return p
 		}
@@ -65,46 +71,54 @@ func (s Players) SearchPlayerByServerID(ID string) *Player {
 	return nil
 }
 
-func (s Players) SearchPlayerByGameID(ID string) *Player {
+func (s *Players) SearchPlayerByGameID(ID string) *Player {
 	intID, err := strconv.Atoi(ID)
 	if err != nil {
 		return nil
 	}
-	return s[IDType(intID)]
+	return (*s)[IDType(intID)]
 }
 
-func (s Players) SearchPlayerByID(ID string, isServerID bool) *Player {
+func (s *Players) SearchPlayerByID(ID string, isServerID bool) *Player {
 	if isServerID {
 		return s.SearchPlayerByServerID(ID)
 	}
 	return s.SearchPlayerByGameID(ID)
 }
 
-func (s Players) GetTags() []string {
+func (s *Players) GetTags() []string {
 	var tags []string
-	for _, p := range s {
+	for _, p := range *s {
 		tags = append(tags, p.Tag)
 	}
 	return tags
 }
 
-func (s Players) GetServerNicknames() []string {
+func (s *Players) GetServerNicknames() []string {
 	var usernames []string
-	for _, p := range s {
+	for _, p := range *s {
 		usernames = append(usernames, p.ServerNick)
 	}
 	return usernames
 }
 
-func (s Players) SearchAllPlayersWithRole(role *roles.Role) Players {
+func (s *Players) SearchAllPlayersWithRole(role *roles.Role) Players {
 	allPlayers := make(Players)
-	for _, player := range s {
+	for _, player := range *s {
 		if player.Role == role {
 			allPlayers[player.ID] = player
 		}
 	}
 
 	return allPlayers
+}
+
+func (s *Players) Append(players ...*Players) {
+	for _, playersColl := range players {
+		for _, p := range *playersColl {
+			(*s)[p.ID] = p
+		}
+	}
 }
 
 // ______________________
@@ -125,4 +139,14 @@ func (s *DeadPlayers) Add(players ...*DeadPlayer) {
 	for _, p := range players {
 		(*s)[p.Role] = append((*s)[p.Role], p)
 	}
+}
+
+func (s *DeadPlayers) ConvertToPlayers() *Players {
+	players := make(Players)
+	for _, rolePlayers := range *s {
+		for _, p := range rolePlayers {
+			players[p.ID] = &p.Player
+		}
+	}
+	return &players
 }

@@ -2,6 +2,7 @@ package game
 
 import (
 	"github.com/https-whoyan/MafiaBot/core/converter"
+	"github.com/https-whoyan/MafiaBot/core/player"
 	"sync"
 	"testing"
 
@@ -131,29 +132,29 @@ func TestNightConfig7_3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 		vCfg := votesCfg{
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{mappedPlayers[roles.Mafia][0].ID},
+				votes: []player.IDType{mappedPlayers[roles.Mafia][0].ID},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{mappedPlayers[roles.Peaceful][2].ID},
+				votes: []player.IDType{mappedPlayers[roles.Peaceful][2].ID},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{mappedPlayers[roles.Mafia][0].ID},
+				votes: []player.IDType{mappedPlayers[roles.Mafia][0].ID},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{}
+		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
 		assert.Equal(t, exceptedDead, actualDead)
@@ -164,29 +165,29 @@ func TestNightConfig7_3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 		vCfg := votesCfg{
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{mappedPlayers[roles.Peaceful][2].ID},
+				votes: []player.IDType{mappedPlayers[roles.Peaceful][2].ID},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{mappedPlayers[roles.Peaceful][2].ID},
+				votes: []player.IDType{mappedPlayers[roles.Peaceful][2].ID},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{}
+		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
 		assert.Equal(t, exceptedDead, actualDead)
@@ -197,30 +198,30 @@ func TestNightConfig7_3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 		doctorID := mappedPlayers[roles.Doctor][0].ID
 		vCfg := votesCfg{
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{doctorID},
+				votes: []player.IDType{doctorID},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{doctorID},
+				votes: []player.IDType{doctorID},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{}
+		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
 		assert.Equal(t, exceptedDead, actualDead)
@@ -232,30 +233,30 @@ func TestNightConfig7_3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 		detectiveID := mappedPlayers[roles.Doctor][0].ID
 		vCfg := votesCfg{
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{mappedPlayers[roles.Doctor][0].ID},
+				votes: []player.IDType{mappedPlayers[roles.Doctor][0].ID},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{
+		exceptedDead := map[player.IDType]bool{
 			detectiveID: true,
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
@@ -269,30 +270,30 @@ func TestNightConfig7_3(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 		doctorID := mappedPlayers[roles.Doctor][0].ID
 		vCfg := votesCfg{
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{doctorID},
+				votes: []player.IDType{doctorID},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{mappedPlayers[roles.Peaceful][0].ID},
+				votes: []player.IDType{mappedPlayers[roles.Peaceful][0].ID},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{
+		exceptedDead := map[player.IDType]bool{
 			doctorID: true,
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
@@ -353,43 +354,43 @@ func TestNightConfig10_2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 		detectiveID := mappedPlayers[roles.Detective][0].ID
 		maniacID := mappedPlayers[roles.Maniac][0].ID
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{maniacID},
+				votes: []player.IDType{maniacID},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{mappedPlayers[roles.Peaceful][0].ID},
+				votes: []player.IDType{mappedPlayers[roles.Peaceful][0].ID},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{}
+		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
 		assert.Equal(t, exceptedDead, actualDead)
@@ -403,37 +404,37 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{}
+		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
 		assert.Equal(t, exceptedDead, actualDead)
@@ -445,7 +446,7 @@ func TestNightConfig10_2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 		maniacID := mappedPlayers[roles.Maniac][0].ID
 		doctorID := mappedPlayers[roles.Doctor][0].ID
 
@@ -454,37 +455,37 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{maniacID},
+				votes: []player.IDType{maniacID},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{doctorID},
+				votes: []player.IDType{doctorID},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{randomPeacefulID2},
+				votes: []player.IDType{randomPeacefulID2},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{maniacID},
+				votes: []player.IDType{maniacID},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{randomPeacefulID1},
+				votes: []player.IDType{randomPeacefulID1},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{
+		exceptedDead := map[player.IDType]bool{
 			randomPeacefulID2: true,
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
@@ -498,7 +499,7 @@ func TestNightConfig10_2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 		maniacID := mappedPlayers[roles.Maniac][0].ID
 
 		randomPeacefulID1 := mappedPlayers[roles.Peaceful][0].ID
@@ -507,41 +508,41 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{randomPeacefulID1},
+				votes: []player.IDType{randomPeacefulID1},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{randomPeacefulID2},
+				votes: []player.IDType{randomPeacefulID2},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{maniacID},
+				votes: []player.IDType{maniacID},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{randomPeacefulID3},
+				votes: []player.IDType{randomPeacefulID3},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{randomPeacefulID3},
+				votes: []player.IDType{randomPeacefulID3},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{
+		exceptedDead := map[player.IDType]bool{
 			randomPeacefulID2: true,
 			randomPeacefulID3: true,
 		}
@@ -558,42 +559,42 @@ func TestNightConfig10_2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 		detectiveID := mappedPlayers[roles.Detective][0].ID
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{}
+		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
 		assert.Equal(t, exceptedDead, actualDead)
@@ -604,44 +605,44 @@ func TestNightConfig10_2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 
 		detectiveID := mappedPlayers[roles.Detective][0].ID
 
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{}
+		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
 		assert.Equal(t, exceptedDead, actualDead)
@@ -652,7 +653,7 @@ func TestNightConfig10_2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 
 		donID := mappedPlayers[roles.Don][0].ID
 		citizenID := mappedPlayers[roles.Citizen][0].ID
@@ -661,37 +662,37 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{donID},
+				votes: []player.IDType{donID},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{citizenID},
+				votes: []player.IDType{citizenID},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{rndPeacefulID},
+				votes: []player.IDType{rndPeacefulID},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{citizenID},
+				votes: []player.IDType{citizenID},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{rndPeacefulID},
+				votes: []player.IDType{rndPeacefulID},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{}
+		exceptedDead := map[player.IDType]bool{}
 		actualDead := converter.SliceToSet(nightLog.Dead)
 
 		assert.Equal(t, exceptedDead, actualDead)
@@ -703,7 +704,7 @@ func TestNightConfig10_2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 
 		doctorID := mappedPlayers[roles.Doctor][0].ID
 		citizenID := mappedPlayers[roles.Citizen][0].ID
@@ -711,37 +712,37 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{citizenID},
+				votes: []player.IDType{citizenID},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{doctorID},
+				votes: []player.IDType{doctorID},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{doctorID},
+				votes: []player.IDType{doctorID},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{doctorID},
+				votes: []player.IDType{doctorID},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{
+		exceptedDead := map[player.IDType]bool{
 			doctorID: true,
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
@@ -754,7 +755,7 @@ func TestNightConfig10_2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 
 		citizenID := mappedPlayers[roles.Citizen][0].ID
 		rndPeacefulID1 := mappedPlayers[roles.Peaceful][0].ID
@@ -762,37 +763,37 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{citizenID},
+				votes: []player.IDType{citizenID},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{citizenID},
+				votes: []player.IDType{citizenID},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{rndPeacefulID1},
+				votes: []player.IDType{rndPeacefulID1},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{
+		exceptedDead := map[player.IDType]bool{
 			citizenID: true,
 		}
 		actualDead := converter.SliceToSet(nightLog.Dead)
@@ -806,7 +807,7 @@ func TestNightConfig10_2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 
 		rndPeacefulID1 := mappedPlayers[roles.Peaceful][0].ID
 		rndPeacefulID2 := mappedPlayers[roles.Peaceful][1].ID
@@ -815,37 +816,37 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{citizenID},
+				votes: []player.IDType{citizenID},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{rndPeacefulID1},
+				votes: []player.IDType{rndPeacefulID1},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{rndPeacefulID2},
+				votes: []player.IDType{rndPeacefulID2},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{rndPeacefulID2},
+				votes: []player.IDType{rndPeacefulID2},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{
+		exceptedDead := map[player.IDType]bool{
 			rndPeacefulID1: true,
 			citizenID:      true,
 		}
@@ -860,7 +861,7 @@ func TestNightConfig10_2(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		mappedPlayers := playersHelper(g.Active)
+		mappedPlayers := playersHelper(*g.Active)
 
 		rndPeacefulID1 := mappedPlayers[roles.Peaceful][0].ID
 		rndPeacefulID2 := mappedPlayers[roles.Peaceful][1].ID
@@ -871,37 +872,37 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []int{NonVote, NonVote},
+				votes: []player.IDType{NonVote, NonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []int{NonVote},
+				votes: []player.IDType{NonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []int{citizenID},
+				votes: []player.IDType{citizenID},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []int{rndPeacefulID1},
+				votes: []player.IDType{rndPeacefulID1},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []int{detectiveID},
+				votes: []player.IDType{detectiveID},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []int{rndPeacefulID2},
+				votes: []player.IDType{rndPeacefulID2},
 			},
 		}
 		takeANight(g, vCfg)
 		nightLog := g.NewNightLog()
 
-		exceptedDead := map[int]bool{
+		exceptedDead := map[player.IDType]bool{
 			rndPeacefulID1: true,
 			rndPeacefulID2: true,
 			citizenID:      true,

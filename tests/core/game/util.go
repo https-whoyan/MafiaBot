@@ -52,7 +52,7 @@ func signalHandler(s game.Signal) *roles.Role {
 	return nil
 }
 
-func playersHelper(players []*player.Player) map[*roles.Role][]*player.Player {
+func playersHelper(players player.Players) map[*roles.Role][]*player.Player {
 	mp := make(map[*roles.Role][]*player.Player)
 	for _, p := range players {
 		mp[p.Role] = append(mp[p.Role], p)
@@ -62,7 +62,7 @@ func playersHelper(players []*player.Player) map[*roles.Role][]*player.Player {
 
 type voteCfg struct {
 	role  *roles.Role
-	votes []int
+	votes []player.IDType
 }
 
 func takeANight(g *game.Game, c votesCfg) {
@@ -86,11 +86,11 @@ func takeANight(g *game.Game, c votesCfg) {
 					continue
 				}
 				if votedRole.IsTwoVotes {
-					vP := c[votedRole].toTwoVotePr(g.Active)
+					vP := c[votedRole].toTwoVotePr(*g.Active)
 					g.TwoVoteChan <- vP
 					continue
 				}
-				vP := c[votedRole].toVotePr(g.Active)
+				vP := c[votedRole].toVotePr(*g.Active)
 				g.VoteChan <- vP
 			}
 		}
@@ -100,17 +100,17 @@ func takeANight(g *game.Game, c votesCfg) {
 
 func (v voteCfg) toTwoVotePr(players player.Players) *game.TwoVotesProvider {
 	return &game.TwoVotesProvider{
-		VotedPlayerID:  strconv.Itoa(player.SearchAllPlayersWithRole(players, v.role)[0].ID),
-		Vote1:          strconv.Itoa(v.votes[0]),
-		Vote2:          strconv.Itoa(v.votes[1]),
+		VotedPlayerID:  strconv.Itoa(int(players.SearchAllPlayersWithRole(v.role)[0].ID)),
+		Vote1:          strconv.Itoa(int(v.votes[0])),
+		Vote2:          strconv.Itoa(int(v.votes[1])),
 		IsServerUserID: false,
 	}
 }
 
-func (v voteCfg) toVotePr(players []*player.Player) *game.VoteProvider {
+func (v voteCfg) toVotePr(players player.Players) *game.VoteProvider {
 	return &game.VoteProvider{
-		VotedPlayerID:  strconv.Itoa(player.SearchAllPlayersWithRole(players, v.role)[0].ID),
-		Vote:           strconv.Itoa(v.votes[0]),
+		VotedPlayerID:  strconv.Itoa(int(players.SearchAllPlayersWithRole(v.role)[0].ID)),
+		Vote:           strconv.Itoa(int(v.votes[0])),
 		IsServerUserID: false,
 	}
 }

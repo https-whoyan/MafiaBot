@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"github.com/https-whoyan/MafiaBot/core/roles"
+	"io"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -36,14 +37,47 @@ var (
 	getRandomPlayerCalling  = func() string { return playerCalling[rand.Intn(len(playerCalling))] }
 )
 
+type Messenger struct {
+	f          myFMT.FmtInterface
+	Init       *initMessenger
+	Night      *nightMessenger
+	AfterNight *afterNightMessenger
+	Finish     *finishMessenger
+}
+
+type primitiveMessenger struct {
+	f myFMT.FmtInterface
+	g *Game
+}
+
+func (m primitiveMessenger) sendMessage(msg string, writer io.Writer) error {
+	_, err := writer.Write([]byte(msg))
+	return err
+}
+
+func NewGameMessanger(f myFMT.FmtInterface, g *Game) *Messenger {
+	base := &primitiveMessenger{f: f, g: g}
+	return &Messenger{
+		f:          f,
+		Init:       &initMessenger{base},
+		Night:      &nightMessenger{base},
+		AfterNight: &afterNightMessenger{base},
+		Finish:     &finishMessenger{base},
+	}
+}
+
 // ____________
 // Init
 // ____________
 
-func (g *Game) GetStartMessage() string {
+type initMessenger struct {
+	*primitiveMessenger
+}
+
+func (m initMessenger) SendStartMessage(writer io.Writer) error {
 	var message string
 
-	f := g.fmtEr
+	f := m.f
 
 	nl := f.LineSplitter()
 	dNl := nl + nl
@@ -54,7 +88,7 @@ func (g *Game) GetStartMessage() string {
 	message += myFMT.BoldUnderline(f, "Today, our players:") + nl
 
 	var aboutIDMessages []string
-	activePlayers := g.Active
+	activePlayers := *m.g.Active
 	sort.Slice(activePlayers, func(i, j int) bool {
 		return activePlayers[playerPack.IDType(j)].ID < activePlayers[playerPack.IDType(j)].ID
 	})
@@ -66,12 +100,12 @@ func (g *Game) GetStartMessage() string {
 	}
 	message += strings.Join(aboutIDMessages, nl)
 
-	if len(g.Spectators) != 0 {
+	if len(*m.g.Spectators) != 0 {
 		message += dNl
 		message += "From behind the scenes to support us: "
 		var spectatorMentions []string
 
-		for _, spectator := range g.Spectators {
+		for _, spectator := range *m.g.Spectators {
 			spectatorMentions = append(spectatorMentions, f.Mention(spectator.ServerNick))
 		}
 		message += strings.Join(spectatorMentions, ", ")
@@ -79,19 +113,19 @@ func (g *Game) GetStartMessage() string {
 
 	message += nl + iL + nl
 	message += myFMT.ItalicUnderline(f, "Selected game configuration:") + nl
-	message += g.RolesConfig.GetMessageAboutConfig(f)
+	message += m.g.RolesConfig.GetMessageAboutConfig(f)
 	message += nl + iL + nl
 
 	// Redo it if it false!!!!
-	message += "A private message has been sent to each of you, you can find your IDType and role in it."
+	message += "A private message has been sent to each of you, you can find your ID and role in it."
 	message += nl
 	message += "Also, " + f.Bold("if you have an active night role, you have been added to special channels, where "+
 		"you can send commands to the bot anonymously")
-	if len(g.Spectators) != 0 {
+	if len(*m.g.Spectators) != 0 {
 		message += f.Italic(" (but there's no hiding from observers))))")
 	}
 	message += "." + nl
-	if g.renameMode != NotRenameModeMode {
+	if m.g.renameMode != NotRenameModeMode {
 		message += nl
 		message += "Also, all participants have been prefixed with their IDs to make it more convenient for you."
 	}
@@ -99,68 +133,74 @@ func (g *Game) GetStartMessage() string {
 	message += f.Bold("Welcome, welcome, welcome... Happy hunger games and the odds be ever in your favor! ") +
 		f.Italic("(Or just have a good game!) 🍀")
 
-	return message
+	_, err := writer.Write([]byte(message))
+	return err
 }
 
 // ____________
 // Night
 // ____________
 
-func (g *Game) getInitialNightMessage() string {
-	g.RLock()
-	defer g.RUnlock()
-	f := g.fmtEr
-	message := f.Bold("Night №") + f.Block(strconv.Itoa(g.NightCounter)) + " is coming." + f.LineSplitter()
-	message += fmt.Sprintf("On this night you are played by %v players.", len(g.Active))
-	return message
+type nightMessenger struct {
+	*primitiveMessenger
 }
 
-func (g *Game) getInvitingMessageToVote(p *playerPack.Player, deadlineInSeconds int) string {
-	g.RLock()
-	defer g.RUnlock()
-	f := g.fmtEr
+func (m *nightMessenger) SendInitialNightMessage(w io.Writer) error {
+	f := m.f
+	message := f.Bold("Night №") + f.Block(strconv.Itoa(m.g.NightCounter)) + " is coming." + f.LineSplitter()
+	message += fmt.Sprintf("On this night you are played by %v players.", len(*m.g.Active))
+	return m.sendMessage(message, w)
+}
+
+func (m *nightMessenger) SendInvitingToVoteMessage(p *playerPack.Player, deadlineInSeconds int, w io.Writer) error {
+	m.g.RLock()
+	defer m.g.RUnlock()
+	f := m.f
 	message := f.Bold("Hello, " + f.Mention(p.ServerNick) + ". It's your turn to Vote.")
 	message += f.LineSplitter()
 	message += myFMT.BoldUnderline(f, fmt.Sprintf("Deadline: %v seconds.", deadlineInSeconds))
-	return message
+	return m.sendMessage(message, w)
 }
 
-func (g *Game) getMessageToPlayerThatIsMuted(p *playerPack.Player) string {
-	g.RLock()
-	defer g.RUnlock()
-	f := g.fmtEr
+func (m *nightMessenger) SendToPlayerThatIsMutedMessage(p *playerPack.Player, w io.Writer) error {
+	m.g.RLock()
+	defer m.g.RUnlock()
 
-	message := "Oops.... someone was muted today!" + f.Mention(p.ServerNick) +
+	message := "Oops.... someone was muted today!" + m.f.Mention(p.ServerNick) +
 		" , just chill, bro."
-	return message
+	return m.sendMessage(message, w)
 }
 
-func (g *Game) getThanksToMutedPlayerMessage(p *playerPack.Player) string {
-	g.RLock()
-	defer g.RUnlock()
-	message := g.fmtEr.Bold(g.fmtEr.Mention(p.ServerNick) + ", always thanks!")
-	return message
+func (m *nightMessenger) SendThanksToMutedPlayerMessage(p *playerPack.Player, writer io.Writer) error {
+	m.g.RLock()
+	defer m.g.RUnlock()
+	message := m.f.Bold(m.f.Mention(p.ServerNick) + ", always thanks!")
+	return m.sendMessage(message, writer)
 }
 
 // ____________
 // AfterNight
 // ____________
 
+type afterNightMessenger struct {
+	*primitiveMessenger
+}
+
 // GetAfterNightMessage provide a message to main chat after game.
-func (g *Game) GetAfterNightMessage(l NightLog) string {
-	f := g.fmtEr
+func (m afterNightMessenger) SendAfterNightMessage(l NightLog, w io.Writer) error {
+	f := m.f
 	message := myFMT.BoldItalic(f, "Dear citizens!") + f.LineSplitter()
 	message += f.Bold("Today, we're losing")
 	if len(l.Dead) == 0 {
 		message += "....  " + myFMT.BoldUnderline(f, "Just our nerve cells...") + f.LineSplitter()
 		message += f.Bold("Everyone survived.")
-		return message
+		return m.sendMessage(message, w)
 	}
 	message += " " + f.Block(strconv.Itoa(len(l.Dead))) +
 		f.Bold(" people")
 	var mentions []string
 	idsSet := cnvPack.SliceToSet(l.Dead)
-	for _, p := range g.Active {
+	for _, p := range *m.g.Active {
 		if idsSet[int(p.ID)] {
 			mentions = append(mentions, f.Mention(p.ServerNick))
 		}
@@ -169,46 +209,58 @@ func (g *Game) GetAfterNightMessage(l NightLog) string {
 	message += f.LineSplitter() + f.LineSplitter()
 	message += f.Bold("Dear victims, you have " +
 		strconv.Itoa(myTime.LastWordDeadlineMinutes) + " minute to say your angry.")
-	return message
+	return m.sendMessage(message, w)
 }
 
 // _____________________
 // Team victory message
 // _____________________
 
-func (g *Game) GetMessageAboutWinner(l FinishLog) string {
+type finishMessenger struct {
+	*primitiveMessenger
+}
+
+func (m finishMessenger) SendMessagesAboutEndOfGame(l FinishLog, w io.Writer) error {
 	var message string
-	f := g.fmtEr
+	f := m.f
 	message = f.Bold("Our game has come to an end.") + f.LineSplitter()
-	if l.IsFool {
-		message += g.getFoolWinnerMessage()
-	} else {
-		message += g.getTeamWinnerMessage(*l.WinnerTeam)
+	err := m.SendMessageAboutWinner(l, w)
+	if err != nil {
+		return err
 	}
-	message += f.LineSplitter() + f.InfoSplitter() + f.LineSplitter()
-	message += g.getAfterGameParticipantAboutMessage()
+	err = m.sendMessage(message, w)
+	return err
+}
+
+func (m finishMessenger) SendMessageAboutWinner(l FinishLog, w io.Writer) error {
+	var message string
+
+	if l.IsFool {
+		message += m.getFoolWinnerMessage()
+	} else {
+		message += m.getTeamWinnerMessage(*l.WinnerTeam)
+	}
+	return m.sendMessage(message, w)
+}
+
+func (m finishMessenger) getTeamWinnerMessage(team roles.Team) string {
 	//Todo
 	return ""
 }
 
-func (g *Game) getTeamWinnerMessage(team roles.Team) string {
-	//Todo
-	return ""
-}
-
-func (g *Game) getFoolWinnerMessage() string {
+func (m finishMessenger) getFoolWinnerMessage() string {
 	//Todo
 	return ""
 }
 
 // Todo
-func (g *Game) getAfterGameParticipantAboutMessage() string {
-	f := g.fmtEr
+func (m finishMessenger) SendParticipantAboutMessage(w io.Writer) string {
+	f := m.f
 	var message string
 	message = myFMT.BoldUnderline(f, "And the roles of the participants were:")
 
-	// allPartitians := g.StartPlayers
-	//todo
+	allPartitions := m.g.Active
+	allPartitions.Append(m.g.Dead.ConvertToPlayers())
 
 	return message
 }

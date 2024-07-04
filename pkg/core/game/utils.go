@@ -11,7 +11,7 @@ func (g *Game) ResetTheVotes() {
 	defer g.Unlock()
 	allPlayers := g.Active
 
-	for _, activePlayer := range allPlayers {
+	for _, activePlayer := range *allPlayers {
 		activePlayer.DayVote = EmptyVoteInt
 	}
 }
@@ -22,7 +22,7 @@ func (g *Game) ResetAllInteractionsStatuses() {
 	defer g.Unlock()
 	allPlayers := g.Active
 
-	for _, activePlayer := range allPlayers {
+	for _, activePlayer := range *allPlayers {
 		activePlayer.InteractionStatus = player.Passed
 	}
 }
@@ -36,7 +36,7 @@ func (g *Game) UnderstandWinnerTeam() *roles.Team {
 
 	// int represent count of players by their team
 	teamsMp := make(map[roles.Team]int)
-	for _, activePlayer := range allPlayers {
+	for _, activePlayer := range *allPlayers {
 		teamsMp[activePlayer.Role.Team]++
 	}
 

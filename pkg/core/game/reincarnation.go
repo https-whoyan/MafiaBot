@@ -21,7 +21,7 @@ func (g *Game) donReincarnation(ch chan<- Signal, p *player.Player) {
 	// I find out he's the only one left on the mafia team.
 	g.RLock()
 	mafiaTeamCounter := 0
-	for _, activePlayer := range g.Active {
+	for _, activePlayer := range *g.Active {
 		if activePlayer.Role.Team == roles.MafiaTeam {
 			mafiaTeamCounter++
 		}
@@ -35,7 +35,7 @@ func (g *Game) donReincarnation(ch chan<- Signal, p *player.Player) {
 	safeSendErrSignal(ch, g.RoleChannels[strings.ToLower(roles.Don.Name)].RemoveUser(p.Tag))
 	safeSendErrSignal(ch, g.RoleChannels[strings.ToLower(roles.Mafia.Name)].AddPlayer(p.Tag))
 
-	f := g.fmtEr
+	f := g.messenger.f
 	g.RUnlock()
 	var message string
 	message = f.Bold("Hello, dear ") + f.Mention(p.ServerNick) + "." + f.LineSplitter()

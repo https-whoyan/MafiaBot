@@ -54,7 +54,7 @@ func (g *Game) NewNightLog() NightLog {
 
 		nightNumber := g.NightCounter
 		nightVotes := make(map[int][]int)
-		for _, p := range g.Active {
+		for _, p := range *g.Active {
 			if p.Role.NightVoteOrder == -1 {
 				continue
 			}
@@ -70,7 +70,7 @@ func (g *Game) NewNightLog() NightLog {
 			nightVotes[int(p.ID)] = votes
 		}
 		var dead []int
-		for _, p := range g.Active {
+		for _, p := range *g.Active {
 			if p.LifeStatus == player.Dead {
 				dead = append(dead, int(p.ID))
 			}
@@ -110,7 +110,7 @@ func (g *Game) NewFinishLog(winnerTeam *roles.Team, isFool bool) FinishLog {
 		defer g.RUnlock()
 
 		containsFool := false
-		for _, players := range g.Dead {
+		for _, players := range *g.Dead {
 			for _, p := range players {
 				if p.Role == roles.Fool {
 					containsFool = true
