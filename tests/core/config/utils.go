@@ -16,5 +16,5 @@ func GetRandomConfig() *config.RolesConfig {
 	}
 	available := *(config.Configs[cfgPlayersCount])
 	availableLen := len(available)
-	return available[rand.Intn(availableLen)]
+	return available[rand.Intn(availableLen-1)]
 }

@@ -320,7 +320,6 @@ func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
 	default:
 		g.ResetAllInteractionsStatuses()
 		g.Lock()
-		defer g.Unlock()
 
 		// Splitting arrays.
 		newActivePlayers := make(playerPack.Players)
@@ -339,27 +338,34 @@ func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
 		// players after a minute, so, using goroutine.
 		go func(newDeadPersons []*playerPack.DeadPlayer) {
 			duration := myTime.LastWordDeadline * time.Second
-			time.Sleep(duration)
-			g.Lock()
-			defer g.Unlock()
-			// I'm adding new dead players to the spectators in the channels (so they won't be so bored)
-			for _, p := range newDeadPersons {
-				for _, interactionChannel := range g.RoleChannels {
-					safeSendErrSignal(ch, channelPack.FromUserToSpectator(interactionChannel, p.Tag))
+			ticker := time.NewTicker(duration)
+			defer ticker.Stop()
+			select {
+			case <-g.ctx.Done():
+				return
+			case <-ticker.C:
+				g.RLock()
+				defer g.RUnlock()
+				// I'm adding new dead players to the spectators in the channels (so they won't be so bored)
+				for _, p := range newDeadPersons {
+					for _, interactionChannel := range g.RoleChannels {
+						safeSendErrSignal(ch, channelPack.FromUserToSpectator(interactionChannel, p.Tag))
+					}
+					safeSendErrSignal(ch, channelPack.FromUserToSpectator(g.MainChannel, p.Tag))
 				}
-				safeSendErrSignal(ch, channelPack.FromUserToSpectator(g.MainChannel, p.Tag))
 			}
 		}(newDeadPersons)
 
 		// Changing arrays according to the night
 		g.Active = &newActivePlayers
 		g.Dead.Add(newDeadPersons...)
+		g.Unlock()
 
 		// Sending a message about who died today.
 		err := g.messenger.AfterNight.SendAfterNightMessage(l, g.MainChannel)
 		safeSendErrSignal(ch, err)
 		// Then, for each person try to do his reincarnation
-		for _, p := range *g.Active {
+		for _, p := range newActivePlayers {
 			g.reincarnation(ch, p)
 		}
 		return

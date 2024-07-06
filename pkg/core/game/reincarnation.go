@@ -3,7 +3,6 @@ package game
 import (
 	"github.com/https-whoyan/MafiaBot/core/player"
 	"github.com/https-whoyan/MafiaBot/core/roles"
-	"strings"
 )
 
 // This is where all the code regarding reincarnation and role reversal is contained.
@@ -26,14 +25,13 @@ func (g *Game) donReincarnation(ch chan<- Signal, p *player.Player) {
 			mafiaTeamCounter++
 		}
 	}
-
 	if mafiaTeamCounter > 1 {
 		g.RUnlock()
 		return
 	}
 	p.Role = roles.Mafia
-	safeSendErrSignal(ch, g.RoleChannels[strings.ToLower(roles.Don.Name)].RemoveUser(p.Tag))
-	safeSendErrSignal(ch, g.RoleChannels[strings.ToLower(roles.Mafia.Name)].AddPlayer(p.Tag))
+	safeSendErrSignal(ch, g.RoleChannels[roles.Don.Name].RemoveUser(p.Tag))
+	safeSendErrSignal(ch, g.RoleChannels[roles.Mafia.Name].AddPlayer(p.Tag))
 
 	f := g.messenger.f
 	g.RUnlock()
@@ -41,6 +39,6 @@ func (g *Game) donReincarnation(ch chan<- Signal, p *player.Player) {
 	message = f.Bold("Hello, dear ") + f.Mention(p.ServerNick) + "." + f.LineSplitter()
 	message += "You are the last player left alive from the mafia team, so you become mafia." + f.LineSplitter()
 	message += f.Underline("Don't reveal yourself.")
-	_, err := g.RoleChannels[strings.ToLower(roles.Mafia.Name)].Write([]byte(message))
+	_, err := g.RoleChannels[roles.Mafia.Name].Write([]byte(message))
 	safeSendErrSignal(ch, err)
 }

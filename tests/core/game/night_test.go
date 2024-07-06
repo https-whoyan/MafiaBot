@@ -913,3 +913,138 @@ func TestNightConfig10_2(t *testing.T) {
 		assert.Equal(t, exceptedDead, convertIntMpToIDTypeMp(actualDead))
 	})
 }
+
+func TestReincarnation(t *testing.T) {
+	t.Parallel()
+	var testedCfg = config.GetConfigByPlayersCountAndIndex(10, 2)
+
+	t.Run("Excepted Reincarnation", func(t *testing.T) {
+		t.Parallel()
+		g, err := initHelper(testedCfg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mappedPlayers := playersHelper(*g.Active)
+		detectiveID := mappedPlayers[roles.Detective][0].ID
+		citizenID := mappedPlayers[roles.Citizen][0].ID
+		mafiaID := mappedPlayers[roles.Mafia][0].ID
+		rndPeacefulID1 := mappedPlayers[roles.Peaceful][0].ID
+		don := mappedPlayers[roles.Don][0]
+		vCfg := votesCfg{
+			roles.Detective: {
+				role:  roles.Detective,
+				votes: []player.IDType{citizenID, don.ID},
+			},
+			roles.Don: {
+				role:  roles.Don,
+				votes: []player.IDType{citizenID},
+			},
+			roles.Citizen: {
+				role:  roles.Citizen,
+				votes: []player.IDType{mafiaID},
+			},
+			roles.Whore: {
+				role:  roles.Whore,
+				votes: []player.IDType{rndPeacefulID1},
+			},
+			roles.Mafia: {
+				role:  roles.Mafia,
+				votes: []player.IDType{detectiveID},
+			},
+			roles.Doctor: {
+				role:  roles.Doctor,
+				votes: []player.IDType{detectiveID},
+			},
+			roles.Maniac: {
+				role:  roles.Maniac,
+				votes: []player.IDType{citizenID},
+			},
+		}
+		takeANight(g, vCfg)
+		nightLog := g.NewNightLog()
+
+		ch := make(chan game.Signal)
+		wg := sync.WaitGroup{}
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			g.AffectNight(nightLog, ch)
+			close(ch)
+		}()
+		go func() {
+			defer wg.Done()
+			for range ch {
+			}
+		}()
+		wg.Wait()
+
+		exceptedDoneRole := roles.Mafia
+		actualDonRole := don.Role
+
+		assert.Equal(t, exceptedDoneRole, actualDonRole)
+	})
+
+	t.Run("Excepted no reincarnation", func(t *testing.T) {
+		t.Parallel()
+		g, err := initHelper(testedCfg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mappedPlayers := playersHelper(*g.Active)
+		detectiveID := mappedPlayers[roles.Detective][0].ID
+		maniacID := mappedPlayers[roles.Maniac][0].ID
+		don := mappedPlayers[roles.Don][0]
+		vCfg := votesCfg{
+			roles.Detective: {
+				role:  roles.Detective,
+				votes: []player.IDType{maniacID, don.ID},
+			},
+			roles.Don: {
+				role:  roles.Don,
+				votes: []player.IDType{NonVote},
+			},
+			roles.Whore: {
+				role:  roles.Whore,
+				votes: []player.IDType{maniacID},
+			},
+			roles.Mafia: {
+				role:  roles.Mafia,
+				votes: []player.IDType{detectiveID},
+			},
+			roles.Citizen: {
+				role:  roles.Citizen,
+				votes: []player.IDType{NonVote},
+			},
+			roles.Doctor: {
+				role:  roles.Doctor,
+				votes: []player.IDType{detectiveID},
+			},
+			roles.Maniac: {
+				role:  roles.Maniac,
+				votes: []player.IDType{mappedPlayers[roles.Peaceful][0].ID},
+			},
+		}
+		takeANight(g, vCfg)
+		nightLog := g.NewNightLog()
+
+		ch := make(chan game.Signal)
+		wg := sync.WaitGroup{}
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			g.AffectNight(nightLog, ch)
+			close(ch)
+		}()
+		go func() {
+			defer wg.Done()
+			for range ch {
+			}
+		}()
+		wg.Wait()
+
+		exceptedDoneRole := roles.Don
+		actualDonRole := don.Role
+
+		assert.Equal(t, exceptedDoneRole, actualDonRole)
+	})
+}
