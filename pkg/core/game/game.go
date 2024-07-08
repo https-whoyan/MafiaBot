@@ -53,7 +53,7 @@ func RenameModeOpt(mode RenameMode) GameOption {
 func VotePingOpt(votePing int) GameOption {
 	return func(g *Game) { g.VotePing = votePing }
 }
-func LoggerOpt(logger GameLogger) GameOption {
+func LoggerOpt(logger Logger) GameOption {
 	return func(g *Game) { g.logger = logger }
 }
 
@@ -109,7 +109,7 @@ type Game struct {
 	// Use to rename user in your interpretation
 	renameProvider playerPack.RenameUserProviderInterface
 	renameMode     RenameMode
-	logger         GameLogger
+	logger         Logger
 	ctx            context.Context
 }
 
@@ -353,6 +353,14 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 		}
 	default:
 		return errors.New("invalid rename mode")
+	}
+	if g.logger != nil {
+		g.RUnlock()
+		g.Lock()
+		err = g.logger.InitNewGame(g)
+		g.Unlock()
+		g.RLock()
+		return err
 	}
 
 	return nil

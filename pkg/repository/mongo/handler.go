@@ -3,11 +3,11 @@ package mongo
 import (
 	"context"
 	"errors"
-	"log"
-	"strings"
-
+	"github.com/https-whoyan/MafiaBot/core/game"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"log"
+	"strings"
 )
 
 const (
@@ -16,6 +16,11 @@ const (
 
 const (
 	GuildChannelsCollection = "guild_channels"
+	GameStorageCollection   = "game_storage"
+)
+
+var (
+	ctx = context.Background()
 )
 
 func (db *MongoDB) getColl(dbName, collection string) (*mongo.Collection, error) {
@@ -353,3 +358,70 @@ func (db *MongoDB) GetMainChannelIID(guildID string) (string, error) {
 // Logs
 // _________________
 // *******************
+
+func (db *MongoDB) InitNewGame(g *game.Game) error {
+	db.Lock()
+	defer db.Unlock()
+	coll, err := db.getColl(DbName, GameStorageCollection)
+	if err != nil {
+		return err
+	}
+	_, err = coll.InsertOne(ctx, newMongoGameLog(g))
+	return err
+}
+
+func (db *MongoDB) SaveNightLog(g *game.Game, l game.NightLog) error {
+	filter := bson.M{
+		"guildID":   g.GuildID,
+		"startTime": g.TimeStart,
+	}
+	updatePush := bson.D{{
+		"$push", bson.D{{
+			"nightLogs", newMongoGameNight(l),
+		}},
+	}}
+	db.Lock()
+	defer db.Unlock()
+	coll, err := db.getColl(DbName, GameStorageCollection)
+	if err != nil {
+		return err
+	}
+	_, err = coll.UpdateOne(ctx, filter, updatePush)
+	return err
+}
+
+func (db *MongoDB) SaveDayLog(g *game.Game, l game.DayLog) error {
+	filter := bson.M{
+		"guildID":   g.GuildID,
+		"startTime": g.TimeStart,
+	}
+	updatePush := bson.D{{
+		"$push", bson.D{{
+			"da", newMongoGameDay(l),
+		}},
+	}}
+	db.Lock()
+	defer db.Unlock()
+	coll, err := db.getColl(DbName, GameStorageCollection)
+	if err != nil {
+		return err
+	}
+	_, err = coll.UpdateOne(ctx, filter, updatePush)
+	return err
+}
+
+func (db *MongoDB) SaveFinishLog(g *game.Game, l game.FinishLog) error {
+	filter := bson.M{
+		"guildID":   g.GuildID,
+		"startTime": g.TimeStart,
+	}
+	updatePush := getUpdateByByNightLog(l)
+	db.Lock()
+	defer db.Unlock()
+	coll, err := db.getColl(DbName, GameStorageCollection)
+	if err != nil {
+		return err
+	}
+	_, err = coll.UpdateOne(ctx, filter, updatePush)
+	return err
+}

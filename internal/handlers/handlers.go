@@ -13,7 +13,6 @@ import (
 	coreConfigPack "github.com/https-whoyan/MafiaBot/core/config"
 	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
 	coreMessagePack "github.com/https-whoyan/MafiaBot/core/message"
-	corePlayerPack "github.com/https-whoyan/MafiaBot/core/player"
 	coreRolesPack "github.com/https-whoyan/MafiaBot/core/roles"
 	botCnvPack "github.com/https-whoyan/MafiaBot/internal/converter"
 	botFMTPack "github.com/https-whoyan/MafiaBot/internal/fmt"
@@ -340,7 +339,7 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 		// Validate, we only want users who participate in the game.
 		_, playersMessageCount, err := botCnvPack.GetElsOnlyIncludeFunc(
 			usersWhoLiked,
-			corePlayerPack.GetTagsByPlayers(g.StartPlayers),
+			g.StartPlayers.GetTags(),
 			func(u *discordgo.User) string { return u.ID })
 
 		if err != nil {
@@ -365,7 +364,7 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 		g.SetState(coreGamePack.RegisterState)
 		return
 	}
-	for _, player := range g.StartPlayers {
+	for _, player := range *g.Active {
 		err = SendToUser(s, player.Tag, coreMessagePack.GetStartPlayerDefinition(player, f))
 		if err != nil {
 			log.Println(err)
@@ -405,7 +404,7 @@ func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 		message := f.B("Incorrect format for entering the IDType of the player you are voting for.") + f.NL() +
 			"Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
 		var allIDS []string
-		for _, player := range g.Active {
+		for _, player := range *g.Active {
 			allIDS = append(allIDS, fmt.Sprintf("%v", player.ID))
 		}
 		message += strings.Join(allIDS, ", ")
@@ -423,7 +422,7 @@ func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 		message := f.B(fmt.Sprintf("Player IDType %v is not found alive.", vote)) + f.NL()
 		message += f.NL() + "Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
 		var allIDS []string
-		for _, player := range g.Active {
+		for _, player := range *g.Active {
 			allIDS = append(allIDS, fmt.Sprintf("%v", player.ID))
 		}
 		message += strings.Join(allIDS, ", ")
@@ -471,7 +470,7 @@ func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 		message := f.B("Incorrect format for entering the IDType of the player you are voting for.") + f.NL() +
 			"Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
 		var allIDS []string
-		for _, player := range g.Active {
+		for _, player := range *g.Active {
 			allIDS = append(allIDS, fmt.Sprintf("%v", player.ID))
 		}
 		message += strings.Join(allIDS, ", ")
@@ -489,7 +488,7 @@ func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 		message := f.B(fmt.Sprintf("Player IDType %v or %v is not found alive.", vote1, vote2)) + f.NL()
 		message += f.NL() + "Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
 		var allIDS []string
-		for _, player := range g.Active {
+		for _, player := range *g.Active {
 			allIDS = append(allIDS, fmt.Sprintf("%v", player.ID))
 		}
 		message += strings.Join(allIDS, ", ")

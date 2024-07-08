@@ -16,14 +16,14 @@ import (
 // Represent Config structs
 
 type RoleConfig struct {
-	Role  *roles.Role `json:"role"`
-	Count int         `json:"count"`
+	Role  *roles.Role `json:"role" bson:"role"`
+	Count int         `json:"count" bson:"count"`
 }
 
 type RolesConfig struct {
-	PlayersCount int `json:"playersCount"`
+	PlayersCount int `json:"playersCount" bson:"playersCount"`
 	// RolesMp present RoleConfig by RoleName.
-	RolesMp map[string]*RoleConfig `json:"rolesMp"`
+	RolesMp map[string]*RoleConfig `json:"rolesMp" bson:"rolesMp"`
 }
 
 type ConfigsByPlayerCount []*RolesConfig

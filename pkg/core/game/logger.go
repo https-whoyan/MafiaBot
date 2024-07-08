@@ -5,12 +5,12 @@ import (
 	"github.com/https-whoyan/MafiaBot/core/roles"
 )
 
-// GameLogger allows you to save game information.
+// Logger allows you to save game information.
 //
 // The implementation is thrown when the game is initialized Init,
 // logs are automatically loaded and saved to the implementation for
 // saving in the run and Finish methods.
-type GameLogger interface {
+type Logger interface {
 	InitNewGame(g *Game) error
 	SaveNightLog(g *Game, log NightLog) error
 	SaveDayLog(g *Game, log DayLog) error
@@ -25,7 +25,7 @@ type GameLogger interface {
 // players who turned out to be dead based on the results of the night.
 type NightLog struct {
 	NightNumber int `json:"number"`
-	// Key - IDType of the voted player
+	// Key - ID of the voted player
 	// Value - usually a vote, but in case the role uses 2 votes - 2 votes at once.
 	NightVotes map[int][]int `json:"votes"`
 	Dead       []int         `json:"dead"`

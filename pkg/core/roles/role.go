@@ -11,8 +11,8 @@ const (
 )
 
 type Role struct {
-	Name           string `json:"name"`
-	Team           Team   `json:"team"`
+	Name           string `json:"name" bson:"name"`
+	Team           Team   `json:"team" bson:"team"`
 	NightVoteOrder int    `json:"nightVoteOrder"`
 	// Presents whether to execute immediately, the action of the role.
 	UrgentCalculation bool
