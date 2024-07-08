@@ -1,6 +1,9 @@
 package game
 
 import (
+	"fmt"
+	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
+	"log"
 	"math/rand"
 	"sort"
 
@@ -17,11 +20,16 @@ var (
 )
 
 func GetNewGameConfig(renameProvider *coreUserPack.BotUserRenameProvider) []coreGamePack.GameOption {
+	currDB, isContains := mongo.GetCurrMongoDB()
+	if !isContains {
+		log.Fatal(fmt.Errorf("empty database"))
+	}
 	options := []coreGamePack.GameOption{
 		coreGamePack.FMTerOpt(FMTer),
 		coreGamePack.RenameModeOpt(ConstRenameMode),
 		coreGamePack.RenamePrOpt(renameProvider),
 		coreGamePack.VotePingOpt(VotePing),
+		coreGamePack.LoggerOpt(currDB),
 	}
 	return options
 }
