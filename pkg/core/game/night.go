@@ -16,10 +16,10 @@ import (
 // Night
 // Actions with the game related to the night.
 // Send will send signals to the channels about which role is currently voting. Comes from the g.run function
-func (g *Game) Night(ch chan<- Signal) {
+func (g *Game) Night(ch chan<- Signal) NightLog {
 	select {
 	case <-g.ctx.Done():
-		return
+		return NightLog{}
 	default:
 		g.SetState(NightState)
 		ch <- g.newSwitchStateSignal()
@@ -59,7 +59,7 @@ func (g *Game) Night(ch chan<- Signal) {
 		for _, p := range needToProcessPlayers {
 			g.nightInteraction(p)
 		}
-		return
+		return g.NewNightLog()
 	}
 
 }
@@ -190,6 +190,7 @@ func (g *Game) waitOneVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player,
 		p.Votes = append(p.Votes, EmptyVoteInt)
 	}
 }
+
 func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	containsNotMutedPlayers bool, deadline time.Duration, ch chan<- Signal) {
 	// Critic section with WaitGroup, don't use context completion check.
@@ -248,6 +249,7 @@ func (g *Game) waitTwoVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player,
 		p.Votes = append(p.Votes, EmptyVoteInt)
 	}
 }
+
 func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	containsNotMutedPlayers bool, deadline time.Duration, ch chan<- Signal) {
 	// Critic section with WaitGroup, don't use context completion check.

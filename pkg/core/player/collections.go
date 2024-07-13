@@ -120,6 +120,10 @@ func (s *Players) Append(players ...*Players) {
 	}
 }
 
+func (s *Players) Len() int {
+	return len(*s)
+}
+
 // ______________________
 // DeadPlayers func s
 // ______________________

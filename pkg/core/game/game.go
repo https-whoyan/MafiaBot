@@ -440,8 +440,8 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 		case <-g.ctx.Done():
 			isStoppedByCtx = true
 		default:
-			g.Night(ch)
-			nightLog := g.NewNightLog()
+			// Night
+			nightLog := g.Night(ch)
 			g.AffectNight(nightLog, ch)
 			if g.logger != nil {
 				err := g.logger.SaveNightLog(g, nightLog)
@@ -449,7 +449,29 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 			}
 			winnerTeam := g.UnderstandWinnerTeam()
 			if winnerTeam != nil {
+				finishLog := g.NewFinishLog(winnerTeam, false)
+				g.FinishByFinishLog(ch, finishLog)
+				return
+			}
 
+			// Day
+			dayLog := g.Day(ch)
+			g.Aff()
+			if g.logger != nil {
+				err := g.logger.SaveDayLog(g, dayLog)
+				safeSendErrSignal(ch, err)
+			}
+			winnerTeam = g.UnderstandWinnerTeam()
+			fool := (*g.Active.SearchAllPlayersWithRole(rolesPack.Fool))[0]
+
+			if dayLog.Kicked != nil && *dayLog.Kicked == int(fool.ID) {
+				finishLog := g.NewFinishLog(winnerTeam, false)
+				g.FinishByFinishLog(ch, finishLog)
+				return
+			} else if winnerTeam != nil {
+				finishLog := g.NewFinishLog(winnerTeam, false)
+				g.FinishByFinishLog(ch, finishLog)
+				return
 			}
 		}
 	}

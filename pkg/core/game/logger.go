@@ -90,7 +90,7 @@ type DayLog struct {
 	// Key - IDType of the player who was voted for during the day to be excluded from the game
 	// Value - number of votes.
 	DayVotes map[int]int `json:"votes"`
-	Kicked   int         `json:"kicked"`
+	Kicked   *int        `json:"kicked"`
 	IsSkip   bool        `json:"isSkip"`
 }
 

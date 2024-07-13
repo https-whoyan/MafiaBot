@@ -2,16 +2,18 @@ package game
 
 import (
 	"fmt"
-	"github.com/https-whoyan/MafiaBot/core/roles"
 	"io"
+	"math"
 	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	cnvPack "github.com/https-whoyan/MafiaBot/core/converter"
 	myFMT "github.com/https-whoyan/MafiaBot/core/fmt"
 	playerPack "github.com/https-whoyan/MafiaBot/core/player"
+	rolesPack "github.com/https-whoyan/MafiaBot/core/roles"
 	myTime "github.com/https-whoyan/MafiaBot/core/time"
 )
 
@@ -41,6 +43,7 @@ type Messenger struct {
 	f          myFMT.FmtInterface
 	Init       *initMessenger
 	Night      *nightMessenger
+	Day        *dayMessenger
 	AfterNight *afterNightMessenger
 	Finish     *finishMessenger
 }
@@ -186,7 +189,7 @@ type afterNightMessenger struct {
 	*primitiveMessenger
 }
 
-// GetAfterNightMessage provide a message to main chat after game.
+// SendAfterNightMessage provide a message to main chat after game.
 func (m afterNightMessenger) SendAfterNightMessage(l NightLog, w io.Writer) error {
 	f := m.f
 	message := myFMT.BoldItalic(f, "Dear citizens!") + f.LineSplitter()
@@ -212,6 +215,35 @@ func (m afterNightMessenger) SendAfterNightMessage(l NightLog, w io.Writer) erro
 	return m.sendMessage(message, w)
 }
 
+// _____
+// Day
+// _____
+
+type dayMessenger struct {
+	*primitiveMessenger
+}
+
+func (m dayMessenger) SendMessageAboutNewDay(w io.Writer, deadline time.Duration) error {
+	f := m.f
+
+	var message string
+	message += myFMT.BoldUnderline(f, "Hello everyone!")
+	message += f.LineSplitter()
+	message += "Comes a " + f.Block(strconv.Itoa(m.g.NightCounter)) + " day."
+	strMinutes := strconv.Itoa(int(math.Ceil(deadline.Minutes())))
+	message += f.Bold("You have a ") + f.Block(strMinutes) + " to set your votes."
+	message += f.LineSplitter()
+	message += f.LineSplitter()
+
+	message += f.Bold("Skip voting will be, if ") + f.Block(strconv.Itoa(DayPersentageToNextStage)+"%") +
+		" of player leave vote to skip."
+	return m.sendMessage(message, w)
+}
+
+func (m dayMessenger) SendMessageThatDayIsSkipped(w io.Writer) {
+
+}
+
 // _____________________
 // Team victory message
 // _____________________
@@ -220,21 +252,41 @@ type finishMessenger struct {
 	*primitiveMessenger
 }
 
-func (m finishMessenger) SendMessagesAboutEndOfGame(l FinishLog, w io.Writer) error {
+func (m finishMessenger) basicEndGameMessage() string {
 	var message string
-	f := m.f
-	message = f.Bold("Our game has come to an end.") + f.LineSplitter()
-	err := m.SendMessageAboutWinner(l, w)
-	if err != nil {
-		return err
-	}
-	err = m.sendMessage(message, w)
-	return err
+	message = m.f.Bold("Dear ladies and gentlemen!")
+	message += myFMT.BoldUnderline(m.f, "Game is over!")
+	message += m.f.LineSplitter() + m.f.InfoSplitter() + m.f.LineSplitter()
+	return message + m.SendParticipantAboutMessage()
 }
 
-func (m finishMessenger) SendMessageAboutWinner(l FinishLog, w io.Writer) error {
+func (m finishMessenger) SendParticipantAboutMessage() string {
+	f := m.f
 	var message string
+	message = myFMT.BoldUnderline(f, "And the roles of the participants were:")
 
+	allPartitionsMp := m.g.Active
+	allPartitionsMp.Append(m.g.Dead.ConvertToPlayers())
+
+	allPartitionsSlice := cnvPack.GetMapValues(*allPartitionsMp)
+
+	sort.Slice(allPartitionsSlice, func(i, j int) bool {
+		return allPartitionsSlice[i].ID < allPartitionsSlice[j].ID
+	})
+
+	for _, p := range allPartitionsSlice {
+		playerMessage := "With ID " + f.Block(strconv.Itoa(int(p.ID)))
+		playerMessage += " played " + f.Mention(p.ServerNick)
+		playerMessage += " and " + f.Bold("his role was ") + myFMT.BoldUnderline(f, p.Role.Name)
+		message += playerMessage + f.LineSplitter()
+	}
+	message += f.InfoSplitter() + f.LineSplitter()
+
+	return message
+}
+
+func (m finishMessenger) SendMessagesAboutEndOfGame(l FinishLog, w io.Writer) error {
+	var message = m.basicEndGameMessage()
 	if l.IsFool {
 		message += m.getFoolWinnerMessage()
 	} else {
@@ -243,24 +295,32 @@ func (m finishMessenger) SendMessageAboutWinner(l FinishLog, w io.Writer) error 
 	return m.sendMessage(message, w)
 }
 
-func (m finishMessenger) getTeamWinnerMessage(team roles.Team) string {
-	//Todo
-	return ""
+func (m finishMessenger) getTeamWinnerMessage(team rolesPack.Team) string {
+	var message = m.basicEndGameMessage()
+
+	message += m.f.Bold("This game was won by the team ") + rolesPack.StringTeam[team]
+	message += m.f.LineSplitter()
+
+	message += "Nice try!"
+	return message
 }
 
 func (m finishMessenger) getFoolWinnerMessage() string {
-	//Todo
-	return ""
-}
+	var message = m.basicEndGameMessage()
 
-// Todo
-func (m finishMessenger) SendParticipantAboutMessage(w io.Writer) string {
-	f := m.f
-	var message string
-	message = myFMT.BoldUnderline(f, "And the roles of the participants were:")
+	message += m.f.Bold("You've been fooled by a fool!") +
+		"The fool's goal is to get ousted during the day's voting."
+	message += m.f.LineSplitter()
 
-	allPartitions := m.g.Active
-	allPartitions.Append(m.g.Dead.ConvertToPlayers())
-
+	// Search fool
+	var fool = &playerPack.Player{}
+	for _, p := range *m.g.Active {
+		if p.Role == rolesPack.Fool {
+			fool = p
+		}
+	}
+	foolMentions := m.f.Mention(fool.ServerNick)
+	message += "Fool in this game was: " + foolMentions
+	message += "Nice try!"
 	return message
 }
