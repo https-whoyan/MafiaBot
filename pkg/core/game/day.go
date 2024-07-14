@@ -123,12 +123,12 @@ func (g *Game) StartDayVoting(done <-chan struct{}) DayLog {
 func CalculateDayDeadline(nighCounter int, deadCount int, totalPlayers int) time.Duration {
 	// Weights of aspects
 	const (
-		currNightCounterWeight  = 0.4
-		deadCountWeight         = 0.5
-		totalPlayersCountWeight = 0.2
+		currNightCounterWeight  = 0.61
+		deadCountWeight         = 0.68
+		totalPlayersCountWeight = 0.27
 	)
 
-	var basicMinutes = 3.0
+	var basicMinutes = 2.2
 	nightCounterAddMinutes := currNightCounterWeight * float64(nighCounter)
 	deadCountAddMinutes := deadCountWeight * float64(deadCount)
 	totalPlayersCountAddMinutes := totalPlayersCountWeight * float64(totalPlayers)

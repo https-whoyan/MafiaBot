@@ -372,9 +372,7 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 	}
 	log.Printf("Init Game in %v Guild", i.GuildID)
 	gameCh := g.Run(context.Background())
-	for gameLog := range gameCh {
-		log.Println(gameLog)
-	}
+	ProcessGameChan(g, f, gameCh)
 }
 
 // _______________

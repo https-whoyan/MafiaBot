@@ -14,10 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	NonVote = game.EmptyVoteInt
-)
-
 func TestNightCheckDeadlock_EmptyVotes(t *testing.T) {
 	t.Parallel()
 	deadlockCheckerHelper := func(cfg *config.RolesConfig) {
@@ -145,7 +141,7 @@ func TestNightConfig7_3(t *testing.T) {
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
@@ -170,7 +166,7 @@ func TestNightConfig7_3(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
@@ -178,7 +174,7 @@ func TestNightConfig7_3(t *testing.T) {
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
@@ -204,7 +200,7 @@ func TestNightConfig7_3(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
@@ -212,7 +208,7 @@ func TestNightConfig7_3(t *testing.T) {
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
@@ -247,7 +243,7 @@ func TestNightConfig7_3(t *testing.T) {
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
@@ -276,7 +272,7 @@ func TestNightConfig7_3(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
@@ -284,7 +280,7 @@ func TestNightConfig7_3(t *testing.T) {
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
@@ -361,11 +357,11 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
@@ -377,7 +373,7 @@ func TestNightConfig10_2(t *testing.T) {
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
@@ -405,31 +401,31 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 		}
 		takeANight(g, vCfg)
@@ -456,11 +452,11 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
@@ -509,11 +505,11 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
@@ -521,7 +517,7 @@ func TestNightConfig10_2(t *testing.T) {
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
@@ -565,15 +561,15 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
@@ -585,11 +581,11 @@ func TestNightConfig10_2(t *testing.T) {
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 		}
 		takeANight(g, vCfg)
@@ -613,7 +609,7 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
@@ -663,11 +659,11 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
@@ -713,11 +709,11 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
@@ -733,7 +729,7 @@ func TestNightConfig10_2(t *testing.T) {
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
@@ -764,11 +760,11 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
@@ -784,11 +780,11 @@ func TestNightConfig10_2(t *testing.T) {
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Maniac: {
 				role:  roles.Maniac,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 		}
 		takeANight(g, vCfg)
@@ -817,15 +813,15 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
@@ -873,15 +869,15 @@ func TestNightConfig10_2(t *testing.T) {
 		vCfg := votesCfg{
 			roles.Detective: {
 				role:  roles.Detective,
-				votes: []player.IDType{NonVote, NonVote},
+				votes: []player.IDType{nonVote, nonVote},
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Mafia: {
 				role:  roles.Mafia,
@@ -1001,7 +997,7 @@ func TestReincarnation(t *testing.T) {
 			},
 			roles.Don: {
 				role:  roles.Don,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Whore: {
 				role:  roles.Whore,
@@ -1013,7 +1009,7 @@ func TestReincarnation(t *testing.T) {
 			},
 			roles.Citizen: {
 				role:  roles.Citizen,
-				votes: []player.IDType{NonVote},
+				votes: []player.IDType{nonVote},
 			},
 			roles.Doctor: {
 				role:  roles.Doctor,

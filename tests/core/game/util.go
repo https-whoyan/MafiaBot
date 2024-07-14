@@ -112,7 +112,6 @@ func (v voteCfg) toTwoVotePr(players *player.Players) *game.TwoVotesProvider {
 	}
 }
 
-// :nolint
 func (v voteCfg) toVotePr(players *player.Players) *game.VoteProvider {
 	votedPlayers := *(players.SearchAllPlayersWithRole(v.role))
 	var votedPlayer = &player.Player{}

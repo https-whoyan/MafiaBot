@@ -18,7 +18,7 @@ type mongoGameLog struct {
 	LogName string `json:"logName,omitempty" bson:"logName,omitempty"`
 
 	StartTime time.Time `json:"startTime,omitempty" bson:"startTime,omitempty"`
-	Config    gameConfig.RolesConfig
+	Config    *gameConfig.RolesConfig
 
 	Players   []mongoGamePlayer `json:"players,omitempty" bson:"players,omitempty"`
 	NightLogs []mongoGameNight  `json:"nightLogs,omitempty" bson:"nightLogs,omitempty"`
@@ -40,6 +40,7 @@ func newMongoGameLog(g *game.Game) mongoGameLog {
 		GuildID:     g.GuildID,
 		StartTime:   g.TimeStart,
 		Players:     playersModel,
+		Config:      g.RolesConfig,
 		IsSuspended: true,
 	}
 	return model
@@ -101,7 +102,7 @@ func newMongoGameDay(l game.DayLog) mongoGameDay {
 		Number: l.DayNumber,
 		Votes:  l.DayVotes,
 		IsSkip: l.IsSkip,
-		Kicked: &l.Kicked,
+		Kicked: l.Kicked,
 	}
 }
 

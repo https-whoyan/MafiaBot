@@ -91,13 +91,13 @@ func (m initMessenger) SendStartMessage(writer io.Writer) error {
 	message += myFMT.BoldUnderline(f, "Today, our players:") + nl
 
 	var aboutIDMessages []string
-	activePlayers := *m.g.Active
+	activePlayers := cnvPack.GetMapValues(*m.g.Active)
 	sort.Slice(activePlayers, func(i, j int) bool {
-		return activePlayers[playerPack.IDType(j)].ID < activePlayers[playerPack.IDType(j)].ID
+		return activePlayers[j].ID < activePlayers[j].ID
 	})
 	for _, player := range activePlayers {
 		messageAboutPlayerID := f.Tab() + f.Bold(sCap(getRandomPlayerCalling())) + " " + f.Mention(player.ServerNick)
-		messageAboutPlayerID += " with IDType in game " + f.Block(sInt(int(player.ID)))
+		messageAboutPlayerID += " with ID in game " + f.Block(sInt(int(player.ID)))
 
 		aboutIDMessages = append(aboutIDMessages, messageAboutPlayerID)
 	}
