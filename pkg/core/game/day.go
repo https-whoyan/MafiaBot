@@ -20,8 +20,10 @@ func (g *Game) Day(ch chan<- Signal) DayLog {
 		g.SetState(DayState)
 		ch <- g.newSwitchStateSignal()
 
+		g.RLock()
 		deadline := CalculateDayDeadline(
 			g.NightCounter, g.Dead.Len(), g.RolesConfig.PlayersCount)
+		g.RUnlock()
 		safeSendErrSignal(ch, g.messenger.Day.SendMessageAboutNewDay(g.MainChannel, deadline))
 
 		// Start timer
