@@ -9,7 +9,7 @@ import (
 //
 // The implementation is thrown when the game is initialized Init,
 // logs are automatically loaded and saved to the implementation for
-// saving in the run and Finish methods.
+// saving in the run and finish methods.
 type Logger interface {
 	InitNewGame(g *Game) error
 	SaveNightLog(g *Game, log NightLog) error

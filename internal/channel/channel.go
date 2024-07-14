@@ -88,16 +88,9 @@ func (ch *BotRoleChannel) AddSpectator(serverUserID string) error {
 }
 
 func (ch *BotRoleChannel) RemoveUser(serverUserID string) (err error) {
-	prev, isContains := ch.mappedPermissions[serverUserID]
-	if isContains {
-		delete(ch.mappedPermissions, serverUserID)
-	}
+	prev, _ := ch.mappedPermissions[serverUserID]
 	ovrd := NewOverridePermission(prev, false)
-	if isContains {
-		err = ch.s.ChannelPermissionSet(ch.ChannelIID, serverUserID, ovrd.Type, ovrd.Allow, 0)
-	} else {
-		err = ch.s.ChannelPermissionSet(ch.ChannelIID, serverUserID, ovrd.Type, 0, discordgo.PermissionAll)
-	}
+	err = ch.s.ChannelPermissionSet(ch.ChannelIID, serverUserID, ovrd.Type, ovrd.Allow, ovrd.Deny)
 	return wrap.UnwrapDiscordRESTErr(err, discordgo.ErrCodeMissingPermissions)
 }
 

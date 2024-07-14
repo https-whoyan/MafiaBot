@@ -106,7 +106,7 @@ func newMongoGameDay(l game.DayLog) mongoGameDay {
 	}
 }
 
-// Finish get an update filter
+// finish get an update filter
 func getUpdateByByNightLog(l game.FinishLog) bson.M {
 	if l.IsFool {
 		return bson.M{

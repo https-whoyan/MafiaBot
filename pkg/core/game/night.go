@@ -23,9 +23,6 @@ func (g *Game) Night(ch chan<- Signal) NightLog {
 	default:
 		g.SetState(NightState)
 		ch <- g.newSwitchStateSignal()
-		g.Lock()
-		g.NightCounter++
-		g.Unlock()
 
 		err := g.messenger.Night.SendInitialNightMessage(g.MainChannel)
 		safeSendErrSignal(ch, err)

@@ -397,7 +397,7 @@ func (db *MongoDB) SaveDayLog(g *game.Game, l game.DayLog) error {
 	}
 	updatePush := bson.D{{
 		"$push", bson.D{{
-			"da", newMongoGameDay(l),
+			"day_log", newMongoGameDay(l),
 		}},
 	}}
 	db.Lock()

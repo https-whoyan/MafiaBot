@@ -385,7 +385,7 @@ Is used to start the game.
 Runs the run method in its goroutine.
 Used after g.Init()
 
-Also call deferred Finish() (or FinishAnyway(), if game was stopped by context)
+Also call deferred finish() (or FinishAnyway(), if game was stopped by context)
 
 It is recommended to use context.Background()
 
@@ -424,7 +424,7 @@ func (g *Game) Run(ctx context.Context) <-chan Signal {
 			case true:
 				g.FinishAnyway(ch)
 			case false:
-				g.Finish(ch)
+				g.finish(ch)
 			}
 		}
 	}()
@@ -440,13 +440,21 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 		case <-g.ctx.Done():
 			isStoppedByCtx = true
 		default:
+			g.Lock()
+			g.NightCounter++
+			g.Unlock()
+
 			// Night
+
 			nightLog := g.Night(ch)
 			g.AffectNight(nightLog, ch)
 			if g.logger != nil {
 				err := g.logger.SaveNightLog(g, nightLog)
 				safeSendErrSignal(ch, err)
 			}
+
+			// Validate is final?
+
 			winnerTeam := g.UnderstandWinnerTeam()
 			if winnerTeam != nil {
 				finishLog := g.NewFinishLog(winnerTeam, false)
@@ -455,12 +463,15 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 			}
 
 			// Day
+
 			dayLog := g.Day(ch)
 			g.AffectDay(dayLog, ch)
 			if g.logger != nil {
 				err := g.logger.SaveDayLog(g, dayLog)
 				safeSendErrSignal(ch, err)
 			}
+
+			// Validate is final?
 			winnerTeam = g.UnderstandWinnerTeam()
 			fool := (*g.Active.SearchAllPlayersWithRole(rolesPack.Fool))[0]
 
@@ -485,12 +496,20 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 // ********************
 // ********************
 
+var (
+	finishingFuncOnce = sync.Once{}
+	finishOnce        = sync.Once{}
+)
+
 func (g *Game) FinishByFinishLog(ch chan<- Signal, l FinishLog) {
-	err := g.messenger.Finish.SendMessagesAboutEndOfGame(l, g.MainChannel)
-	safeSendErrSignal(ch, err)
-	g.SetState(FinishState)
-	g.replaceCtx()
-	g.Finish(ch)
+	finishingFuncOnce.Do(func() {
+		err := g.messenger.Finish.SendMessagesAboutEndOfGame(l, g.MainChannel)
+		safeSendErrSignal(ch, err)
+		g.SetState(FinishState)
+		ch <- g.newSwitchStateSignal()
+		g.replaceCtx()
+		g.finish(ch)
+	})
 }
 
 func (g *Game) replaceCtx() {
@@ -506,88 +525,93 @@ func (g *Game) replaceCtx() {
 
 // FinishAnyway is used to end the running game anyway.
 func (g *Game) FinishAnyway(ch chan<- Signal) {
-	if !g.IsRunning() {
-		return
-	}
-	content := "The game was suspended."
-	_, err := g.MainChannel.Write([]byte(g.messenger.Finish.f.Bold(content)))
-	safeSendErrSignal(ch, err)
-	g.SetState(FinishState)
-	ch <- g.newSwitchStateSignal()
-	g.replaceCtx()
-	g.Finish(ch)
+	finishingFuncOnce.Do(func() {
+		if !g.IsRunning() {
+			return
+		}
+		content := "The game was suspended."
+		_, err := g.MainChannel.Write([]byte(g.messenger.Finish.f.Bold(content)))
+		safeSendErrSignal(ch, err)
+		g.SetState(FinishState)
+		ch <- g.newSwitchStateSignal()
+		g.replaceCtx()
+		g.finish(ch)
+	})
 }
 
-func (g *Game) Finish(ch chan<- Signal) {
+func (g *Game) finish(ch chan<- Signal) {
 	if !g.IsFinished() {
 		sendFatalSignal(ch, errors.New("game is not finished"))
 		return
 	}
 
-	// Delete from channels
-	for _, player := range *g.Active {
-		if player.Role.NightVoteOrder == -1 {
-			continue
+	finishOnce.Do(func() {
+
+		// Delete from channels
+		for _, player := range *g.Active {
+			if player.Role.NightVoteOrder == -1 {
+				continue
+			}
+
+			playerChannel := g.RoleChannels[player.Role.Name]
+			safeSendErrSignal(ch, playerChannel.RemoveUser(player.Tag))
 		}
 
-		playerChannel := g.RoleChannels[player.Role.Name]
-		safeSendErrSignal(ch, playerChannel.RemoveUser(player.Tag))
-	}
-
-	// Then remove spectators from game
-	for _, tag := range playerPack.GetTags(g.Dead, g.Spectators) {
-		for _, interactionChannel := range g.RoleChannels {
-			safeSendErrSignal(ch, interactionChannel.RemoveUser(tag))
-		}
-	}
-
-	// Then, remove all players of main chat.
-	for _, player := range *g.StartPlayers {
-		safeSendErrSignal(ch, g.MainChannel.RemoveUser(player.Tag))
-	}
-	// And spectators.
-	for _, spectator := range *g.Spectators {
-		safeSendErrSignal(ch, g.MainChannel.RemoveUser(spectator.Tag))
-	}
-
-	// _______________
-	// Renaming.
-	// _______________
-	activePlayersAndSpectators := append(*g.StartPlayers, *g.Spectators...)
-	switch g.renameMode {
-	case NotRenameModeMode: // No actions
-	case RenameInGuildMode:
-		for _, player := range activePlayersAndSpectators {
-			safeSendErrSignal(ch, player.RenameUserAfterGame(g.renameProvider, ""))
-		}
-	case RenameOnlyInMainChannelMode:
-		mainChannelServerID := g.MainChannel.GetServerID()
-
-		for _, player := range activePlayersAndSpectators {
-			err := player.RenameUserAfterGame(g.renameProvider, mainChannelServerID)
-			safeSendErrSignal(ch, err)
-		}
-	case RenameInAllChannelsMode:
-		// Rename from Role Channels.
-		for _, player := range activePlayersAndSpectators {
+		// Then remove spectators from game
+		for _, tag := range playerPack.GetTags(g.Dead, g.Spectators) {
 			for _, interactionChannel := range g.RoleChannels {
-				interactionChannelID := interactionChannel.GetServerID()
-
-				err := player.RenameUserAfterGame(g.renameProvider, interactionChannelID)
-				safeSendErrSignal(ch, err)
+				safeSendErrSignal(ch, interactionChannel.RemoveUser(tag))
 			}
 		}
 
-		// Rename from main channel
-		mainChannelServerID := g.MainChannel.GetServerID()
-
-		for _, player := range activePlayersAndSpectators {
-			err := player.RenameUserAfterGame(g.renameProvider, mainChannelServerID)
-			safeSendErrSignal(ch, err)
+		// Then, remove all players of main chat.
+		for _, player := range *g.StartPlayers {
+			safeSendErrSignal(ch, g.MainChannel.RemoveUser(player.Tag))
 		}
-	default:
-		sendFatalSignal(ch, errors.New("invalid rename mode"))
-		return
-	}
-	sendCloseSignal(ch, "the game has been successfully completed.")
+		// And spectators.
+		for _, spectator := range *g.Spectators {
+			safeSendErrSignal(ch, g.MainChannel.RemoveUser(spectator.Tag))
+		}
+
+		// _______________
+		// Renaming.
+		// _______________
+		activePlayersAndSpectators := append(*g.StartPlayers, *g.Spectators...)
+		switch g.renameMode {
+		case NotRenameModeMode: // No actions
+		case RenameInGuildMode:
+			for _, player := range activePlayersAndSpectators {
+				safeSendErrSignal(ch, player.RenameUserAfterGame(g.renameProvider, ""))
+			}
+		case RenameOnlyInMainChannelMode:
+			mainChannelServerID := g.MainChannel.GetServerID()
+
+			for _, player := range activePlayersAndSpectators {
+				err := player.RenameUserAfterGame(g.renameProvider, mainChannelServerID)
+				safeSendErrSignal(ch, err)
+			}
+		case RenameInAllChannelsMode:
+			// Rename from Role Channels.
+			for _, player := range activePlayersAndSpectators {
+				for _, interactionChannel := range g.RoleChannels {
+					interactionChannelID := interactionChannel.GetServerID()
+
+					err := player.RenameUserAfterGame(g.renameProvider, interactionChannelID)
+					safeSendErrSignal(ch, err)
+				}
+			}
+
+			// Rename from main channel
+			mainChannelServerID := g.MainChannel.GetServerID()
+
+			for _, player := range activePlayersAndSpectators {
+				err := player.RenameUserAfterGame(g.renameProvider, mainChannelServerID)
+				safeSendErrSignal(ch, err)
+			}
+		default:
+			sendFatalSignal(ch, errors.New("invalid rename mode"))
+			return
+		}
+		sendCloseSignal(ch, "the game has been successfully completed.")
+	})
 }

@@ -160,7 +160,7 @@ func (b *Bot) initBotCommands() {
 	b.initCommand(handlerPack.NewGameVoteCommand())
 	b.initCommand(handlerPack.NewGameTwoVoteCommand())
 
-	// Finish game
+	// finish game
 	b.initCommand(handlerPack.NewFinishGameCommand())
 
 	// Other

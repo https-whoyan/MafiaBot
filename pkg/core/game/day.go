@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DayPersentageToNextStage = 50
+	DayPersentageToNextStage = 51
 )
 
 func (g *Game) Day(ch chan<- Signal) DayLog {

@@ -262,8 +262,8 @@ type finishMessenger struct {
 
 func (m finishMessenger) basicEndGameMessage() string {
 	var message string
-	message = m.f.Bold("Dear ladies and gentlemen!")
-	message += myFMT.BoldUnderline(m.f, "Game is over!")
+	message = m.f.Bold("Dear ladies and gentlemen!") + m.f.LineSplitter()
+	message += m.f.Tab() + myFMT.BoldUnderline(m.f, "Game is over!")
 	message += m.f.LineSplitter() + m.f.InfoSplitter() + m.f.LineSplitter()
 	return message + m.SendParticipantAboutMessage()
 }
@@ -271,7 +271,7 @@ func (m finishMessenger) basicEndGameMessage() string {
 func (m finishMessenger) SendParticipantAboutMessage() string {
 	f := m.f
 	var message string
-	message = myFMT.BoldUnderline(f, "And the roles of the participants were:")
+	message = myFMT.BoldUnderline(f, "And the roles of the participants were:") + f.LineSplitter() + f.LineSplitter()
 
 	allPartitionsMp := m.g.Active
 	allPartitionsMp.Append(m.g.Dead.ConvertToPlayers())
@@ -286,7 +286,7 @@ func (m finishMessenger) SendParticipantAboutMessage() string {
 		playerMessage := "With ID " + f.Block(strconv.Itoa(int(p.ID)))
 		playerMessage += " played " + f.Mention(p.ServerNick)
 		playerMessage += " and " + f.Bold("his role was ") + myFMT.BoldUnderline(f, p.Role.Name)
-		message += playerMessage + f.LineSplitter()
+		message += f.Tab() + playerMessage + f.LineSplitter()
 	}
 	message += f.InfoSplitter() + f.LineSplitter()
 
@@ -294,11 +294,11 @@ func (m finishMessenger) SendParticipantAboutMessage() string {
 }
 
 func (m finishMessenger) SendMessagesAboutEndOfGame(l FinishLog, w io.Writer) error {
-	var message = m.basicEndGameMessage()
+	var message string
 	if l.IsFool {
-		message += m.getFoolWinnerMessage()
+		message = m.getFoolWinnerMessage()
 	} else {
-		message += m.getTeamWinnerMessage(*l.WinnerTeam)
+		message = m.getTeamWinnerMessage(*l.WinnerTeam)
 	}
 	return m.sendMessage(message, w)
 }
