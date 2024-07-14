@@ -17,16 +17,12 @@ func (g *Game) Day(ch chan<- Signal) DayLog {
 	case <-g.ctx.Done():
 		return DayLog{}
 	default:
-		g.Lock()
 		g.SetState(DayState)
-		g.Unlock()
 		ch <- g.newSwitchStateSignal()
 
-		g.RLock()
 		deadline := CalculateDayDeadline(
-			g.NightCounter, len(*g.Dead.ConvertToPlayers()), g.RolesConfig.PlayersCount)
+			g.NightCounter, g.Dead.Len(), g.RolesConfig.PlayersCount)
 		safeSendErrSignal(ch, g.messenger.Day.SendMessageAboutNewDay(g.MainChannel, deadline))
-		g.RUnlock()
 
 		// Start timer
 		done := make(chan struct{})

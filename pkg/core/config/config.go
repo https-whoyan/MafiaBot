@@ -74,6 +74,120 @@ var (
 		},
 	}
 
+	// ThreeTestConfigs Test
+	ThreeTestConfigs = &ConfigsByPlayerCount{
+		{
+			PlayersCount: 3,
+			RolesMp: map[string]*RoleConfig{
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+			},
+		},
+		{
+			PlayersCount: 3,
+			RolesMp: map[string]*RoleConfig{
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 2,
+				},
+			},
+		},
+		{
+			PlayersCount: 3,
+			RolesMp: map[string]*RoleConfig{
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+			},
+		},
+	}
+
+	// FourTestConfigs Test
+	FourTestConfigs = &ConfigsByPlayerCount{
+		{
+			PlayersCount: 4,
+			RolesMp: map[string]*RoleConfig{
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 1,
+				},
+				"Don": {
+					Role:  roles.Don,
+					Count: 1,
+				},
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 1,
+				},
+				"Fool": {
+					Role:  roles.Fool,
+					Count: 1,
+				},
+			},
+		},
+		{
+			PlayersCount: 4,
+			RolesMp: map[string]*RoleConfig{
+				"Maniac": {
+					Role:  roles.Maniac,
+					Count: 1,
+				},
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 1,
+				},
+				"Peaceful": {
+					Role:  roles.Peaceful,
+					Count: 2,
+				},
+			},
+		},
+		{
+			PlayersCount: 4,
+			RolesMp: map[string]*RoleConfig{
+				"Mafia": {
+					Role:  roles.Mafia,
+					Count: 1,
+				},
+				"Whore": {
+					Role:  roles.Whore,
+					Count: 1,
+				},
+				"Citizen": {
+					Role:  roles.Citizen,
+					Count: 1,
+				},
+				"Detective": {
+					Role:  roles.Detective,
+					Count: 1,
+				},
+			},
+		},
+	}
+
 	// FivePlayersConfigs represent configs with 5 players
 	FivePlayersConfigs = &ConfigsByPlayerCount{
 		{
@@ -1181,6 +1295,8 @@ var (
 	// Configs int key represent count of players
 	Configs = map[int]*ConfigsByPlayerCount{
 		2:  TwoTestConfigs,
+		3:  ThreeTestConfigs,
+		4:  FourTestConfigs,
 		5:  FivePlayersConfigs,
 		6:  SixPlayersConfigs,
 		7:  SevenPlayersConfigs,

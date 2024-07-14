@@ -165,8 +165,10 @@ func (g *Game) waitOneVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player,
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		<-done
-		close(done)
+		select {
+		case <-done:
+			return
+		}
 	}()
 	go func() {
 		defer wg.Done()
@@ -224,8 +226,10 @@ func (g *Game) waitTwoVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player,
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		<-done
-		close(done)
+		select {
+		case <-done:
+			return
+		}
 	}()
 	go func() {
 		defer wg.Done()

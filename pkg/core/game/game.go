@@ -11,6 +11,7 @@ import (
 	fmtPack "github.com/https-whoyan/MafiaBot/core/fmt"
 	playerPack "github.com/https-whoyan/MafiaBot/core/player"
 	rolesPack "github.com/https-whoyan/MafiaBot/core/roles"
+	timePack "github.com/https-whoyan/MafiaBot/core/time"
 )
 
 // This file describes the structure of the game, as well as the start and end functions of the game.
@@ -398,7 +399,7 @@ func (g *Game) Run(ctx context.Context) <-chan Signal {
 		// Send InteractionMessage About New Game
 		err := g.messenger.Init.SendStartMessage(g.MainChannel)
 		// Used for participants to familiarize themselves with their roles, and so on.
-		time.Sleep(25 * time.Second)
+		time.Sleep(timePack.RoleInfoCount * time.Second)
 		safeSendErrSignal(ch, err)
 		switch {
 		case ctx == nil:
@@ -540,12 +541,12 @@ func (g *Game) FinishAnyway(ch chan<- Signal) {
 }
 
 func (g *Game) finish(ch chan<- Signal) {
-	if !g.IsFinished() {
-		sendFatalSignal(ch, errors.New("game is not finished"))
-		return
-	}
 
 	finishOnce.Do(func() {
+		if !g.IsFinished() {
+			sendFatalSignal(ch, errors.New("game is not finished"))
+			return
+		}
 
 		// Delete from channels
 		for _, player := range *g.Active {

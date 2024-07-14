@@ -50,8 +50,8 @@ func (g *Game) UnderstandWinnerTeam() *roles.Team {
 		return &winnerTeam
 	case 2:
 		// In this case, it all depends on the number of peaceful people.
-		peacefulCnt, isZero := teamsMp[roles.PeacefulTeam]
-		if isZero {
+		peacefulCnt, isNonZero := teamsMp[roles.PeacefulTeam]
+		if !isNonZero { // (Is zero)
 			// So that leaves the mafia team and the maniac team.
 			// But the mafia team knows each other. So the mafia wins.
 			winnerTeam := roles.MafiaTeam

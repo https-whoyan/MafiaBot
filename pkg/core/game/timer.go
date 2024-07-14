@@ -83,6 +83,7 @@ func FakeTimer(done chan<- struct{}) { go fakeTimer(done) }
 func fakeTimer(done chan<- struct{}) {
 	sleepRandomSecond()
 	done <- struct{}{}
+	close(done)
 }
 
 func sleepRandomSecond() {

@@ -228,7 +228,7 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 			log.Printf("Execute %v command.", cmdName)
 			currGame := b.Games[executedGuildID]
 			// Validate Is correct command by game state
-			content, isOk := handlerPack.ValidateCommandByGameState(executedCommandName, currGame, b.FMTer)
+			content, isOk := handlerPack.ValidateCommandByGameState(s, executedCommandName, currGame, b.FMTer)
 			if !isOk {
 				handlerPack.Response(s, i.Interaction, content)
 				return
@@ -260,7 +260,7 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 		gameConfig := botGamePack.GetNewGameConfig(userRenameProvider)
 
 		b.Games[executedGuildID] = gamePack.GetNewGame(executedGuildID, gameConfig...)
-		content, isOk := handlerPack.ValidateCommandByGameState(executedCommandName, b.Games[executedGuildID], b.FMTer)
+		content, isOk := handlerPack.ValidateCommandByGameState(s, executedCommandName, b.Games[executedGuildID], b.FMTer)
 		if !isOk {
 			handlerPack.Response(s, i.Interaction, content)
 			return

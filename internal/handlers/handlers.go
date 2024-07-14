@@ -235,7 +235,7 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 	registrationMessageID, err := currRedisDB.GetInitialGameMessageID(i.GuildID)
 	if (err != nil || registrationMessageID == "") && g.State == coreGamePack.RegisterState {
 		messageContent := f.U("Registration Deadline passed!") + f.NL() + "Please, " +
-			f.B("use the "+RegisterGameCommandName+" command") + " to register a new game."
+			f.B("use the /"+RegisterGameCommandName+" command") + " to register a new game."
 		g.SetState(coreGamePack.NonDefinedState)
 		Response(s, i, messageContent)
 		return
@@ -435,8 +435,9 @@ func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 		return
 	}
 answerToVote:
-	Response(s, i, f.B("Your voice is being processed."))
+	Response(s, i, f.B("Your vote counts. "))
 	g.VoteChan <- vP
+
 }
 
 func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
@@ -501,7 +502,7 @@ func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 		return
 	}
 answerToTwoVote:
-	Response(s, i, f.B("Your voice is being processed."))
+	Response(s, i, f.B("Your vote counts. "))
 	g.TwoVoteChan <- vP
 }
 

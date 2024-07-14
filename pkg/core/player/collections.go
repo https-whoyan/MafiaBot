@@ -160,3 +160,11 @@ func (s *DeadPlayers) ConvertToPlayers() *Players {
 	}
 	return &players
 }
+
+func (s *DeadPlayers) Len() int {
+	counter := 0
+	for _, ps := range *s {
+		counter += len(ps)
+	}
+	return counter
+}
