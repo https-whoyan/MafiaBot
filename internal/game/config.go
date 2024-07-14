@@ -48,7 +48,7 @@ type ConfigMessages struct {
 
 type ConfigMessage struct {
 	ConfigIndex    int    `redis:"configIndex"`
-	MessageID      string `json:"messageID"`
+	MessageID      string `redis:"messageID"`
 	ReactionsCount int
 }
 

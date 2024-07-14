@@ -124,6 +124,13 @@ func (s *Players) Len() int {
 	return len(*s)
 }
 
+func (s *Players) ToDead(playerID IDType, reason DeadReason, dayLived int, deadPlayers *DeadPlayers) {
+	p := (*s)[playerID]
+	newDeadPlayer := NewDeadPlayer(p, reason, dayLived)
+	(*deadPlayers)[p.Role] = append((*deadPlayers)[p.Role], newDeadPlayer)
+	delete(*s, p.ID)
+}
+
 // ______________________
 // DeadPlayers func s
 // ______________________

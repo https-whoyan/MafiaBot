@@ -4,10 +4,12 @@ import (
 	"math"
 	"strconv"
 	"time"
+
+	"github.com/https-whoyan/MafiaBot/core/player"
 )
 
 const (
-	DayPersentageToNextStage = 80
+	DayPersentageToNextStage = 50
 )
 
 func (g *Game) Day(ch chan<- Signal) DayLog {
@@ -45,7 +47,7 @@ func (g *Game) StartDayVoting(done <-chan struct{}) DayLog {
 	occurrencesMp := make(map[int]int)
 
 	var kickedID = -1
-	var breakDownDayPlayersCount = int(math.Ceil(float64(DayPersentageToNextStage*g.Active.Len()) / 100.0))
+	var breakDownDayPlayersCount = int(math.Ceil(float64(DayPersentageToNextStage*g.Active.Len())/100.0)) + 1
 
 	acceptTheVote := func(voteP VoteProviderInterface) (kickedID *int) {
 		var votedPlayerID = int(g.Active.SearchPlayerByID(voteP.GetVotedPlayerID()).ID)
@@ -57,8 +59,26 @@ func (g *Game) StartDayVoting(done <-chan struct{}) DayLog {
 		occurrencesMp[vote]++
 		votesMp[votedPlayerID] = vote
 
+		// If occurrencesMp[vote] >= breakDownDayPlayersCount
 		if occurrencesMp[vote] >= breakDownDayPlayersCount {
 			kickedID = &vote
+		}
+		// Case, when all players leave his vote
+		if len(votesMp) == g.Active.Len() {
+			// Calculate vote, which have maximum occurrences
+			var (
+				mxOccurrence = 0
+				mxVote       = 0
+			)
+
+			for vote, occurrence := range votesMp {
+				if occurrence > mxOccurrence {
+					mxOccurrence = occurrence
+					mxVote = vote
+				}
+			}
+
+			return &mxVote
 		}
 
 		return
@@ -118,6 +138,15 @@ func CalculateDayDeadline(nighCounter int, deadCount int, totalPlayers int) time
 	return time.Minute * time.Duration(totalTimeMinutes)
 }
 
-func (g *Game) AffectDay(l DayLog, ch chan<- Signal) {
-	//todo
+func (g *Game) AffectDay(l DayLog, ch chan<- Signal) (isFool bool) {
+	if l.IsSkip {
+		safeSendErrSignal(ch, g.messenger.Day.SendMessageThatDayIsSkipped(g.MainChannel))
+		return
+	}
+	kickedPlayer := (*g.Active)[player.IDType(*l.Kicked)]
+	safeSendErrSignal(ch, g.messenger.Day.SendMessageAboutKickedPlayer(g.MainChannel, kickedPlayer))
+
+	safeSendErrSignal(ch, g.messenger.Day.SendMessageAboutKickedPlayer(g.MainChannel, kickedPlayer))
+	g.Active.ToDead(kickedPlayer.ID, player.KilledByDayVoting, g.NightCounter, g.Dead)
+	return
 }

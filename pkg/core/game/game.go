@@ -456,7 +456,7 @@ func (g *Game) run(ch chan<- Signal) (isStoppedByCtx bool) {
 
 			// Day
 			dayLog := g.Day(ch)
-			g.Aff()
+			g.AffectDay(dayLog, ch)
 			if g.logger != nil {
 				err := g.logger.SaveDayLog(g, dayLog)
 				safeSendErrSignal(ch, err)

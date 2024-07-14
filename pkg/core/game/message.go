@@ -240,8 +240,16 @@ func (m dayMessenger) SendMessageAboutNewDay(w io.Writer, deadline time.Duration
 	return m.sendMessage(message, w)
 }
 
-func (m dayMessenger) SendMessageThatDayIsSkipped(w io.Writer) {
+func (m dayMessenger) SendMessageThatDayIsSkipped(w io.Writer) error {
+	var message string
+	message = m.f.Bold("Today's vote has been skipped!")
+	return m.sendMessage(message, w)
+}
 
+func (m dayMessenger) SendMessageAboutKickedPlayer(w io.Writer, kickedPlayer *playerPack.Player) error {
+	var message string
+	message = m.f.Bold("As a result of today's vote, the ousted... " + m.f.Mention(kickedPlayer.ServerNick))
+	return m.sendMessage(message, w)
 }
 
 // _____________________
