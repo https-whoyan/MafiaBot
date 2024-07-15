@@ -91,7 +91,7 @@ func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate, fMT
 // NoticeIsEmptyGame If game not exists
 func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate, fMTer *botFMT.DiscordFMTer) {
 	content := "You can't interact with the game because you haven't registered it" + fMTer.NL() +
-		fMTer.Bold("Write the "+fMTer.Underline(RegisterGameCommandName)+" command") + " to start the game."
+		fMTer.Bold("Write the /"+fMTer.Underline(RegisterGameCommandName)+" command") + " to start the game."
 	Response(s, i.Interaction, content)
 }
 
@@ -101,6 +101,12 @@ func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate, fMT
 
 // SetRolesChannels to game.
 func setRolesChannels(s *discordgo.Session, guildID string, g *coreGamePack.Game) ([]string, error) {
+	if len(g.RoleChannels) == len(coreRolePack.GetAllNightInteractionRolesNames()) {
+		if g.MainChannel != nil {
+			// Set it before
+			return []string{}, nil
+		}
+	}
 	// Get night interaction roles names
 	allRolesNames := coreRolePack.GetAllNightInteractionRolesNames()
 	// Get curr MongoDB struct

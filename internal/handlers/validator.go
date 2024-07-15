@@ -45,6 +45,10 @@ func ValidateCommandByGameState(s *discordgo.Session, commandName string, g *gam
 		if g.IsRunning() {
 			return "", true
 		}
+	case DayVoteGameCommandName:
+		if g.IsRunning() {
+			return "", true
+		}
 	case FinishGameCommandName:
 		return "", true
 	}

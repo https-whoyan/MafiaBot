@@ -36,6 +36,7 @@ func (g *Game) Day(ch chan<- Signal) DayLog {
 func startTime(done chan<- struct{}, duration time.Duration) {
 	go func() {
 		time.Sleep(duration)
+		done <- struct{}{}
 		close(done)
 	}()
 }
@@ -126,7 +127,7 @@ func CalculateDayDeadline(nighCounter int, deadCount int, totalPlayers int) time
 		totalPlayersCountWeight = 0.27
 	)
 
-	var basicMinutes = 2.2
+	var basicMinutes = 0.0 // TODO 2.2
 	nightCounterAddMinutes := currNightCounterWeight * float64(nighCounter)
 	deadCountAddMinutes := deadCountWeight * float64(deadCount)
 	totalPlayersCountAddMinutes := totalPlayersCountWeight * float64(totalPlayers)

@@ -159,6 +159,7 @@ func (b *Bot) initBotCommands() {
 	// Vote
 	b.initCommand(handlerPack.NewGameVoteCommand())
 	b.initCommand(handlerPack.NewGameTwoVoteCommand())
+	b.initCommand(handlerPack.NewDayVoteCommand())
 
 	// finish game
 	b.initCommand(handlerPack.NewFinishGameCommand())

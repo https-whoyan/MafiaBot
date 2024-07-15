@@ -23,8 +23,8 @@ import (
 type RenameMode int8
 
 const (
-	// NotRenameModeMode used if you not want to rename users in your implementations
-	NotRenameModeMode RenameMode = 0
+	// NotRenameMode used if you not want to rename users in your implementations
+	NotRenameMode RenameMode = 0
 	// RenameInGuildMode used if you want to rename user everything in your guild
 	RenameInGuildMode RenameMode = 1
 	// RenameOnlyInMainChannelMode used if you want to rename user only in MainChannel
@@ -192,7 +192,7 @@ func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 	if g.messenger == nil {
 		err = errors.Join(err, EmptyFMTerErr)
 	}
-	if g.renameMode == NotRenameModeMode {
+	if g.renameMode == NotRenameMode {
 		return err
 	}
 	if g.renameProvider == nil {
@@ -304,7 +304,7 @@ func (g *Game) Init(cfg *configPack.RolesConfig) (err error) {
 	// Renaming.
 	// _______________
 	switch g.renameMode {
-	case NotRenameModeMode: // No actions
+	case NotRenameMode: // No actions
 	case RenameInGuildMode:
 		for _, player := range *g.Active {
 			err = player.RenameAfterGettingID(g.renameProvider, "")
@@ -579,7 +579,7 @@ func (g *Game) finish(ch chan<- Signal) {
 		// _______________
 		activePlayersAndSpectators := append(*g.StartPlayers, *g.Spectators...)
 		switch g.renameMode {
-		case NotRenameModeMode: // No actions
+		case NotRenameMode: // No actions
 		case RenameInGuildMode:
 			for _, player := range activePlayersAndSpectators {
 				safeSendErrSignal(ch, player.RenameUserAfterGame(g.renameProvider, ""))

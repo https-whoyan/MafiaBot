@@ -101,6 +101,7 @@ var (
 	VotePingError         = errors.New("player get same Vote before")
 	IncorrectVoteTime     = errors.New("incorrect Vote time")
 	OneVoteRequiredErr    = errors.New("one Vote required")
+	TwoVoteRequiredErr    = errors.New("two Vote required")
 	TwoVotesOneOfEmptyErr = errors.New("both votes must be either blank or not blank")
 )
 
@@ -164,6 +165,9 @@ func (g *Game) NightVoteValidator(vP VoteProviderInterface, roleChannel channel.
 	if g.NightVoting != votedPlayer.Role {
 		return IncorrectVotedPlayer
 	}
+	if g.NightVoting.IsTwoVotes {
+		return TwoVoteRequiredErr
+	}
 	if roleChannel != nil && g.NightVoting != roleChannel.GetRole() {
 		return IncorrectVoteChannel
 	}
@@ -211,6 +215,9 @@ func (g *Game) twoVoteProviderValidator(vP TwoVoteProviderInterface) error {
 	}
 	votedPlayerID, isServerID := vP.GetVotedPlayerID()
 	votedPlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
+	if g.State != NightState {
+		return IncorrectVoteTime
+	}
 	if votedPlayer == nil {
 		return InVotePlayerNotFound
 	}
@@ -256,10 +263,6 @@ func (g *Game) NightTwoVoteValidatorByChannelIID(vP TwoVoteProviderInterface, ch
 func (g *Game) NightTwoVoteValidator(vP TwoVoteProviderInterface, roleChannel channel.RoleChannel) error {
 	if err := g.twoVoteProviderValidator(vP); err != nil {
 		return err
-	}
-
-	if g.State != NightState {
-		return IncorrectVoteTime
 	}
 
 	votedPlayerID, isServerID := vP.GetVotedPlayerID()

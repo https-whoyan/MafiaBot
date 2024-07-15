@@ -399,7 +399,7 @@ func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.IncorrectVoteType):
-		message := f.B("Incorrect format for entering the IDType of the player you are voting for.") + f.NL() +
+		message := f.B("Incorrect format for entering the ID of the player you are voting for.") + f.NL() +
 			"Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
 		var allIDS []string
 		for _, player := range *g.Active {
@@ -413,7 +413,7 @@ func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.VotePlayerIsNotAlive):
-		message := f.B("I think the dead  can't vote.")
+		message := f.B("I think the dead can't vote.")
 		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.VotePlayerNotFound):
@@ -431,6 +431,11 @@ func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 		message += f.I(fmt.Sprintf("You cannot vote for the same player 2 times within %v nights.",
 			g.VotePing+1)) + f.NL() + f.NL()
 		message += f.IU("Please, re-vote.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.TwoVoteRequiredErr):
+		message := f.B("Your role requires a double vote.") + f.NL()
+		message += f.BU("Use /" + TwoVoteGameCommandName + " command.")
 		Response(s, i, message)
 		return
 	}
@@ -462,7 +467,7 @@ func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 		return
 	case errors.Is(err, coreGamePack.OneVoteRequiredErr):
 		message := "Your role requires one vote, not 2." + f.NL()
-		message += "Use " + f.B("/"+VoteGameCommandName) + "command"
+		message += "Use " + f.B("/"+VoteGameCommandName) + " command"
 		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.IncorrectVoteType):
@@ -504,6 +509,62 @@ func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 answerToTwoVote:
 	Response(s, i, f.B("Your vote counts. "))
 	g.TwoVoteChan <- vP
+}
+
+func (c DayVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
+	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
+	options := i.ApplicationCommandData().Options
+	vote := options[0].Value.(string)
+	fmt.Println(518)
+	vP := coreGamePack.NewVoteProvider(i.Member.User.ID, vote, true)
+	fmt.Println(g.Active)
+	err := g.DayVoteValidator(vP)
+	fmt.Println("ti dalbaeb, ", err)
+
+	switch {
+	case err == nil:
+		goto answerToVote
+	case errors.Is(err, coreGamePack.IncorrectVotedPlayer):
+		message := f.B("Right now you are not allowed to leave your vote.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.IncorrectVoteTime):
+		message := f.B("It is not possible to apply a vote not during the night or not during daytime voting.") +
+			f.NL() + f.U("Use the command later.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.IncorrectVoteType):
+		message := f.B("Incorrect format for entering the ID of the p you are voting for.") + f.NL() +
+			"Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
+		var allIDS []string
+		for _, p := range *g.Active {
+			allIDS = append(allIDS, fmt.Sprintf("%v", p.ID))
+		}
+		message += strings.Join(allIDS, ", ")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.PlayerIsMutedErr):
+		message := f.B("Oops, you are muted now.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.VotePlayerIsNotAlive):
+		message := f.B("I think the dead can't vote.")
+		Response(s, i, message)
+		return
+	case errors.Is(err, coreGamePack.VotePlayerNotFound):
+		message := f.B(fmt.Sprintf("Player IDType %v is not found alive.", vote)) + f.NL()
+		message += f.NL() + "Available options " + f.I("live players") + ":" + f.NL() + f.Tab()
+		var allIDS []string
+		for _, player := range *g.Active {
+			allIDS = append(allIDS, fmt.Sprintf("%v", player.ID))
+		}
+		message += strings.Join(allIDS, ", ")
+		Response(s, i, message)
+		return
+	}
+answerToVote:
+	Response(s, i, f.B("Your day vote been accepted."))
+	g.VoteChan <- vP
 }
 
 // _____________

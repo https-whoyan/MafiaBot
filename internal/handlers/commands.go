@@ -26,6 +26,7 @@ const (
 	StartGameCommandName        = "start_game"
 	VoteGameCommandName         = "vote"
 	TwoVoteGameCommandName      = "two_vote"
+	DayVoteGameCommandName      = "day_vote"
 	FinishGameCommandName       = "finish_game"
 )
 
@@ -262,6 +263,36 @@ func NewGameTwoVoteCommand() *GameTwoVoteCommand {
 func (c GameTwoVoteCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
 func (c GameTwoVoteCommand) GetName() string                       { return c.name }
 func (c GameTwoVoteCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
+
+type DayVoteCommand struct {
+	cmd           *discordgo.ApplicationCommand
+	isUsedForGame bool
+	name          string
+}
+
+func NewDayVoteCommand() *GameTwoVoteCommand {
+	description := "The command used for day voting, use " + coreGamePack.EmptyVoteStr + " for skip."
+	return &GameTwoVoteCommand{
+		cmd: &discordgo.ApplicationCommand{
+			Name:        DayVoteGameCommandName,
+			Description: description,
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "kicked_player_id",
+					Description: "Enter the player's game ID",
+					Required:    true,
+				},
+			},
+		},
+		isUsedForGame: true,
+		name:          DayVoteGameCommandName,
+	}
+}
+
+func (c DayVoteCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c DayVoteCommand) GetName() string                       { return c.name }
+func (c DayVoteCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
 // ___________
 // Other

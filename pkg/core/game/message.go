@@ -64,6 +64,7 @@ func NewGameMessanger(f myFMT.FmtInterface, g *Game) *Messenger {
 		f:          f,
 		Init:       &initMessenger{base},
 		Night:      &nightMessenger{base},
+		Day:        &dayMessenger{base},
 		AfterNight: &afterNightMessenger{base},
 		Finish:     &finishMessenger{base},
 	}
@@ -128,7 +129,7 @@ func (m initMessenger) SendStartMessage(writer io.Writer) error {
 		message += f.Italic(" (but there's no hiding from observers))))")
 	}
 	message += "." + nl
-	if m.g.renameMode != NotRenameModeMode {
+	if m.g.renameMode != NotRenameMode {
 		message += nl
 		message += "Also, all participants have been prefixed with their IDs to make it more convenient for you."
 	}
@@ -227,11 +228,9 @@ func (m dayMessenger) SendMessageAboutNewDay(w io.Writer, deadline time.Duration
 	f := m.f
 
 	var message string
-	message += myFMT.BoldUnderline(f, "Hello everyone!")
-	message += f.LineSplitter()
-	message += "Comes a " + f.Block(strconv.Itoa(m.g.NightCounter)) + " day."
+	message += "Comes a " + f.Block(strconv.Itoa(m.g.NightCounter)) + " day. "
 	strMinutes := strconv.Itoa(int(math.Ceil(deadline.Minutes())))
-	message += f.Bold("You have a ") + f.Block(strMinutes) + " to set your votes."
+	message += f.Bold("You have a ") + f.Block(strMinutes) + " minutes to set your votes."
 	message += f.LineSplitter()
 	message += f.LineSplitter()
 
