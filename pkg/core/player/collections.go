@@ -12,7 +12,7 @@ import (
 type NonPlayingPlayers []*NonPlayingPlayer
 
 // Players Type
-// Key - player IDType
+// Key - player ID
 //
 // Used only for g.Active
 type Players map[IDType]*Player

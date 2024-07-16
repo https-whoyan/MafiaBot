@@ -3,13 +3,12 @@ package game
 type State int8
 
 const (
-	NonDefinedState State = 1
-	RegisterState   State = 2
-	StartingState   State = 3
-	NightState      State = 4
-	DayState        State = 5
-	VotingState     State = 6
-	FinishState     State = 7
+	NonDefinedState State = iota
+	RegisterState
+	StartingState
+	NightState
+	DayState
+	FinishState
 )
 
 func (g *Game) IsFinished() bool {
@@ -17,7 +16,7 @@ func (g *Game) IsFinished() bool {
 }
 
 func (g *Game) IsRunning() bool {
-	return g.State == NightState || g.State == DayState || g.State == VotingState
+	return g.State == NightState || g.State == DayState
 }
 
 // _________________
@@ -37,9 +36,9 @@ func (g *Game) getNextState() State {
 	case NightState:
 		return DayState
 	case DayState:
-		return VotingState
-	case VotingState:
 		return NightState
+	default:
+		panic("unknown game state")
 	}
 
 	return g.PreviousState
@@ -68,7 +67,6 @@ var stateDefinition = map[State]string{
 	StartingState:   "is prepared for starting",
 	NightState:      "is in night state",
 	DayState:        "is in day state",
-	VotingState:     "is in day voting state",
 	FinishState:     "is finished",
 }
 

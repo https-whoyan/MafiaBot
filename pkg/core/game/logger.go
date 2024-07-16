@@ -87,7 +87,7 @@ func (g *Game) NewNightLog() NightLog {
 
 type DayLog struct {
 	DayNumber int `json:"number"`
-	// Key - IDType of the player who was voted for during the day to be excluded from the game
+	// Key - ID of the player who was voted for during the day to be excluded from the game
 	// Value - number of votes.
 	DayVotes map[int]int `json:"votes"`
 	Kicked   *int        `json:"kicked"`

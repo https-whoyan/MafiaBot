@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DayPersentageToNextStage = 51
+	DayPersentageToNextStage = 50
 )
 
 func (g *Game) Day(ch chan<- Signal) DayLog {
@@ -36,7 +36,6 @@ func (g *Game) Day(ch chan<- Signal) DayLog {
 func startTime(done chan<- struct{}, duration time.Duration) {
 	go func() {
 		time.Sleep(duration)
-		done <- struct{}{}
 		close(done)
 	}()
 }
@@ -46,7 +45,7 @@ func (g *Game) StartDayVoting(done <-chan struct{}) DayLog {
 	occurrencesMp := make(map[int]int)
 
 	var kickedID = -1
-	var breakDownDayPlayersCount = int(math.Ceil(float64(DayPersentageToNextStage*g.Active.Len())/100.0)) + 1
+	var breakDownDayPlayersCount = int(math.Ceil(float64(DayPersentageToNextStage*g.Active.Len()) / 100.0))
 
 	acceptTheVote := func(voteP VoteProviderInterface) (kickedID *int) {
 		var votedPlayerID = int(g.Active.SearchPlayerByID(voteP.GetVotedPlayerID()).ID)
@@ -92,6 +91,10 @@ func (g *Game) StartDayVoting(done <-chan struct{}) DayLog {
 		dayLog.Kicked = kickedID
 		dayLog.DayVotes = votesMp
 		dayLog.IsSkip = false
+		if *kickedID == -1 {
+			dayLog.Kicked = nil
+			dayLog.IsSkip = true
+		}
 	}
 
 	select {
@@ -103,19 +106,27 @@ func (g *Game) StartDayVoting(done <-chan struct{}) DayLog {
 		return dayLog
 	default:
 		for voteP := range g.VoteChan {
-			err := g.DayVote(voteP, nil)
-			if err != nil {
-				maybeKickedID := acceptTheVote(voteP)
-				if maybeKickedID != nil {
-					kickedID = *maybeKickedID
-					break
+			select {
+			case <-g.ctx.Done():
+				standDayLog(&kickedID)
+				return dayLog
+			case <-done:
+				standDayLog(&kickedID)
+				return dayLog
+			default:
+				err := g.DayVote(voteP, nil)
+				if err != nil {
+					maybeKickedID := acceptTheVote(voteP)
+					if maybeKickedID != nil {
+						kickedID = *maybeKickedID
+						break
+					}
 				}
 			}
 		}
+		standDayLog(&kickedID)
+		return dayLog
 	}
-
-	standDayLog(&kickedID)
-	return dayLog
 }
 
 // CalculateDayDeadline calculate the day max time.
@@ -145,7 +156,6 @@ func (g *Game) AffectDay(l DayLog, ch chan<- Signal) (isFool bool) {
 	kickedPlayer := (*g.Active)[player.IDType(*l.Kicked)]
 	safeSendErrSignal(ch, g.messenger.Day.SendMessageAboutKickedPlayer(g.MainChannel, kickedPlayer))
 
-	safeSendErrSignal(ch, g.messenger.Day.SendMessageAboutKickedPlayer(g.MainChannel, kickedPlayer))
 	g.Active.ToDead(kickedPlayer.ID, player.KilledByDayVoting, g.NightCounter, g.Dead)
 	return
 }

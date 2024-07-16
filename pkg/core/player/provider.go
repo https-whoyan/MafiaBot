@@ -13,7 +13,7 @@ import (
 // RenameUserProviderInterface
 //
 // Need to rename people at game startup by adding prefixes to them,
-// like “<IDType in game>: <old nickname>”
+// like “<ID in game>: <old nickname>”
 //
 // See below
 type RenameUserProviderInterface interface {
@@ -22,14 +22,14 @@ type RenameUserProviderInterface interface {
 
 // Edit it.
 const (
-	playerPatternWithoutNickname = "%v"     // IDType
-	playerPrefixPattern          = "%v: %v" // IDType, Nick
+	playerPatternWithoutNickname = "%v"     // ID
+	playerPrefixPattern          = "%v: %v" // ID, Nick
 
 	spectatorPrefixPattern   = "(spectator) %v" // Nick
 	spectatorWithoutNickname = "(spectator)"
 
-	deadPrefixPatternWithoutNickname = "(dead) %v"     // IDType
-	deadPrefixPattern                = "(dead) %v: %v" // IDType, Nick
+	deadPrefixPatternWithoutNickname = "(dead) %v"     // ID
+	deadPrefixPattern                = "(dead) %v: %v" // ID, Nick
 )
 
 var (
@@ -50,7 +50,7 @@ var (
 )
 
 var (
-	InvalidID          = errors.New("invalid IDType")
+	InvalidID          = errors.New("invalid ")
 	UserIsNotActive    = errors.New("user is not a active user")
 	UserIsNotDead      = errors.New("user is not a dead user")
 	UserIsNotSpectator = errors.New("user is not spectator")

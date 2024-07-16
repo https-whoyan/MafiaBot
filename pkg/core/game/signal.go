@@ -195,13 +195,8 @@ func HandleExample() {
 			if switchSignal.SwitchSignalType == SwitchStateSwitchStateType {
 
 				currentGameState := switchSignal.Value.(SwitchStateValue).CurrentState
-				if currentGameState == VotingState {
-					// Now you know that the day's voting stage is now underway.
-					// In the daytime voting, all votes are sent to the VoteChan channel.
-				} else {
-					log.Println(currentGameState) // For no errors
-					// currentGameState now indicates which stage the game has switched to.
-				}
+				log.Println(currentGameState) // For no errors
+				// currentGameState now indicates which stage the game has switched to.
 
 			} else if switchSignal.SwitchSignalType == SwitchNightVotedRoleSwitchStateType {
 

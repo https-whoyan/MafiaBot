@@ -11,16 +11,16 @@ import (
 type AliveStatus int
 
 const (
-	Alive      AliveStatus = 1
-	Dead       AliveStatus = 2
-	Spectating AliveStatus = 3
+	Alive AliveStatus = iota
+	Dead
+	Spectating
 )
 
 type VoteStatus int
 
 const (
-	Passed VoteStatus = 1
-	Muted  VoteStatus = 2
+	Passed VoteStatus = iota
+	Muted
 )
 
 type IDType int
@@ -30,7 +30,7 @@ type IDType int
 // _______________
 
 // NonPlayingPlayer
-// Used for peoples, are used for people who do not have their IDType in the game, i.e. are not participating in it.
+// Used for peoples, are used for people who do not have their ID in the game, i.e. are not participating in it.
 type NonPlayingPlayer struct {
 	// Tag Represent account IDType on the presentation platform
 	Tag string `json:"tag"`

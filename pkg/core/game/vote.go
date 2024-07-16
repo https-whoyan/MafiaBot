@@ -26,10 +26,10 @@ const (
 type VoteProviderInterface interface {
 	// GetVotedPlayerID Provides 2 fields: information about the voting player.
 	//
-	// The 1st field provides the IDType of the player who voted,
-	// the second field is whether this IDType is your server IDType or in-game IDType.
+	// The 1st field provides the ID of the player who voted,
+	// the second field is whether this ID is your server ID or in-game IDType.
 	GetVotedPlayerID() (votedUserID string, isUserServerID bool)
-	// GetVote provide one field: IDType of the player being voted for.
+	// GetVote provide one field: ID of the player being voted for.
 	// If you need empty Vote, use the EmptyVoteStr constant.
 	GetVote() (ID string)
 }
@@ -130,7 +130,7 @@ func (g *Game) voteProviderValidator(vP VoteProviderInterface) error {
 	if votedPlayer.LifeStatus != player.Alive {
 		return VotePlayerIsNotAlive
 	}
-	toVotePlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
+	toVotePlayer := g.Active.SearchPlayerByID(vote, isServerID)
 	if toVotePlayer == nil {
 		return VotePlayerNotFound
 	}

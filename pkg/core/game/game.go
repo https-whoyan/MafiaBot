@@ -24,13 +24,13 @@ type RenameMode int8
 
 const (
 	// NotRenameMode used if you not want to rename users in your implementations
-	NotRenameMode RenameMode = 0
+	NotRenameMode RenameMode = iota
 	// RenameInGuildMode used if you want to rename user everything in your guild
-	RenameInGuildMode RenameMode = 1
+	RenameInGuildMode
 	// RenameOnlyInMainChannelMode used if you want to rename user only in MainChannel
-	RenameOnlyInMainChannelMode RenameMode = 2
+	RenameOnlyInMainChannelMode
 	// RenameInAllChannelsMode used if you want to rename user in every channel (Roles and Main)
-	RenameInAllChannelsMode RenameMode = 3
+	RenameInAllChannelsMode
 )
 
 // ____________________
@@ -87,10 +87,8 @@ type Game struct {
 
 	// Keeps what role is voting (in night) right now.
 	NightVoting *rolesPack.Role `json:"nightVoting"`
-	// Unbuffered Channel.
-	VoteChan chan VoteProviderInterface
-	// Unbuffered Channel.
-	TwoVoteChan chan TwoVoteProviderInterface
+	VoteChan    <-chan VoteProviderInterface
+	TwoVoteChan <-chan TwoVoteProviderInterface
 	// Can the player choose himself
 	VoteForYourself bool `json:"voteForYourself"`
 	// VotePing presents a delay number for voting for the same player again.
@@ -205,8 +203,9 @@ func (g *Game) validationStart(cfg *configPack.RolesConfig) error {
 		return err
 	case RenameInAllChannelsMode:
 		return err
+	default:
+		err = errors.Join(err, EmptyRenameModeErr)
 	}
-	err = errors.Join(err, EmptyRenameModeErr)
 	return err
 }
 

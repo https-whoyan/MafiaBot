@@ -270,9 +270,9 @@ type DayVoteCommand struct {
 	name          string
 }
 
-func NewDayVoteCommand() *GameTwoVoteCommand {
+func NewDayVoteCommand() *DayVoteCommand {
 	description := "The command used for day voting, use " + coreGamePack.EmptyVoteStr + " for skip."
-	return &GameTwoVoteCommand{
+	return &DayVoteCommand{
 		cmd: &discordgo.ApplicationCommand{
 			Name:        DayVoteGameCommandName,
 			Description: description,
