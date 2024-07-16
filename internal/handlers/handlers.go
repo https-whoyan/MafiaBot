@@ -216,11 +216,7 @@ func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interact
 func (c FinishGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	g *coreGamePack.Game, _ *botFMTPack.DiscordFMTer) {
 	Response(s, i, "Ok... Bad idea, but ok.")
-	ch := make(chan coreGamePack.Signal)
-	go g.FinishAnyway(ch)
-	for signal := range ch {
-		log.Println(signal)
-	}
+	g.FinishAnyway()
 }
 
 func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,

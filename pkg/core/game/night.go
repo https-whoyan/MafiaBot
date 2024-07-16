@@ -4,7 +4,6 @@ import (
 	"github.com/https-whoyan/MafiaBot/core/converter"
 	"sort"
 	"strconv"
-	"sync"
 	"time"
 
 	channelPack "github.com/https-whoyan/MafiaBot/core/channel"
@@ -16,16 +15,16 @@ import (
 // Night
 // Actions with the game related to the night.
 // Send will send signals to the channels about which role is currently voting. Comes from the g.run function
-func (g *Game) Night(ch chan<- Signal) NightLog {
+func (g *Game) Night() NightLog {
 	select {
 	case <-g.ctx.Done():
 		return NightLog{}
 	default:
 		g.SetState(NightState)
-		ch <- g.newSwitchStateSignal()
+		g.infoSender <- g.newSwitchStateSignal()
 
-		err := g.messenger.Night.SendInitialNightMessage(g.MainChannel)
-		safeSendErrSignal(ch, err)
+		err := g.Messenger.Night.SendInitialNightMessage(g.MainChannel)
+		safeSendErrSignal(g.infoSender, err)
 
 		// I'm getting the voting order
 		g.RLock()
@@ -34,7 +33,7 @@ func (g *Game) Night(ch chan<- Signal) NightLog {
 
 		// For each of the votes
 		for _, votedRole := range orderToVote {
-			g.RoleNightAction(votedRole, ch)
+			g.RoleNightAction(votedRole)
 		}
 		// On this line, all votes are accepted.
 		// I hereby signify that the voting is over.
@@ -69,7 +68,7 @@ RoleNightAction
 
 	A follow-up call to the methods themselves is voice acceptance.
 */
-func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
+func (g *Game) RoleNightAction(votedRole *rolesPack.Role) {
 	select {
 	case <-g.ctx.Done():
 		return
@@ -79,7 +78,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 		g.Lock()
 		g.NightVoting = votedRole
 		g.Unlock()
-		ch <- g.newSwitchVoteSignal()
+		g.infoSender <- g.newSwitchVoteSignal()
 		// Finding all the players with that role.
 		// And finding nightInteraction channel
 		g.RLock()
@@ -96,17 +95,17 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 		// And if a player is locked, I tell him about it and add him to spectators for the duration of the Vote.
 		for _, voter := range *allPlayersWithRole {
 			if voter.InteractionStatus == playerPack.Muted {
-				err = g.messenger.Night.SendToPlayerThatIsMutedMessage(voter, interactionChannel)
-				safeSendErrSignal(ch, err)
+				err = g.Messenger.Night.SendToPlayerThatIsMutedMessage(voter, interactionChannel)
+				safeSendErrSignal(g.infoSender, err)
 
 				// Add to spectator
 				err = channelPack.FromUserToSpectator(interactionChannel, voter.Tag)
-				safeSendErrSignal(ch, err)
+				safeSendErrSignal(g.infoSender, err)
 
 			} else {
 				containsNotMutedPlayers = true
-				err = g.messenger.Night.SendInvitingToVoteMessage(voter, voteDeadlineInt, interactionChannel)
-				safeSendErrSignal(ch, err)
+				err = g.Messenger.Night.SendInvitingToVoteMessage(voter, voteDeadlineInt, interactionChannel)
+				safeSendErrSignal(g.infoSender, err)
 			}
 		}
 
@@ -115,19 +114,19 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 		slicePlayers := converter.GetMapValues(*allPlayersWithRole)
 		switch votedRole.IsTwoVotes {
 		case true:
-			g.twoVoterRoleNightVoting(slicePlayers, containsNotMutedPlayers, voteDeadline, ch)
+			g.twoVoterRoleNightVoting(slicePlayers, containsNotMutedPlayers, voteDeadline)
 		case false:
-			g.oneVoteRoleNightVoting(slicePlayers, containsNotMutedPlayers, voteDeadline, ch)
+			g.oneVoteRoleNightVoting(slicePlayers, containsNotMutedPlayers, voteDeadline)
 		}
 
 		// Putting it back in the channel.
 		for _, voter := range *allPlayersWithRole {
 			if voter.InteractionStatus == playerPack.Muted {
 				err = channelPack.FromUserToSpectator(interactionChannel, voter.Tag)
-				safeSendErrSignal(ch, err)
+				safeSendErrSignal(g.infoSender, err)
 
-				err = g.messenger.Night.SendThanksToMutedPlayerMessage(voter, interactionChannel)
-				safeSendErrSignal(ch, err)
+				err = g.Messenger.Night.SendThanksToMutedPlayerMessage(voter, interactionChannel)
+				safeSendErrSignal(g.infoSender, err)
 			}
 		}
 
@@ -146,7 +145,7 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 			message := g.nightInteraction(voter)
 			if message != nil {
 				_, err = interactionChannel.Write([]byte(*message))
-				safeSendErrSignal(ch, err)
+				safeSendErrSignal(g.infoSender, err)
 			}
 			return
 		}
@@ -157,158 +156,109 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role, ch chan<- Signal) {
 
 /* The logic of accepting a role's Vote, and timers, depending on whether the role votes with 2 votes or one. */
 
-func (g *Game) waitOneVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player, ch chan<- Signal) {
-	done := make(chan struct{})
-	FakeTimer(done)
-	// All votes will be with errors.
-	wg := &sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		select {
-		case <-done:
-			return
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		select {
-		case <-done:
-			return
-		case voteP := <-g.VoteChan:
-			select {
-			case ch <- newErrSignal(g.NightOneVote(voteP, nil)):
-			case <-done:
-				return
-			}
-		}
-	}()
-	wg.Wait()
-	// Set to all Empty votes
+func (g *Game) waitOneVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player) {
+	g.randomTimer()
+
+	select {
+	case voteP := <-g.VoteChan:
+		// All votes will be with errors
+		err := g.NightOneVote(voteP, nil)
+		g.infoSender <- newErrSignal(err)
+	case <-g.timerDone:
+		votedPlayer := int(allPlayersWithRole[0].ID)
+		voteProvider := NewVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, false)
+		_ = g.NightOneVote(voteProvider, nil)
+		break
+	}
 	for _, p := range allPlayersWithRole {
 		p.Votes = append(p.Votes, EmptyVoteInt)
 	}
 }
 
 func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*playerPack.Player,
-	containsNotMutedPlayers bool, deadline time.Duration, ch chan<- Signal) {
+	containsNotMutedPlayers bool, deadline time.Duration) {
 	// Critic section with WaitGroup, don't use context completion check.
 	var err error
 
 	if !containsNotMutedPlayers {
-		g.waitOneVoteRoleFakeTimer(allPlayersWithRole, ch)
+		g.waitOneVoteRoleFakeTimer(allPlayersWithRole)
 		return
 	}
 
-	done := make(chan struct{})
-	wg := &sync.WaitGroup{}
-	for _, voter := range allPlayersWithRole {
-		VoteTimer(g.VoteChan, done, deadline,
-			strconv.Itoa(int(voter.ID)), false, wg)
-	}
-	for voteP := range g.VoteChan {
+	g.timer(deadline)
+
+	select {
+	case voteP := <-g.VoteChan:
 		err = g.NightOneVote(voteP, nil)
 		if err == nil {
+			g.timerStop <- struct{}{}
 			break
 		} else {
-			ch <- newErrSignal(err)
+			g.infoSender <- newErrSignal(err)
 		}
+	case <-g.timerDone:
+		votedPlayer := int(allPlayersWithRole[0].ID)
+		voteProvider := NewVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, false)
+		_ = g.NightOneVote(voteProvider, nil)
+		break
 	}
-	close(done)
-	wg.Wait()
+
+	return
 }
 
-func (g *Game) waitTwoVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player, ch chan<- Signal) {
-	done := make(chan struct{})
-	FakeTimer(done)
-	// All votes will be with errors.
-	wg := &sync.WaitGroup{}
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		select {
-		case <-done:
-			return
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		select {
-		case <-done:
-			return
-		case voteP := <-g.TwoVoteChan:
-			select {
-			case ch <- newErrSignal(g.NightTwoVote(voteP, nil)):
-			case <-done:
-				return
-			}
-		}
-	}()
-	wg.Wait()
-	// Set to all Empty votes
+func (g *Game) waitTwoVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player) {
+	g.randomTimer()
+
+	select {
+	case voteP := <-g.TwoVoteChan:
+		// All votes will be with errors
+		err := g.NightTwoVote(voteP, nil)
+		g.infoSender <- newErrSignal(err)
+	case <-g.timerDone:
+		votedPlayer := int(allPlayersWithRole[0].ID)
+		voteProvider := NewTwoVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, EmptyVoteStr, false)
+		_ = g.NightTwoVote(voteProvider, nil)
+		break
+	}
+
 	for _, p := range allPlayersWithRole {
 		p.Votes = append(p.Votes, EmptyVoteInt)
 	}
 }
 
 func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*playerPack.Player,
-	containsNotMutedPlayers bool, deadline time.Duration, ch chan<- Signal) {
-	// Critic section with WaitGroup, don't use context completion check.
+	containsNotMutedPlayers bool, deadline time.Duration) {
 	var err error
 
 	if !containsNotMutedPlayers {
-		done := make(chan struct{})
-		FakeTimer(done)
-		// All votes will be with errors.
-		wg := &sync.WaitGroup{}
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
-			<-done
-		}()
-		go func() {
-			defer wg.Done()
-			select {
-			case <-done:
-				return
-			case voteP := <-g.TwoVoteChan:
-				select {
-				case ch <- newErrSignal(g.NightTwoVote(voteP, nil)):
-				case <-done:
-					return
-				}
-			}
-		}()
-		wg.Wait()
-		// Set to all Empty votes
-		for _, p := range allPlayersWithRole {
-			p.Votes = append(p.Votes, EmptyVoteInt, EmptyVoteInt)
-		}
+		g.waitTwoVoteRoleFakeTimer(allPlayersWithRole)
 		return
 	}
 
-	// I create a channel for timers to work correctly.
-	done := make(chan struct{})
-	wg := &sync.WaitGroup{}
-	for _, voter := range allPlayersWithRole {
-		TwoVoteTimer(g.TwoVoteChan, done, deadline,
-			strconv.Itoa(int(voter.ID)), false, wg)
-	}
-	for voteP := range g.TwoVoteChan {
+	g.timer(deadline)
+
+	select {
+	case voteP := <-g.TwoVoteChan:
 		err = g.NightTwoVote(voteP, nil)
 		if err == nil {
+			g.timerStop <- struct{}{}
 			break
 		} else {
-			ch <- newErrSignal(err)
+			g.infoSender <- newErrSignal(err)
 		}
+	case <-g.timerDone:
+		votedPlayer := int(allPlayersWithRole[0].ID)
+		voteProvider := NewTwoVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, EmptyVoteStr, false)
+		_ = g.NightTwoVote(voteProvider, nil)
+		break
 	}
-	close(done)
-	wg.Wait()
+
+	return
 }
 
 // AffectNight changes players according to the night's actions.
 // Errors during execution are sent to the channel
-func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
+func (g *Game) AffectNight(l NightLog) {
 	// Clearing all statuses
 	if !g.IsRunning() {
 		panic("Game is not running")
@@ -359,14 +309,14 @@ func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
 						case <-g.ctx.Done():
 							return
 						default:
-							safeSendErrSignal(ch, channelPack.FromUserToSpectator(interactionChannel, p.Tag))
+							safeSendErrSignal(g.infoSender, channelPack.FromUserToSpectator(interactionChannel, p.Tag))
 						}
 					}
 					select {
 					case <-g.ctx.Done():
 						return
 					default:
-						safeSendErrSignal(ch, channelPack.FromUserToSpectator(mainChannel, p.Tag))
+						safeSendErrSignal(g.infoSender, channelPack.FromUserToSpectator(mainChannel, p.Tag))
 					}
 				}
 			}
@@ -378,11 +328,11 @@ func (g *Game) AffectNight(l NightLog, ch chan<- Signal) {
 		g.Unlock()
 
 		// Sending a message about who died today.
-		err := g.messenger.AfterNight.SendAfterNightMessage(l, g.MainChannel)
-		safeSendErrSignal(ch, err)
+		err := g.Messenger.AfterNight.SendAfterNightMessage(l, g.MainChannel)
+		safeSendErrSignal(g.infoSender, err)
 		// Then, for each person try to do his reincarnation
 		for _, p := range newActivePlayers {
-			g.reincarnation(ch, p)
+			g.reincarnation(p)
 		}
 		return
 	}

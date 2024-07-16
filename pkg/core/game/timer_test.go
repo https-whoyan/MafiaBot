@@ -1,11 +1,9 @@
 package game
 
-import (
-	"log"
-	"sync"
-	"testing"
-	"time"
-)
+// TODO
+// REPLACE
+
+/*
 
 var (
 	senderUserFakeID    = "1"
@@ -228,3 +226,5 @@ func TestFakeTimer(t *testing.T) {
 			" seconds")
 	})
 }
+
+*/

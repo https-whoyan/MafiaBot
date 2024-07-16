@@ -57,7 +57,7 @@ func (g *Game) mafiaInteraction(mafia *player.Player) {
 func (g *Game) donInteraction(don *player.Player) *InteractionMessage {
 	g.Lock()
 	defer g.Unlock()
-	f := g.messenger.f
+	f := g.Messenger.f
 
 	checkedPlayer, isEmpty := g.interactionHelper(don)
 	if isEmpty {
@@ -67,7 +67,7 @@ func (g *Game) donInteraction(don *player.Player) *InteractionMessage {
 	checkedPlayerRoleName := checkedPlayer.Role.Name
 
 	message := InteractionMessage("Checked player " + f.Block(strconv.Itoa(int(checkedPlayer.ID))) + ", role: " +
-		g.messenger.f.Block(checkedPlayerRoleName))
+		g.Messenger.f.Block(checkedPlayerRoleName))
 	return &message
 }
 
@@ -110,7 +110,7 @@ func (g *Game) detectiveInteraction(detective *player.Player) *InteractionMessag
 		return nil
 	}
 
-	f := g.messenger.f
+	f := g.Messenger.f
 	checkedPlayer1 := g.Active.SearchPlayerByGameID(strconv.Itoa(checkedID1))
 	checkedPlayer2 := g.Active.SearchPlayerByGameID(strconv.Itoa(checkedID2))
 

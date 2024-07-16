@@ -8,15 +8,15 @@ import (
 // This is where all the code regarding reincarnation and role reversal is contained.
 // This may be necessary if a role is specified to become a different role in certain scenarios.
 
-func (g *Game) reincarnation(ch chan<- Signal, p *player.Player) {
+func (g *Game) reincarnation(p *player.Player) {
 	switch p.Role {
 	case roles.Don:
-		g.donReincarnation(ch, p)
+		g.donReincarnation(p)
 	}
 	return
 }
 
-func (g *Game) donReincarnation(ch chan<- Signal, p *player.Player) {
+func (g *Game) donReincarnation(p *player.Player) {
 	// I find out he's the only one left on the mafia team.
 	g.RLock()
 	mafiaTeamCounter := 0
@@ -30,15 +30,15 @@ func (g *Game) donReincarnation(ch chan<- Signal, p *player.Player) {
 		return
 	}
 	p.Role = roles.Mafia
-	safeSendErrSignal(ch, g.RoleChannels[roles.Don.Name].RemoveUser(p.Tag))
-	safeSendErrSignal(ch, g.RoleChannels[roles.Mafia.Name].AddPlayer(p.Tag))
+	safeSendErrSignal(g.infoSender, g.RoleChannels[roles.Don.Name].RemoveUser(p.Tag))
+	safeSendErrSignal(g.infoSender, g.RoleChannels[roles.Mafia.Name].AddPlayer(p.Tag))
 
-	f := g.messenger.f
+	f := g.Messenger.f
 	g.RUnlock()
 	var message string
 	message = f.Bold("Hello, dear ") + f.Mention(p.ServerNick) + "." + f.LineSplitter()
 	message += "You are the last player left alive from the mafia team, so you become mafia." + f.LineSplitter()
 	message += f.Underline("Don't reveal yourself.")
 	_, err := g.RoleChannels[roles.Mafia.Name].Write([]byte(message))
-	safeSendErrSignal(ch, err)
+	safeSendErrSignal(g.infoSender, err)
 }

@@ -12,37 +12,29 @@ const (
 	DayPersentageToNextStage = 50
 )
 
-func (g *Game) Day(ch chan<- Signal) DayLog {
+func (g *Game) Day() DayLog {
 	select {
 	case <-g.ctx.Done():
 		return DayLog{}
 	default:
 		g.SetState(DayState)
-		ch <- g.newSwitchStateSignal()
+		g.infoSender <- g.newSwitchStateSignal()
 
 		g.RLock()
 		deadline := CalculateDayDeadline(
 			g.NightCounter, g.Dead.Len(), g.RolesConfig.PlayersCount)
 		g.RUnlock()
-		safeSendErrSignal(ch, g.messenger.Day.SendMessageAboutNewDay(g.MainChannel, deadline))
+		safeSendErrSignal(g.infoSender, g.Messenger.Day.SendMessageAboutNewDay(g.MainChannel, deadline))
 
-		// Start timer
-		done := make(chan struct{})
-		startTime(done, deadline)
-		return g.StartDayVoting(done)
+		return g.StartDayVoting(deadline)
 	}
 }
 
-func startTime(done chan<- struct{}, duration time.Duration) {
-	go func() {
-		time.Sleep(duration)
-		close(done)
-	}()
-}
-
-func (g *Game) StartDayVoting(done <-chan struct{}) DayLog {
+func (g *Game) StartDayVoting(deadline time.Duration) DayLog {
 	votesMp := make(map[int]int)
 	occurrencesMp := make(map[int]int)
+
+	g.timer(deadline)
 
 	var kickedID = -1
 	var breakDownDayPlayersCount = int(math.Ceil(float64(DayPersentageToNextStage*g.Active.Len()) / 100.0))
@@ -99,34 +91,23 @@ func (g *Game) StartDayVoting(done <-chan struct{}) DayLog {
 
 	select {
 	case <-g.ctx.Done():
-		standDayLog(&kickedID)
-		return dayLog
-	case <-done:
-		standDayLog(&kickedID)
-		return dayLog
-	default:
-		for voteP := range g.VoteChan {
-			select {
-			case <-g.ctx.Done():
-				standDayLog(&kickedID)
-				return dayLog
-			case <-done:
-				standDayLog(&kickedID)
-				return dayLog
-			default:
-				err := g.DayVote(voteP, nil)
-				if err != nil {
-					maybeKickedID := acceptTheVote(voteP)
-					if maybeKickedID != nil {
-						kickedID = *maybeKickedID
-						break
-					}
-				}
+		break
+	case <-g.timerDone:
+		break
+	case voteP := <-g.VoteChan:
+		err := g.DayVote(voteP, nil)
+		if err != nil {
+			maybeKickedID := acceptTheVote(voteP)
+			if maybeKickedID != nil {
+				kickedID = *maybeKickedID
+				g.timerDone <- struct{}{}
+				break
 			}
 		}
-		standDayLog(&kickedID)
-		return dayLog
 	}
+
+	standDayLog(&kickedID)
+	return dayLog
 }
 
 // CalculateDayDeadline calculate the day max time.
@@ -148,13 +129,13 @@ func CalculateDayDeadline(nighCounter int, deadCount int, totalPlayers int) time
 	return time.Minute * time.Duration(totalTimeMinutes)
 }
 
-func (g *Game) AffectDay(l DayLog, ch chan<- Signal) (isFool bool) {
+func (g *Game) AffectDay(l DayLog) (isFool bool) {
 	if l.IsSkip {
-		safeSendErrSignal(ch, g.messenger.Day.SendMessageThatDayIsSkipped(g.MainChannel))
+		safeSendErrSignal(g.infoSender, g.Messenger.Day.SendMessageThatDayIsSkipped(g.MainChannel))
 		return
 	}
 	kickedPlayer := (*g.Active)[player.IDType(*l.Kicked)]
-	safeSendErrSignal(ch, g.messenger.Day.SendMessageAboutKickedPlayer(g.MainChannel, kickedPlayer))
+	safeSendErrSignal(g.infoSender, g.Messenger.Day.SendMessageAboutKickedPlayer(g.MainChannel, kickedPlayer))
 
 	g.Active.ToDead(kickedPlayer.ID, player.KilledByDayVoting, g.NightCounter, g.Dead)
 	return
