@@ -159,17 +159,29 @@ func (g *Game) RoleNightAction(votedRole *rolesPack.Role) {
 func (g *Game) waitOneVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player) {
 	g.randomTimer()
 
-	select {
-	case voteP := <-g.VoteChan:
-		// All votes will be with errors
-		err := g.NightOneVote(voteP, nil)
-		g.infoSender <- newErrSignal(err)
-	case <-g.timerDone:
-		votedPlayer := int(allPlayersWithRole[0].ID)
-		voteProvider := NewVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, false)
-		_ = g.NightOneVote(voteProvider, nil)
-		break
+	for {
+		isNeedToContinue := false
+		select {
+		case voteP := <-g.VoteChan:
+			// All votes will be with errors
+			err := g.NightOneVote(voteP, nil)
+			g.infoSender <- newErrSignal(err)
+			isNeedToContinue = true
+			break
+		case <-g.timerDone:
+			votedPlayer := int(allPlayersWithRole[0].ID)
+			voteProvider := NewVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, false)
+			_ = g.NightOneVote(voteProvider, nil)
+			break
+		case <-g.ctx.Done():
+			break
+		}
+
+		if !isNeedToContinue {
+			break
+		}
 	}
+
 	for _, p := range allPlayersWithRole {
 		p.Votes = append(p.Votes, EmptyVoteInt)
 	}
@@ -177,7 +189,6 @@ func (g *Game) waitOneVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player)
 
 func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 	containsNotMutedPlayers bool, deadline time.Duration) {
-	// Critic section with WaitGroup, don't use context completion check.
 	var err error
 
 	if !containsNotMutedPlayers {
@@ -187,20 +198,30 @@ func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 
 	g.timer(deadline)
 
-	select {
-	case voteP := <-g.VoteChan:
-		err = g.NightOneVote(voteP, nil)
-		if err == nil {
-			g.timerStop <- struct{}{}
+	for {
+		isNeedToContinue := false
+		select {
+		case voteP := <-g.VoteChan:
+			err = g.NightOneVote(voteP, nil)
+			if err == nil {
+				g.timerStop <- struct{}{}
+				break
+			} else {
+				g.infoSender <- newErrSignal(err)
+				isNeedToContinue = true
+				break
+			}
+		case <-g.timerDone:
+			votedPlayer := int(allPlayersWithRole[0].ID)
+			voteProvider := NewVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, false)
+			_ = g.NightOneVote(voteProvider, nil)
 			break
-		} else {
-			g.infoSender <- newErrSignal(err)
+		case <-g.ctx.Done():
+			break
 		}
-	case <-g.timerDone:
-		votedPlayer := int(allPlayersWithRole[0].ID)
-		voteProvider := NewVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, false)
-		_ = g.NightOneVote(voteProvider, nil)
-		break
+		if !isNeedToContinue {
+			break
+		}
 	}
 
 	return
@@ -209,16 +230,27 @@ func (g *Game) oneVoteRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 func (g *Game) waitTwoVoteRoleFakeTimer(allPlayersWithRole []*playerPack.Player) {
 	g.randomTimer()
 
-	select {
-	case voteP := <-g.TwoVoteChan:
-		// All votes will be with errors
-		err := g.NightTwoVote(voteP, nil)
-		g.infoSender <- newErrSignal(err)
-	case <-g.timerDone:
-		votedPlayer := int(allPlayersWithRole[0].ID)
-		voteProvider := NewTwoVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, EmptyVoteStr, false)
-		_ = g.NightTwoVote(voteProvider, nil)
-		break
+	for {
+		isNeedToContinue := false
+		select {
+		case voteP := <-g.TwoVoteChan:
+			// All votes will be with errors
+			err := g.NightTwoVote(voteP, nil)
+			g.infoSender <- newErrSignal(err)
+			isNeedToContinue = true
+			break
+		case <-g.timerDone:
+			votedPlayer := int(allPlayersWithRole[0].ID)
+			voteProvider := NewTwoVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, EmptyVoteStr, false)
+			_ = g.NightTwoVote(voteProvider, nil)
+			break
+		case <-g.ctx.Done():
+			break
+		}
+
+		if !isNeedToContinue {
+			break
+		}
 	}
 
 	for _, p := range allPlayersWithRole {
@@ -237,20 +269,30 @@ func (g *Game) twoVoterRoleNightVoting(allPlayersWithRole []*playerPack.Player,
 
 	g.timer(deadline)
 
-	select {
-	case voteP := <-g.TwoVoteChan:
-		err = g.NightTwoVote(voteP, nil)
-		if err == nil {
-			g.timerStop <- struct{}{}
+	for {
+		isNeedToContinue := false
+		select {
+		case voteP := <-g.TwoVoteChan:
+			err = g.NightTwoVote(voteP, nil)
+			if err == nil {
+				g.timerStop <- struct{}{}
+				break
+			} else {
+				g.infoSender <- newErrSignal(err)
+				isNeedToContinue = true
+			}
+		case <-g.timerDone:
+			votedPlayer := int(allPlayersWithRole[0].ID)
+			voteProvider := NewTwoVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, EmptyVoteStr, false)
+			_ = g.NightTwoVote(voteProvider, nil)
 			break
-		} else {
-			g.infoSender <- newErrSignal(err)
+		case <-g.ctx.Done():
+			break
 		}
-	case <-g.timerDone:
-		votedPlayer := int(allPlayersWithRole[0].ID)
-		voteProvider := NewTwoVoteProvider(strconv.Itoa(votedPlayer), EmptyVoteStr, EmptyVoteStr, false)
-		_ = g.NightTwoVote(voteProvider, nil)
-		break
+
+		if !isNeedToContinue {
+			break
+		}
 	}
 
 	return

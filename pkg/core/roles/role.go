@@ -1,15 +1,5 @@
 package roles
 
-// All information regarding roles.
-
-type Team int
-
-const (
-	PeacefulTeam Team = 1
-	MafiaTeam    Team = 2
-	ManiacTeam   Team = 3
-)
-
 type Role struct {
 	Name           string `json:"name" bson:"name"`
 	Team           Team   `json:"team" bson:"team"`

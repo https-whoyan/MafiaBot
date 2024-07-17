@@ -318,7 +318,7 @@ func (b *Bot) DeleteHandlers() {
 func (b *Bot) FinishAllGames() {
 	for _, game := range b.Games {
 		ch := make(chan gamePack.Signal)
-		go game.FinishAnyway(ch)
+		go game.FinishAnyway()
 
 		for {
 			gSignal, ok := <-ch

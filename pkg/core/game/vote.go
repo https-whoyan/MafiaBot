@@ -130,7 +130,7 @@ func (g *Game) voteProviderValidator(vP VoteProviderInterface) error {
 	if votedPlayer.LifeStatus != player.Alive {
 		return VotePlayerIsNotAlive
 	}
-	toVotePlayer := g.Active.SearchPlayerByID(vote, isServerID)
+	toVotePlayer := g.Active.SearchPlayerByID(vote, false)
 	if toVotePlayer == nil {
 		return VotePlayerNotFound
 	}

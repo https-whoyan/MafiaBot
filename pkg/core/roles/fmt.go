@@ -19,12 +19,6 @@ var MappedEmoji = map[string]string{
 	"Whose":     "",
 }
 
-var StringTeam = map[Team]string{
-	PeacefulTeam: "❤️ Peaceful",
-	MafiaTeam:    "🖤 Mafia Team",
-	ManiacTeam:   "\U0001FA76 Maniac Team",
-}
-
 func GetEmojiByName(name string) string {
 	return MappedEmoji[name]
 }

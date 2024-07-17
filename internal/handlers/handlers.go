@@ -227,6 +227,7 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 		content := "Internal Server Error!"
 		Response(s, i, content)
 	}
+	g.SwitchState()
 
 	registrationMessageID, err := currRedisDB.GetInitialGameMessageID(i.GuildID)
 	if (err != nil || registrationMessageID == "") && g.State == coreGamePack.RegisterState {

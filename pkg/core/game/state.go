@@ -5,6 +5,7 @@ type State int8
 const (
 	NonDefinedState State = iota
 	RegisterState
+	InitState
 	StartingState
 	NightState
 	DayState
@@ -30,6 +31,8 @@ func (g *Game) getNextState() State {
 	case NonDefinedState:
 		return RegisterState
 	case RegisterState:
+		return InitState
+	case InitState:
 		return StartingState
 	case StartingState:
 		return NightState

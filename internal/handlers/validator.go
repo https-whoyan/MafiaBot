@@ -26,16 +26,22 @@ func ValidateCommandByGameState(s *discordgo.Session, commandName string, g *gam
 			userRenameProvider := userPack.NewBotUserRenameProvider(s, g.GuildID)
 			*g = *game.GetNewGame(g.GuildID, botGamePack.GetNewGameConfig(userRenameProvider)...)
 			return "", true
+		default:
+			break
 		}
 	case ChoiceGameConfigCommandName:
 		switch gameState {
 		case game.RegisterState:
 			return "", true
+		default:
+			break
 		}
 	case StartGameCommandName:
 		switch gameState {
-		case game.RegisterState:
+		case game.InitState:
 			return "", true
+		default:
+			break
 		}
 	case VoteGameCommandName:
 		if g.IsRunning() {
@@ -46,11 +52,16 @@ func ValidateCommandByGameState(s *discordgo.Session, commandName string, g *gam
 			return "", true
 		}
 	case DayVoteGameCommandName:
-		if g.State == game.DayState {
+		switch gameState {
+		case game.DayState:
+			return "", true
+		default:
 			return "", true
 		}
 	case FinishGameCommandName:
-		return "", true
+		if g.IsRunning() {
+			return "", true
+		}
 	}
 
 	return content, false
