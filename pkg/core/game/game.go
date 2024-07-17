@@ -491,6 +491,7 @@ func (g *Game) run() (isStoppedByCtx bool) {
 				g.FinishByFinishLog(finishLog)
 				return
 			}
+			g.ClearDayVotes()
 		}
 	}
 	return

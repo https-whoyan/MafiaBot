@@ -5,8 +5,8 @@ import (
 	"github.com/https-whoyan/MafiaBot/core/roles"
 )
 
-// ResetTheVotes use to reset all player votes
-func (g *Game) ResetTheVotes() {
+// ClearDayVotes use to reset all player votes
+func (g *Game) ClearDayVotes() {
 	g.Lock()
 	defer g.Unlock()
 	allPlayers := g.Active
@@ -16,7 +16,6 @@ func (g *Game) ResetTheVotes() {
 	}
 }
 
-// ResetAllInteractionsStatuses use to reset all player nightInteraction statuses
 func (g *Game) ResetAllInteractionsStatuses() {
 	g.Lock()
 	defer g.Unlock()

@@ -320,13 +320,6 @@ func (g *Game) NightOneVote(vP VoteProviderInterface, opt *OptionalChannelIID) e
 		intVote, _ := strconv.Atoi(vote)
 		votedPlayer.Votes = append(votedPlayer.Votes, intVote)
 	}
-	// Set empty votes to same role players
-	sameRolePlayers := g.Active.SearchAllPlayersWithRole(votedPlayer.Role)
-	for _, sameRolePlayer := range *sameRolePlayers {
-		if sameRolePlayer.ID != votedPlayer.ID {
-			sameRolePlayer.Votes = append(sameRolePlayer.Votes, EmptyVoteInt)
-		}
-	}
 	g.Unlock()
 	return nil
 }
@@ -353,7 +346,7 @@ func (g *Game) NightTwoVote(vP TwoVoteProviderInterface, opt *OptionalChannelIID
 	votedPlayer := g.Active.SearchPlayerByID(votedPlayerID, isServerID)
 	g.RUnlock()
 	vote1, vote2 := vP.GetVote()
-	if vote1 == EmptyVoteStr && vote2 != EmptyVoteStr {
+	if vote1 != vote2 && (vote2 == EmptyVoteStr || vote1 == EmptyVoteStr) {
 		return TwoVotesOneOfEmptyErr
 	}
 	g.Lock()
@@ -364,13 +357,6 @@ func (g *Game) NightTwoVote(vP TwoVoteProviderInterface, opt *OptionalChannelIID
 		intVote1, _ := strconv.Atoi(vote1)
 		intVote2, _ := strconv.Atoi(vote2)
 		votedPlayer.Votes = append(votedPlayer.Votes, intVote1, intVote2)
-	}
-	// Set empty votes to same role players
-	sameRolePlayers := g.Active.SearchAllPlayersWithRole(votedPlayer.Role)
-	for _, sameRolePlayer := range *sameRolePlayers {
-		if sameRolePlayer.ID != votedPlayer.ID {
-			sameRolePlayer.Votes = append(sameRolePlayer.Votes, EmptyVoteInt, EmptyVoteInt)
-		}
 	}
 	g.Unlock()
 	return nil

@@ -55,16 +55,16 @@ func (g *Game) StartDayVoting(deadline time.Duration) DayLog {
 		}
 		// Case, when all players leave his vote
 		if len(votesMp) == g.Active.Len() {
-			// Calculate vote, which have maximum occurrences
+			// Calculate pVote, which have maximum occurrences
 			var (
 				mxOccurrence = 0
 				mxVote       = 0
 			)
 
-			for vote, occurrence := range votesMp {
+			for pVote, occurrence := range occurrencesMp {
 				if occurrence > mxOccurrence {
 					mxOccurrence = occurrence
-					mxVote = vote
+					mxVote = pVote
 				}
 			}
 
@@ -89,20 +89,28 @@ func (g *Game) StartDayVoting(deadline time.Duration) DayLog {
 		}
 	}
 
-	select {
-	case <-g.ctx.Done():
-		break
-	case <-g.timerDone:
-		break
-	case voteP := <-g.VoteChan:
-		err := g.DayVote(voteP, nil)
-		if err != nil {
+	for {
+		isNeedToContinue := false
+		select {
+		case <-g.ctx.Done():
+			break
+		case <-g.timerDone:
+			break
+		case voteP := <-g.VoteChan:
+			err := g.DayVote(voteP, nil)
+			if err != nil {
+				isNeedToContinue = true
+				break
+			}
 			maybeKickedID := acceptTheVote(voteP)
 			if maybeKickedID != nil {
 				kickedID = *maybeKickedID
 				g.timerDone <- struct{}{}
 				break
 			}
+		}
+		if !isNeedToContinue {
+			break
 		}
 	}
 

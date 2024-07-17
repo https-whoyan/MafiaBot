@@ -6,7 +6,7 @@ var Detective = &Role{
 	Team:              PeacefulTeam,
 	UrgentCalculation: true,
 	IsTwoVotes:        true,
-	NightVoteOrder:    5,
+	NightVoteOrder:    6,
 	Description: `
 		The commissioner checks 2 players at night, and finds out if they are 
 		on the same team or not. Plays for peaceful players.`,
