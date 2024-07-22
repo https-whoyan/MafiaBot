@@ -10,7 +10,7 @@ import (
 	botFMT "github.com/https-whoyan/MafiaBot/internal/fmt"
 	coreUserPack "github.com/https-whoyan/MafiaBot/internal/user"
 
-	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
+	coreGamePack "github.com/https-whoyan/MafiaCore/game"
 )
 
 var (

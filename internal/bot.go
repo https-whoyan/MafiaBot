@@ -8,11 +8,11 @@ import (
 	"sync"
 	"syscall"
 
-	gamePack "github.com/https-whoyan/MafiaBot/core/game"
 	botFMTPack "github.com/https-whoyan/MafiaBot/internal/fmt"
 	botGamePack "github.com/https-whoyan/MafiaBot/internal/game"
 	handlerPack "github.com/https-whoyan/MafiaBot/internal/handlers"
 	userPack "github.com/https-whoyan/MafiaBot/internal/user"
+	gamePack "github.com/https-whoyan/MafiaCore/game"
 
 	"github.com/bwmarrin/discordgo"
 )

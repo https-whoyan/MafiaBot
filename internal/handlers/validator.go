@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/https-whoyan/MafiaBot/core/game"
 	"github.com/https-whoyan/MafiaBot/internal/fmt"
 	botGamePack "github.com/https-whoyan/MafiaBot/internal/game"
 	userPack "github.com/https-whoyan/MafiaBot/internal/user"
+	"github.com/https-whoyan/MafiaCore/game"
 )
 
 // ValidateCommandByGameState validate, is correct command name by current game State.

@@ -2,15 +2,15 @@ package handlers
 
 import (
 	"errors"
-	"github.com/https-whoyan/MafiaBot/core/converter"
+	"github.com/https-whoyan/MafiaCore/converter"
 	"log"
 	"strings"
 
-	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
-	coreRolePack "github.com/https-whoyan/MafiaBot/core/roles"
 	botChannelPack "github.com/https-whoyan/MafiaBot/internal/channel"
 	botConvertedPack "github.com/https-whoyan/MafiaBot/internal/converter"
 	botFMT "github.com/https-whoyan/MafiaBot/internal/fmt"
+	coreGamePack "github.com/https-whoyan/MafiaCore/game"
+	coreRolePack "github.com/https-whoyan/MafiaCore/roles"
 
 	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 

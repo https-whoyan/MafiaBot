@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/https-whoyan/MafiaBot/core/game"
+	"github.com/https-whoyan/MafiaCore/game"
 )
 
 // ProcessGameChan Used to process chan, and send addition info, about, what command need to send to the chat.

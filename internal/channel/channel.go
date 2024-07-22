@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/https-whoyan/MafiaBot/core/roles"
 	"github.com/https-whoyan/MafiaBot/internal/wrap"
+	"github.com/https-whoyan/MafiaCore/roles"
 
 	"github.com/bwmarrin/discordgo"
 )

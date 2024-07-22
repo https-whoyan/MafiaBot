@@ -3,7 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
-	"github.com/https-whoyan/MafiaBot/core/game"
+	"github.com/https-whoyan/MafiaCore/game"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"

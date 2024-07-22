@@ -1,7 +1,7 @@
 package converter
 
 import (
-	corePlayerPack "github.com/https-whoyan/MafiaBot/core/player"
+	corePlayerPack "github.com/https-whoyan/MafiaCore/player"
 
 	"github.com/bwmarrin/discordgo"
 )

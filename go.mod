@@ -4,8 +4,6 @@ go 1.22
 
 toolchain go1.22.4
 
-require github.com/https-whoyan/MafiaBot/core v0.0.0
-
 require (
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/joho/godotenv v1.5.1
@@ -13,6 +11,8 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.mongodb.org/mongo-driver v1.15.1
 )
+
+require github.com/https-whoyan/MafiaCore v0.0.1
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -32,7 +32,4 @@ require (
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-
 )
-
-replace github.com/https-whoyan/MafiaBot/core => ./pkg/core

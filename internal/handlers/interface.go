@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
 	botFMTPack "github.com/https-whoyan/MafiaBot/internal/fmt"
+	coreGamePack "github.com/https-whoyan/MafiaCore/game"
 
 	"github.com/bwmarrin/discordgo"
 )

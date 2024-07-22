@@ -4,10 +4,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"time"
 
-	gameConfig "github.com/https-whoyan/MafiaBot/core/config"
-	"github.com/https-whoyan/MafiaBot/core/game"
-	"github.com/https-whoyan/MafiaBot/core/player"
-	"github.com/https-whoyan/MafiaBot/core/roles"
+	gameConfig "github.com/https-whoyan/MafiaCore/config"
+	"github.com/https-whoyan/MafiaCore/game"
+	"github.com/https-whoyan/MafiaCore/player"
+	"github.com/https-whoyan/MafiaCore/roles"
 )
 
 // Document struct

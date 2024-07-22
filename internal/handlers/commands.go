@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	coreGamePack "github.com/https-whoyan/MafiaBot/core/game"
-	coreRolesPack "github.com/https-whoyan/MafiaBot/core/roles"
+	coreGamePack "github.com/https-whoyan/MafiaCore/game"
+	coreRolesPack "github.com/https-whoyan/MafiaCore/roles"
 
 	"github.com/bwmarrin/discordgo"
 )
