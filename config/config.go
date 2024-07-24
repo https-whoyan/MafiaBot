@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"os"
 	"sync"
 
 	"github.com/https-whoyan/MafiaBot/internal"
@@ -67,8 +68,6 @@ func (c *Config) Run() {
 	logAboutDiscordGo()
 	bot.InitBot(c.botConfig)
 
-	bot.Run()
-
 	defer func() {
 		err = redis.Disconnect()
 		if err != nil {
@@ -82,7 +81,11 @@ func (c *Config) Run() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		os.Clearenv()
+		os.Exit(0)
 	}()
+
+	bot.Run()
 }
 
 func loadDotEnv() {
