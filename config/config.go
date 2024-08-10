@@ -82,7 +82,7 @@ func (c *Config) Run() {
 			log.Fatal(err)
 		}
 		os.Clearenv()
-		os.Exit(0)
+		os.Exit(1)
 	}()
 
 	bot.Run()
