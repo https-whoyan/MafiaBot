@@ -20,7 +20,7 @@ var (
 )
 
 func GetNewGameConfig(renameProvider *coreUserPack.BotUserRenameProvider) []coreGamePack.GameOption {
-	currDB, isContains := mongo.GetCurrMongoDB()
+	currDB, isContains := mongo.GetCurrGameStorage()
 	if !isContains {
 		log.Fatal(fmt.Errorf("empty database"))
 	}

@@ -11,9 +11,9 @@ import (
 // ValidateCommandByGameState validate, is correct command name by current game State.
 func ValidateCommandByGameState(s *discordgo.Session, commandName string, g *game.Game, fmtEr *fmt.DiscordFMTer) (
 	content string, isOk bool) {
-	gameState := g.State
+	gameState := g.GetState()
 
-	gameIn := "Game " + g.State.String() + "."
+	gameIn := "Game " + g.GetState().String() + "."
 	cantUse := fmtEr.B("Couldn't use /" + commandName + " command")
 	content = gameIn + fmtEr.NL() + cantUse
 
@@ -23,8 +23,8 @@ func ValidateCommandByGameState(s *discordgo.Session, commandName string, g *gam
 		case game.NonDefinedState:
 			return "", true
 		case game.FinishState:
-			userRenameProvider := userPack.NewBotUserRenameProvider(s, g.GuildID)
-			*g = *game.GetNewGame(g.GuildID, botGamePack.GetNewGameConfig(userRenameProvider)...)
+			userRenameProvider := userPack.NewBotUserRenameProvider(s, g.GuildID())
+			*g = *game.GetNewGame(g.GuildID(), botGamePack.GetNewGameConfig(userRenameProvider)...)
 			return "", true
 		default:
 			break

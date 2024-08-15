@@ -30,7 +30,7 @@ type mongoGameLog struct {
 	IsSuspended  bool       `json:"isSuspended,omitempty" bson:"isSuspended,omitempty"`
 }
 
-func newMongoGameLog(g *game.Game) mongoGameLog {
+func newMongoGameLog(g game.DeepCloneGame) mongoGameLog {
 	var playersModel []mongoGamePlayer
 	for _, p := range *g.Active {
 		mongoP := newMongoGamePlayer(p)
@@ -67,13 +67,13 @@ func newMongoGamePlayer(p *player.Player) mongoGamePlayer {
 // NightLog struct
 
 type mongoGameNight struct {
-	Number      int                    `json:"number,omitempty" bson:"number,omitempty"`
-	Votes       map[int]mongoGameVotes `json:"votes,omitempty" bson:"votes,omitempty"`
-	DeadPlayers []int                  `json:"deadPlayers,omitempty" bson:"deadPlayers,omitempty"`
+	Number      int                              `json:"number,omitempty" bson:"number,omitempty"`
+	Votes       map[player.IDType]mongoGameVotes `json:"votes,omitempty" bson:"votes,omitempty"`
+	DeadPlayers []player.IDType                  `json:"deadPlayers,omitempty" bson:"deadPlayers,omitempty"`
 }
 
 func newMongoGameNight(l game.NightLog) mongoGameNight {
-	votes := make(map[int]mongoGameVotes)
+	votes := make(map[player.IDType]mongoGameVotes)
 	for voter, voterVotes := range l.NightVotes {
 		votes[voter] = mongoGameVotes{voterVotes}
 	}
@@ -85,16 +85,16 @@ func newMongoGameNight(l game.NightLog) mongoGameNight {
 }
 
 type mongoGameVotes struct {
-	Votes []int `json:"votes,omitempty" bson:"votes,omitempty"`
+	Votes []player.IDType `json:"votes,omitempty" bson:"votes,omitempty"`
 }
 
 // DayLog struct
 
 type mongoGameDay struct {
-	Number int         `json:"number,omitempty" bson:"number,omitempty"`
-	Votes  map[int]int `json:"votes,omitempty" bson:"votes,omitempty"`
-	Kicked *int        `json:"kicked,omitempty" bson:"kicked,omitempty"`
-	IsSkip bool        `json:"isSkip,omitempty" bson:"isSkip,omitempty"`
+	Number int                             `json:"number,omitempty" bson:"number,omitempty"`
+	Votes  map[player.IDType]player.IDType `json:"votes,omitempty" bson:"votes,omitempty"`
+	Kicked *player.IDType                  `json:"kicked,omitempty" bson:"kicked,omitempty"`
+	IsSkip bool                            `json:"isSkip,omitempty" bson:"isSkip,omitempty"`
 }
 
 func newMongoGameDay(l game.DayLog) mongoGameDay {

@@ -101,8 +101,8 @@ func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate, fMT
 
 // SetRolesChannels to game.
 func setRolesChannels(s *discordgo.Session, guildID string, g *coreGamePack.Game) ([]string, error) {
-	if len(g.RoleChannels) == len(coreRolePack.GetAllNightInteractionRolesNames()) {
-		if g.MainChannel != nil {
+	if len(g.GetRoleChannels()) == len(coreRolePack.GetAllNightInteractionRolesNames()) {
+		if g.GetMainChannel() != nil {
 			// Set it before
 			return []string{}, nil
 		}

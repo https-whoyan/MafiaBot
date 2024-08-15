@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/https-whoyan/MafiaCore/game"
 	"log"
 	"os"
 	"sync"
@@ -35,7 +36,6 @@ func LoadMongoDBConfig() (*MongoDBConfig, error) {
 // ____________
 
 type MongoDB struct {
-	sync.Mutex
 	db *mongo.Client
 }
 
@@ -84,13 +84,18 @@ func GetCurrMongoDB() (*MongoDB, bool) {
 	return currMongoDB, true
 }
 
+func GetCurrGameStorage() (game.Logger, bool) {
+	if currMongoDB == nil {
+		return nil, false
+	}
+	return currMongoDB, true
+}
+
 func DisconnectMongoDB() error {
 	if currMongoDB == nil {
 		return errors.New("mongoDB is not initialized")
 	}
-	currMongoDB.Lock()
 	err := currMongoDB.db.Disconnect(context.TODO())
-	currMongoDB.Unlock()
 	log.Println("Disconnect MongoDB")
 	return err
 }

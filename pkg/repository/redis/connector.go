@@ -34,7 +34,6 @@ func LoadRedisConfig() (*RedisConfig, error) {
 }
 
 type RedisDB struct {
-	sync.Mutex
 	db *redis.Client
 }
 
@@ -97,9 +96,7 @@ func Disconnect() error {
 	if currRedisDB == nil {
 		return errors.New("redis DB isn't initialized")
 	}
-	currRedisDB.Lock()
 	err := currRedisDB.db.Close()
-	currRedisDB.Unlock()
 	log.Println("Disconnect Redis")
 	return err
 }

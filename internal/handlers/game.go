@@ -32,7 +32,7 @@ func ProcessGameChan(g *game.Game, f *fmt.DiscordFMTer, signalChannel <-chan gam
 					message += "Use " + f.BU("/vote") + " command to leave a vote" + f.NL()
 					message = "To vote for skipping, " + f.B("use -1")
 
-					_, _ = g.MainChannel.Write([]byte(message))
+					_, _ = g.GetMainChannel().Write([]byte(message))
 				}
 			} else {
 				log.Println(switchSignal.Value.(game.SwitchNightVoteRoleSwitchValue).CurrentVotedRole)

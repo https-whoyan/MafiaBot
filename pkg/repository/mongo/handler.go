@@ -3,7 +3,6 @@ package mongo
 import (
 	"context"
 	"errors"
-	"github.com/https-whoyan/MafiaCore/game"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
@@ -86,12 +85,8 @@ func (g GuildChannels) getMainChannelIID() string {
 // ** Utils **
 
 func (db *MongoDB) IsFreeChannelIID(guildID string, ChannelID string) (bool, error) {
-	if db.TryLock() {
-		defer db.Unlock()
-	}
-
 	coll, err := db.getColl(DbName, GuildChannelsCollection)
-	ctx := context.Background()
+	internalCtx := context.Background()
 	if err != nil {
 		return false, err
 	}
@@ -104,7 +99,7 @@ func (db *MongoDB) IsFreeChannelIID(guildID string, ChannelID string) (bool, err
 			},
 		},
 	}
-	err = coll.FindOne(ctx, filterRoleChannels).Err()
+	err = coll.FindOne(internalCtx, filterRoleChannels).Err()
 	if !errors.Is(err, mongo.ErrNoDocuments) {
 		return false, nil
 	}
@@ -117,7 +112,7 @@ func (db *MongoDB) IsFreeChannelIID(guildID string, ChannelID string) (bool, err
 			"MainChannel.channelIID", ChannelID,
 		},
 	}
-	err = coll.FindOne(ctx, filterMainChannels).Err()
+	err = coll.FindOne(internalCtx, filterMainChannels).Err()
 	if !errors.Is(err, mongo.ErrNoDocuments) {
 		return false, nil
 	}
@@ -127,10 +122,6 @@ func (db *MongoDB) IsFreeChannelIID(guildID string, ChannelID string) (bool, err
 
 // Push if not exists information about GuildID
 func (db *MongoDB) pushIfNotExistsGuildChannels(guildID string) (isInserted bool, err error) {
-	if db.TryLock() {
-		defer db.Unlock()
-	}
-
 	coll, err := db.getColl(DbName, GuildChannelsCollection)
 	if err != nil {
 		return false, err
@@ -164,9 +155,6 @@ func (db *MongoDB) pushIfNotExistsGuildChannels(guildID string) (isInserted bool
 // ________________
 
 func (db *MongoDB) getEntryByGuildID(guildID string) (*GuildChannels, error) {
-	if db.TryLock() {
-		defer db.Unlock()
-	}
 	coll, err := db.getColl(DbName, GuildChannelsCollection)
 	if err != nil {
 		return nil, err
@@ -184,10 +172,6 @@ func (db *MongoDB) getEntryByGuildID(guildID string) (*GuildChannels, error) {
 }
 
 func (db *MongoDB) DeleteRoleChannel(guildID string, role string) (isDeleted bool, err error) {
-	if db.TryLock() {
-		defer db.Unlock()
-	}
-
 	coll, err := db.getColl(DbName, GuildChannelsCollection)
 	if err != nil {
 		return false, err
@@ -223,9 +207,6 @@ func (db *MongoDB) DeleteRoleChannel(guildID string, role string) (isDeleted boo
 
 func (db *MongoDB) SetRoleChannel(guildID string, channelIID string, role string) error {
 	role = strings.ToLower(role)
-	if db.TryLock() {
-		defer db.Unlock()
-	}
 	// If channelIID used in other role:
 	isFree, err := db.IsFreeChannelIID(guildID, channelIID)
 	if err != nil || !isFree {
@@ -267,9 +248,6 @@ func (db *MongoDB) SetRoleChannel(guildID string, channelIID string, role string
 }
 
 func (db *MongoDB) GetRoleByChannelIID(guildID string, channelIID string) (string, error) {
-	if db.TryLock() {
-		defer db.Unlock()
-	}
 	coll, err := db.getColl(DbName, GuildChannelsCollection)
 	if err != nil {
 		return "", err
@@ -309,9 +287,6 @@ func (db *MongoDB) GetChannelIIDByRole(guildID string, role string) (string, err
 // Not to need Delete, just push
 
 func (db *MongoDB) SetMainChannel(guildID string, channelIID string) error {
-	if db.TryLock() {
-		defer db.Unlock()
-	}
 	// If channelIID used in other role:
 	isFree, err := db.IsFreeChannelIID(guildID, channelIID)
 	if err != nil || !isFree {
@@ -351,77 +326,4 @@ func (db *MongoDB) GetMainChannelIID(guildID string) (string, error) {
 	}
 
 	return entry.getMainChannelIID(), nil
-}
-
-// *******************
-// _________________
-// Logs
-// _________________
-// *******************
-
-func (db *MongoDB) InitNewGame(g *game.Game) error {
-	db.Lock()
-	defer db.Unlock()
-	coll, err := db.getColl(DbName, GameStorageCollection)
-	if err != nil {
-		return err
-	}
-	_, err = coll.InsertOne(ctx, newMongoGameLog(g))
-	return err
-}
-
-func (db *MongoDB) SaveNightLog(g *game.Game, l game.NightLog) error {
-	filter := bson.M{
-		"guildID":   g.GuildID,
-		"startTime": g.TimeStart,
-	}
-	updatePush := bson.D{{
-		"$push", bson.D{{
-			"nightLogs", newMongoGameNight(l),
-		}},
-	}}
-	db.Lock()
-	defer db.Unlock()
-	coll, err := db.getColl(DbName, GameStorageCollection)
-	if err != nil {
-		return err
-	}
-	_, err = coll.UpdateOne(ctx, filter, updatePush)
-	return err
-}
-
-func (db *MongoDB) SaveDayLog(g *game.Game, l game.DayLog) error {
-	filter := bson.M{
-		"guildID":   g.GuildID,
-		"startTime": g.TimeStart,
-	}
-	updatePush := bson.D{{
-		"$push", bson.D{{
-			"day_log", newMongoGameDay(l),
-		}},
-	}}
-	db.Lock()
-	defer db.Unlock()
-	coll, err := db.getColl(DbName, GameStorageCollection)
-	if err != nil {
-		return err
-	}
-	_, err = coll.UpdateOne(ctx, filter, updatePush)
-	return err
-}
-
-func (db *MongoDB) SaveFinishLog(g *game.Game, l game.FinishLog) error {
-	filter := bson.M{
-		"guildID":   g.GuildID,
-		"startTime": g.TimeStart,
-	}
-	updatePush := getUpdateByByNightLog(l)
-	db.Lock()
-	defer db.Unlock()
-	coll, err := db.getColl(DbName, GameStorageCollection)
-	if err != nil {
-		return err
-	}
-	_, err = coll.UpdateOne(ctx, filter, updatePush)
-	return err
 }

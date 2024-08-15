@@ -37,9 +37,6 @@ func redisNameByFieldName(t reflect.Type, fieldName string) string {
 // _____________________
 
 func (r *RedisDB) SetInitialGameMessageID(guildID string, messageID string, lifeDuration time.Duration) error {
-	r.Lock()
-	defer r.Unlock()
-
 	ctx := context.Background()
 	key := initialGameTB + ":" + guildID
 
@@ -50,9 +47,6 @@ func (r *RedisDB) SetInitialGameMessageID(guildID string, messageID string, life
 }
 
 func (r *RedisDB) GetInitialGameMessageID(guildID string) (string, error) {
-	r.Lock()
-	defer r.Unlock()
-
 	ctx := context.Background()
 	key := initialGameTB + ":" + guildID
 
@@ -71,9 +65,6 @@ func (r *RedisDB) GetInitialGameMessageID(guildID string) (string, error) {
 // _________________
 
 func (r *RedisDB) SetConfigGameVotingMessages(c *botGame.ConfigMessages, lifeDuration time.Duration) (err error) {
-	r.Lock()
-	defer r.Unlock()
-
 	ctx := context.Background()
 	key := configVotingGameTB + ":" + c.GuildID
 
@@ -100,9 +91,6 @@ func (r *RedisDB) SetConfigGameVotingMessages(c *botGame.ConfigMessages, lifeDur
 }
 
 func (r *RedisDB) GetConfigGameVotingMessageID(guildID string) (*botGame.ConfigMessages, error) {
-	r.Lock()
-	defer r.Unlock()
-
 	ctx := context.Background()
 	key := configVotingGameTB + ":" + guildID
 

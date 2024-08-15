@@ -223,7 +223,7 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
 	currRedisDB, isContains := redis.GetCurrRedisDB()
 	if !isContains {
-		log.Println("redis is not exists, command: startGameCommand")
+		log.Println("redis is not exists, command: choiceGameConfig")
 		content := "Internal Server Error!"
 		Response(s, i, content)
 	}
