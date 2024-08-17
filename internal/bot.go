@@ -221,6 +221,21 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 
 		// I know the guildID
 		executedGuildID := i.GuildID
+		registerNewGame := func() {
+			log.Printf("Must be register_game: Execute %v command.", cmdName)
+
+			userRenameProvider := userPack.NewBotUserRenameProvider(s, executedGuildID)
+			gameConfig := botGamePack.GetNewGameConfig(userRenameProvider)
+
+			b.Games[executedGuildID] = gamePack.GetNewGame(executedGuildID, gameConfig...)
+			content, isOk := handlerPack.ValidateCommandByGameState(s, executedCommandName, b.Games[executedGuildID], b.FMTer)
+			if !isOk {
+				handlerPack.Response(s, i.Interaction, content)
+				return
+			}
+			log.Printf("Registered new game by %v Guild ID", executedGuildID)
+			cmd.Execute(s, i.Interaction, b.Games[executedGuildID], b.FMTer)
+		}
 		// And is there a game on this server
 		_, containsGame := b.Games[executedGuildID]
 
@@ -228,6 +243,10 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 		if containsGame {
 			log.Printf("Execute %v command.", cmdName)
 			currGame := b.Games[executedGuildID]
+			if currGame.GetState() == gamePack.FinishState {
+				registerNewGame()
+				return
+			}
 			// Validate Is correct command by game state
 			content, isOk := handlerPack.ValidateCommandByGameState(s, executedCommandName, currGame, b.FMTer)
 			if !isOk {
@@ -253,23 +272,9 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 			return
 		}
 
-		// I use the register_game command
-		log.Printf("Must be register_game: Execute %v command.", cmdName)
-
-		// (Get UserRename provider)
-		userRenameProvider := userPack.NewBotUserRenameProvider(s, executedGuildID)
-		gameConfig := botGamePack.GetNewGameConfig(userRenameProvider)
-
-		b.Games[executedGuildID] = gamePack.GetNewGame(executedGuildID, gameConfig...)
-		content, isOk := handlerPack.ValidateCommandByGameState(s, executedCommandName, b.Games[executedGuildID], b.FMTer)
-		if !isOk {
-			handlerPack.Response(s, i.Interaction, content)
-			return
-		}
-		log.Printf("Registered new game by %v Guild ID", executedGuildID)
-		cmd.Execute(s, i.Interaction, b.Games[executedGuildID], b.FMTer)
-
-		return
+		// Stand, that game is nil.
+		// RegisterNewGame
+		registerNewGame()
 	}
 }
 

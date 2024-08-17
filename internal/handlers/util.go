@@ -174,3 +174,76 @@ func setMainChannel(s *discordgo.Session, guildID string, g *coreGamePack.Game) 
 	mainChannel, _ := botChannelPack.NewBotMainChannel(s, channelIID)
 	_ = g.SetMainChannel(mainChannel)
 }
+
+func getInfoAboutVote(g *coreGamePack.Game, f *botFMT.DiscordFMTer, vote1 string, vote2 *string) string {
+	if vote1 == coreGamePack.EmptyVoteStr {
+		return f.IU("You chose not to vote for anyone") + "... 🙄"
+	}
+
+	var (
+		message string
+		players = g.GetActivePlayers()
+	)
+	if vote2 != nil {
+		nick1 := players.SearchPlayerByID(vote1, false).GetNick()
+		nick2 := players.SearchPlayerByID(*vote2, false).GetNick()
+		message += f.B("You chose to vote for players ")
+		message += f.Bl(vote1) + f.B("  :") + f.Bl(nick1) + f.B(" and ") +
+			f.Bl(*vote2) + f.B(" :") + f.Bl(nick2)
+	} else {
+		nick1 := players.SearchPlayerByID(vote1, false).GetNick()
+		message += f.B("You chose to vote for player ")
+		message += f.Bl(vote1) + f.B("  :") + f.Bl(nick1)
+	}
+	return message
+}
+
+// Vote Command validators
+
+func getVotesCountRequired(g *coreGamePack.Game) int {
+	nightVoting := g.GetNightVoting()
+	if nightVoting == nil {
+		return -1
+	}
+	if !nightVoting.IsTwoVotes {
+		return 2
+	}
+	return 1
+}
+
+func voteTypeValidator(s *discordgo.Session, i *discordgo.Interaction,
+	c Command, f *botFMT.DiscordFMTer, g *coreGamePack.Game) bool {
+	var (
+		notRequiredVoteNowMessage = "Right now, " + f.B("the game is not in voting mode.") +
+			f.NL() + "Please repeat the command later."
+		requiredOneVote = f.B("It's a one-vote goal right now. ") + "Please try again later."
+		requiredTwoVote = f.B("It's a two-vote goal right now. ") + "Please try again later."
+		dayVoteRequired = f.B("It's a day-vote goal right now. ")
+	)
+	gameState := g.GetState()
+	votesCountNeed := getVotesCountRequired(g)
+	if gameState == coreGamePack.DayState {
+		if c.GetName() != DayVoteGameCommandName {
+			Response(s, i, dayVoteRequired)
+			return false
+		}
+		return true
+	}
+	if votesCountNeed == -1 {
+		Response(s, i, notRequiredVoteNowMessage)
+		return false
+	}
+	switch c.GetName() {
+	case VoteGameCommandName:
+		if votesCountNeed == 2 {
+			Response(s, i, requiredOneVote)
+			return false
+		}
+	case TwoVoteGameCommandName:
+		if votesCountNeed == 1 {
+			Response(s, i, requiredTwoVote)
+			return false
+		}
+	}
+	return true
+}

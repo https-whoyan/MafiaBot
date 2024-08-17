@@ -379,14 +379,19 @@ func (c StartGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction
 
 func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
+	if ok := voteTypeValidator(s, i, c, f, g); !ok {
+		return
+	}
 	options := i.ApplicationCommandData().Options
 	vote := options[0].Value.(string)
-	vP := coreGamePack.NewVoteProvider(i.Member.User.ID, vote, true, true)
+	vP := coreGamePack.NewVoteProvider(i.Member.User.ID, vote, true, false)
 	err := g.SetNightVote(vP)
 
 	switch {
 	case err == nil:
-		Response(s, i, f.B("Your vote counts. "))
+		var message = "Your vote counts." + f.NL()
+		message += getInfoAboutVote(g, f, vote, nil)
+		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.IncorrectVoteTimeErr):
 		message := f.B("Right now you are not allowed to leave your vote.")
@@ -437,15 +442,20 @@ func (c GameVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 
 func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
+	if ok := voteTypeValidator(s, i, c, f, g); !ok {
+		return
+	}
 	options := i.ApplicationCommandData().Options
 	vote1 := options[0].Value.(string)
 	vote2 := options[1].Value.(string)
-	vP := coreGamePack.NewTwoVoteProvider(i.Member.User.ID, vote1, vote2, true, true)
+	vP := coreGamePack.NewTwoVoteProvider(i.Member.User.ID, vote1, vote2, true, false)
 	err := g.SetNightTwoVote(vP)
 
 	switch {
 	case err == nil:
-		Response(s, i, f.B("Your vote counts. "))
+		var message = "Your vote counts." + f.NL()
+		message += getInfoAboutVote(g, f, vote1, &vote2)
+		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.IncorrectVoteTimeErr):
 		message := f.B("Right now you are not allowed to leave your vote.")
@@ -491,6 +501,9 @@ func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 
 func (c DayVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
+	if ok := voteTypeValidator(s, i, c, f, g); !ok {
+		return
+	}
 	options := i.ApplicationCommandData().Options
 	vote := options[0].Value.(string)
 	vP := coreGamePack.NewVoteProvider(i.Member.User.ID, vote, true, false)
@@ -498,7 +511,9 @@ func (c DayVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 
 	switch {
 	case err == nil:
-		Response(s, i, f.B("Your day vote been accepted."))
+		var message = "Your vote counts." + f.NL()
+		message += getInfoAboutVote(g, f, vote, nil)
+		Response(s, i, message)
 		return
 	case errors.Is(err, coreGamePack.IncorrectVoteTimeErr):
 		message := f.B("It is not possible to apply a vote not during the night or not during daytime voting.") +
