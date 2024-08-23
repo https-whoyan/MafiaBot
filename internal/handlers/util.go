@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"errors"
-	"github.com/https-whoyan/MafiaCore/converter"
+	"github.com/https-whoyan/MafiaCore/channel"
+	"github.com/samber/lo"
 	"log"
 	"strings"
 
 	botChannelPack "github.com/https-whoyan/MafiaBot/internal/channel"
-	botConvertedPack "github.com/https-whoyan/MafiaBot/internal/converter"
 	botFMT "github.com/https-whoyan/MafiaBot/internal/fmt"
 	coreGamePack "github.com/https-whoyan/MafiaCore/game"
 	coreRolePack "github.com/https-whoyan/MafiaCore/roles"
@@ -143,16 +143,20 @@ func setRolesChannels(s *discordgo.Session, guildID string, g *coreGamePack.Game
 	// If a have all roles
 	if len(emptyRolesMp) == 0 {
 		// Convert
-		sliceMappedRoles := botConvertedPack.GetMapValues(mappedRoles)
-		InterfaceRoleChannelSlice := botConvertedPack.ConvertRoleChannelsSliceToIChannelSlice(sliceMappedRoles)
+		sliceMappedRoles := lo.Values(mappedRoles)
+		interfaceRoleChannelSlice := lo.Map(
+			sliceMappedRoles,
+			func(ch *botChannelPack.BotRoleChannel, _ int) channel.RoleChannel {
+				return channel.RoleChannel(ch)
+			})
 
 		// Save it to g.RoleChannels.
-		err := g.SetRoleChannels(InterfaceRoleChannelSlice...)
+		err := g.SetRoleChannels(interfaceRoleChannelSlice...)
 
 		return []string{}, err
 	}
 
-	return converter.GetMapKeys(emptyRolesMp), nil
+	return lo.Keys(emptyRolesMp), nil
 }
 
 // Check, if main channel exists or not

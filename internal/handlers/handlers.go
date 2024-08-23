@@ -193,10 +193,7 @@ func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interact
 		f.U("Deadline: "+deadlineStr+" minutes"))
 
 	channelID := i.ChannelID
-	message, err := s.ChannelMessageSend(channelID, responseMessageText)
-	if err != nil {
-		log.Print(err)
-	}
+	message, _ := s.ChannelMessageSend(channelID, responseMessageText)
 	g.SwitchState()
 	messageID := message.ID
 	// Safe messageID to redis
@@ -205,12 +202,12 @@ func (c RegisterGameCommand) Execute(s *discordgo.Session, i *discordgo.Interact
 		log.Print("DB isn't initialed, couldn't get currDB")
 		return
 	}
-	err = currDB.SetInitialGameMessageID(
+	_ = currDB.SetInitialGameMessageID(
 		i.GuildID, messageID,
 		botTimeConstsPack.RegistrationDeadlineSeconds*time.Second)
-	if err != nil {
-		log.Print(err)
-	}
+	_ = currDB.SetChannelStorage(
+		i.GuildID, i.ChannelID, redis.SetInitialGameStorage,
+		botTimeConstsPack.RegistrationDeadlineSeconds*time.Second)
 }
 
 func (c FinishGameCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
@@ -223,11 +220,9 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
 	currRedisDB, isContains := redis.GetCurrRedisDB()
 	if !isContains {
-		log.Println("redis is not exists, command: choiceGameConfig")
 		content := "Internal Server Error!"
 		Response(s, i, content)
 	}
-	g.SwitchState()
 
 	registrationMessageID, err := currRedisDB.GetInitialGameMessageID(i.GuildID)
 	if (err != nil || registrationMessageID == "") && g.GetState() == coreGamePack.RegisterState {
@@ -241,7 +236,12 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 	// If playersCount not in range [minAvailableCount, maxAvailableCount],
 	// Send message that it's impossible to choice config.
 	registrationStickerUnicode := botFMTPack.RegistrationPlayerSticker
-	_, playersCount := botMsgPack.GetUsersByEmojiID(s, i.ChannelID, registrationMessageID, registrationStickerUnicode)
+	initialMessageChannelIID, err := currRedisDB.GetChannelStorage(i.GuildID, redis.SetInitialGameStorage)
+	if err != nil || initialMessageChannelIID == "" {
+		content := "Internal Server Error!"
+		Response(s, i, content)
+	}
+	_, playersCount := botMsgPack.GetUsersByEmojiID(s, initialMessageChannelIID, registrationMessageID, registrationStickerUnicode)
 
 	allConfigs, nearest, err := coreConfigPack.GetConfigsByPlayersCount(playersCount)
 	switch {
@@ -289,7 +289,6 @@ func (c ChoiceGameConfigCommand) Execute(s *discordgo.Session, i *discordgo.Inte
 
 	db, isContains := redis.GetCurrRedisDB()
 	if !isContains {
-		log.Println("redis is not exists, command: startGameCommand")
 		content = "Internal Server Error!"
 		_, _ = sendMessages(s, i.ChannelID, content)
 		return
@@ -501,6 +500,7 @@ func (c GameTwoVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interacti
 
 func (c DayVoteCommand) Execute(s *discordgo.Session, i *discordgo.Interaction,
 	g *coreGamePack.Game, f *botFMTPack.DiscordFMTer) {
+	g.SwitchState()
 	if ok := voteTypeValidator(s, i, c, f, g); !ok {
 		return
 	}

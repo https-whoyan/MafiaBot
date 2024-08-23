@@ -140,3 +140,40 @@ func (r *RedisDB) GetConfigGameVotingMessageID(guildID string) (*botGame.ConfigM
 
 	return ans, err
 }
+
+// ChannelsIDStorage
+
+const (
+	channelStoragePrefix = "channelStorage"
+)
+
+type channelStorageType string
+
+const (
+	SetInitialGameStorage channelStorageType = "setInitialGame"
+	//...
+)
+
+func (r *RedisDB) SetChannelStorage(guildID string, channelIID string,
+	storageType channelStorageType, duration time.Duration) error {
+	ctx := context.Background()
+	key := channelStoragePrefix + ":" + guildID + ":" + string(storageType)
+
+	pipe := r.db.TxPipeline()
+	pipe.Set(ctx, key, channelIID, duration)
+	_, err := pipe.Exec(ctx)
+	return err
+}
+
+func (r *RedisDB) GetChannelStorage(guildID string, storageType channelStorageType) (channelIID string, err error) {
+	ctx := context.Background()
+	key := channelStoragePrefix + ":" + guildID + ":" + string(storageType)
+
+	pipe := r.db.TxPipeline()
+	cmd := pipe.Get(ctx, key)
+	_, err = pipe.Exec(ctx)
+	if err != nil {
+		return "", err
+	}
+	return cmd.Result()
+}

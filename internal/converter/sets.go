@@ -38,11 +38,3 @@ func SetDiff[S ~[]E, E comparable](operatedSet S, needNotIncludeS S) (S, int) {
 	}
 	return ans, len(ans)
 }
-
-func SliceToSet[S ~[]E, E comparable](sl S) map[E]bool {
-	mp := make(map[E]bool)
-	for _, val := range sl {
-		mp[val] = true
-	}
-	return mp
-}

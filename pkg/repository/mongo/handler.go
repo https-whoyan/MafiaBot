@@ -86,7 +86,6 @@ func (g GuildChannels) getMainChannelIID() string {
 
 func (db *MongoDB) IsFreeChannelIID(guildID string, ChannelID string) (bool, error) {
 	coll, err := db.getColl(DbName, GuildChannelsCollection)
-	internalCtx := context.Background()
 	if err != nil {
 		return false, err
 	}
@@ -95,11 +94,11 @@ func (db *MongoDB) IsFreeChannelIID(guildID string, ChannelID string) (bool, err
 		{"guildID", guildID},
 		{
 			"roleChannels", bson.M{
-				"$elemMatch": bson.M{"channelIID": ChannelID},
-			},
+			"$elemMatch": bson.M{"channelIID": ChannelID},
+		},
 		},
 	}
-	err = coll.FindOne(internalCtx, filterRoleChannels).Err()
+	err = coll.FindOne(ctx, filterRoleChannels).Err()
 	if !errors.Is(err, mongo.ErrNoDocuments) {
 		return false, nil
 	}
@@ -112,7 +111,7 @@ func (db *MongoDB) IsFreeChannelIID(guildID string, ChannelID string) (bool, err
 			"MainChannel.channelIID", ChannelID,
 		},
 	}
-	err = coll.FindOne(internalCtx, filterMainChannels).Err()
+	err = coll.FindOne(ctx, filterMainChannels).Err()
 	if !errors.Is(err, mongo.ErrNoDocuments) {
 		return false, nil
 	}
@@ -128,7 +127,6 @@ func (db *MongoDB) pushIfNotExistsGuildChannels(guildID string) (isInserted bool
 	}
 
 	filter := bson.D{{"guildID", guildID}}
-	ctx := context.Background()
 
 	// I get an error if there are no documents in mongo
 	isContains := !errors.Is(coll.FindOne(ctx, filter).Err(), mongo.ErrNoDocuments)
@@ -160,7 +158,6 @@ func (db *MongoDB) getEntryByGuildID(guildID string) (*GuildChannels, error) {
 		return nil, err
 	}
 
-	ctx := context.Background()
 	result := GuildChannels{}
 	filter := bson.D{{"guildID", guildID}}
 
@@ -177,7 +174,6 @@ func (db *MongoDB) DeleteRoleChannel(guildID string, role string) (isDeleted boo
 		return false, err
 	}
 
-	ctx := context.Background()
 	filter := bson.D{
 		{
 			"guildID", guildID,
@@ -221,7 +217,6 @@ func (db *MongoDB) SetRoleChannel(guildID string, channelIID string, role string
 	if err != nil {
 		return err
 	}
-	ctx := context.Background()
 	coll, err := db.getColl(DbName, GuildChannelsCollection)
 	if err != nil {
 		return err
@@ -253,7 +248,6 @@ func (db *MongoDB) GetRoleByChannelIID(guildID string, channelIID string) (strin
 		return "", err
 	}
 
-	ctx := context.Background()
 	result := &GuildChannels{}
 	filter := bson.D{
 		{"guildID", guildID},
@@ -308,7 +302,6 @@ func (db *MongoDB) SetMainChannel(guildID string, channelIID string) error {
 			"mainChannel.channelIID", channelIID,
 		}},
 	}}
-	ctx := context.Background()
 
 	result, err := coll.UpdateOne(ctx, filter, updateSet)
 	if err != nil || result.ModifiedCount == 0 {
