@@ -5,11 +5,13 @@ import (
 	"github.com/https-whoyan/MafiaBot/internal/fmt"
 	botGamePack "github.com/https-whoyan/MafiaBot/internal/game"
 	userPack "github.com/https-whoyan/MafiaBot/internal/user"
+	"github.com/https-whoyan/MafiaBot/pkg"
 	"github.com/https-whoyan/MafiaCore/game"
 )
 
 // ValidateCommandByGameState validate, is correct command name by current game State.
-func ValidateCommandByGameState(s *discordgo.Session, commandName string, g *game.Game, fmtEr *fmt.DiscordFMTer) (
+func ValidateCommandByGameState(s *discordgo.Session,
+	commandName string, g *game.Game, fmtEr *fmt.DiscordFMTer, databases *pkg.Database) (
 	content string, isOk bool) {
 	gameState := g.GetState()
 
@@ -24,34 +26,35 @@ func ValidateCommandByGameState(s *discordgo.Session, commandName string, g *gam
 			return "", true
 		case game.FinishState:
 			userRenameProvider := userPack.NewBotUserRenameProvider(s, g.GuildID())
-			*g = *game.GetNewGame(g.GuildID(), botGamePack.GetNewGameConfig(userRenameProvider)...)
+			*g = *game.GetNewGame(g.GuildID(), botGamePack.GetNewGameConfig(
+				userRenameProvider, databases.Storage)...)
 			return "", true
 		default:
 			break
 		}
-	case ChoiceGameConfigCommandName:
+	case choiceGameConfigCommandName:
 		switch gameState {
 		case game.RegisterState:
 			return "", true
 		default:
 			break
 		}
-	case StartGameCommandName:
+	case startGameCommandName:
 		switch gameState {
 		case game.InitState:
 			return "", true
 		default:
 			break
 		}
-	case VoteGameCommandName:
+	case voteGameCommandName:
 		if g.IsRunning() {
 			return "", true
 		}
-	case TwoVoteGameCommandName:
+	case twoVoteGameCommandName:
 		if g.IsRunning() {
 			return "", true
 		}
-	case DayVoteGameCommandName:
+	case dayVoteGameCommandName:
 		switch gameState {
 		case game.DayState:
 			return "", true

@@ -3,12 +3,18 @@ package redis
 import (
 	"context"
 	"errors"
+	"github.com/redis/go-redis/v9"
+	"log"
 	"reflect"
 	"strconv"
 	"time"
 
 	botGame "github.com/https-whoyan/MafiaBot/internal/game"
 )
+
+type redisDB struct {
+	db *redis.Client
+}
 
 const (
 	initialGameTB      = "initialGames"
@@ -22,7 +28,7 @@ const (
 // Utils
 
 // It can be r.db.Del...
-func (r *RedisDB) deleteKey(key string) { r.db.PExpire(context.Background(), key, time.Millisecond) }
+func (r *redisDB) deleteKey(key string) { r.db.PExpire(context.Background(), key, time.Millisecond) }
 
 func redisNameByFieldName(t reflect.Type, fieldName string) string {
 	field, isFound := t.FieldByName(fieldName)
@@ -36,8 +42,7 @@ func redisNameByFieldName(t reflect.Type, fieldName string) string {
 // InitialGameMessage
 // _____________________
 
-func (r *RedisDB) SetInitialGameMessageID(guildID string, messageID string, lifeDuration time.Duration) error {
-	ctx := context.Background()
+func (r *redisDB) SetInitialGameMessageID(ctx context.Context, guildID string, messageID string, lifeDuration time.Duration) error {
 	key := initialGameTB + ":" + guildID
 
 	pipe := r.db.TxPipeline()
@@ -46,8 +51,7 @@ func (r *RedisDB) SetInitialGameMessageID(guildID string, messageID string, life
 	return err
 }
 
-func (r *RedisDB) GetInitialGameMessageID(guildID string) (string, error) {
-	ctx := context.Background()
+func (r *redisDB) GetInitialGameMessageID(ctx context.Context, guildID string) (string, error) {
 	key := initialGameTB + ":" + guildID
 
 	pipe := r.db.TxPipeline()
@@ -64,8 +68,7 @@ func (r *RedisDB) GetInitialGameMessageID(guildID string) (string, error) {
 // ConfigsVoting
 // _________________
 
-func (r *RedisDB) SetConfigGameVotingMessages(c *botGame.ConfigMessages, lifeDuration time.Duration) (err error) {
-	ctx := context.Background()
+func (r *redisDB) SetConfigGameVotingMessages(ctx context.Context, c *botGame.ConfigMessages, lifeDuration time.Duration) (err error) {
 	key := configVotingGameTB + ":" + c.GuildID
 
 	t := reflect.TypeOf(*c)
@@ -90,8 +93,7 @@ func (r *RedisDB) SetConfigGameVotingMessages(c *botGame.ConfigMessages, lifeDur
 	return err
 }
 
-func (r *RedisDB) GetConfigGameVotingMessageID(guildID string) (*botGame.ConfigMessages, error) {
-	ctx := context.Background()
+func (r *redisDB) GetConfigGameVotingMessageID(ctx context.Context, guildID string) (*botGame.ConfigMessages, error) {
 	key := configVotingGameTB + ":" + guildID
 
 	t := reflect.TypeOf(botGame.ConfigMessages{})
@@ -143,20 +145,19 @@ func (r *RedisDB) GetConfigGameVotingMessageID(guildID string) (*botGame.ConfigM
 
 // ChannelsIDStorage
 
+type СhannelStorageType string
+
 const (
 	channelStoragePrefix = "channelStorage"
 )
 
-type channelStorageType string
-
 const (
-	SetInitialGameStorage channelStorageType = "setInitialGame"
+	SetInitialGameStorage СhannelStorageType = "setInitialGame"
 	//...
 )
 
-func (r *RedisDB) SetChannelStorage(guildID string, channelIID string,
-	storageType channelStorageType, duration time.Duration) error {
-	ctx := context.Background()
+func (r *redisDB) SetChannelStorage(ctx context.Context, guildID string, channelIID string,
+	storageType СhannelStorageType, duration time.Duration) error {
 	key := channelStoragePrefix + ":" + guildID + ":" + string(storageType)
 
 	pipe := r.db.TxPipeline()
@@ -165,8 +166,7 @@ func (r *RedisDB) SetChannelStorage(guildID string, channelIID string,
 	return err
 }
 
-func (r *RedisDB) GetChannelStorage(guildID string, storageType channelStorageType) (channelIID string, err error) {
-	ctx := context.Background()
+func (r *redisDB) GetChannelStorage(ctx context.Context, guildID string, storageType СhannelStorageType) (channelIID string, err error) {
 	key := channelStoragePrefix + ":" + guildID + ":" + string(storageType)
 
 	pipe := r.db.TxPipeline()
@@ -176,4 +176,11 @@ func (r *RedisDB) GetChannelStorage(guildID string, storageType channelStorageTy
 		return "", err
 	}
 	return cmd.Result()
+}
+
+// Close
+
+func (r *redisDB) Close(_ context.Context) error {
+	log.Println("Disconnect Redis")
+	return r.db.Close()
 }

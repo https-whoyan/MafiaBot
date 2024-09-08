@@ -1,17 +1,16 @@
 package bot
 
 import (
-	"errors"
+	"context"
 	"log"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 
 	botFMTPack "github.com/https-whoyan/MafiaBot/internal/fmt"
 	botGamePack "github.com/https-whoyan/MafiaBot/internal/game"
 	handlerPack "github.com/https-whoyan/MafiaBot/internal/handlers"
 	userPack "github.com/https-whoyan/MafiaBot/internal/user"
+	pkgPack "github.com/https-whoyan/MafiaBot/pkg"
 	gamePack "github.com/https-whoyan/MafiaCore/game"
 
 	"github.com/bwmarrin/discordgo"
@@ -21,13 +20,13 @@ import (
 // BotConfig
 // ____________
 
-type BotConfig struct {
+type Config struct {
 	token string
 }
 
-func LoadBotConfig() *BotConfig {
+func LoadBotConfig() *Config {
 	token := os.Getenv("BOT_TOKEN")
-	return &BotConfig{
+	return &Config{
 		token: token,
 	}
 }
@@ -35,11 +34,6 @@ func LoadBotConfig() *BotConfig {
 // ________
 // Bot
 // ________
-
-var (
-	botOnce     sync.Once
-	botInstance *Bot
-)
 
 type Bot struct {
 	sync.Mutex
@@ -60,55 +54,30 @@ type Bot struct {
 	//
 	// Implement of FmtInterface.
 	FMTer *botFMTPack.DiscordFMTer
+	// Databases
+	Databases *pkgPack.Database
 }
 
-func InitBot(cnf *BotConfig) {
-	botOnce.Do(func() {
-		token := cnf.token
-		botStr := "Bot " + token
-		s, err := discordgo.New(botStr)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		bot := &Bot{
-			token:    token,
-			Session:  s,
-			Commands: make(map[string]handlerPack.Command),
-			Games:    make(map[string]*gamePack.Game),
-			FMTer:    botFMTPack.DiscordFMTInstance,
-		}
-
-		bot.initBotCommands()
-		bot.registerHandlers()
-		botInstance = bot
-	})
-}
-
-func Run() {
-	if botInstance == nil {
-		log.Fatal("Bot isn't instance!")
-	}
-	err := botInstance.Open()
+func InitBot(ctx context.Context, cnf *Config, databases *pkgPack.Database) (*Bot, error) {
+	token := cnf.token
+	botStr := "Bot " + token
+	s, err := discordgo.New(botStr)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	botInstance.loginAs()
-	botInstance.registerCommands()
 
-	// If you need delete all registered commands, use here: bot.DeleteAllGloballyRegisteredCommands()
-
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-	<-sc
-}
-
-func DisconnectBot() error {
-	if botInstance == nil {
-		return errors.New("bot isn't initialized")
+	bot := &Bot{
+		token:     token,
+		Session:   s,
+		Commands:  make(map[string]handlerPack.Command),
+		Games:     make(map[string]*gamePack.Game),
+		FMTer:     botFMTPack.DiscordFMTInstance,
+		Databases: databases,
 	}
-	return botInstance.Close()
 
+	bot.initBotCommands()
+	bot.registerHandlers(ctx)
+	return bot, nil
 }
 
 func (b *Bot) loginAs() {
@@ -127,8 +96,8 @@ func (b *Bot) Open() error {
 }
 
 func (b *Bot) Close() error {
-	b.FinishAllGames()
-	b.DeleteHandlers()
+	b.finishAllGames()
+	b.deleteHandlers()
 	b.removeRegisteredCommands()
 	err := b.Session.Close()
 	if err != nil {
@@ -148,29 +117,29 @@ func (b *Bot) initCommand(c handlerPack.Command) {
 
 func (b *Bot) initBotCommands() {
 	// Channels
-	b.initCommand(handlerPack.NewAddMainChannelCommand())
-	b.initCommand(handlerPack.NewAddChannelRoleCommand())
+	b.initCommand(handlerPack.NewAddMainChannelCommand(b.Session, b.Databases.Storage))
+	b.initCommand(handlerPack.NewAddChannelRoleCommand(b.Session, b.Databases.Storage))
 
 	// Game
-	b.initCommand(handlerPack.NewRegisterGameCommand())
-	b.initCommand(handlerPack.NewChoiceGameConfigCommand())
-	b.initCommand(handlerPack.NewStartGameCommand())
+	b.initCommand(handlerPack.NewRegisterGameCommand(b.Session, b.Databases))
+	b.initCommand(handlerPack.NewChoiceGameConfigCommand(b.Session, b.Databases.Hasher))
+	b.initCommand(handlerPack.NewStartGameCommand(b.Session, b.Databases.Hasher))
 
 	// Vote
-	b.initCommand(handlerPack.NewGameVoteCommand())
-	b.initCommand(handlerPack.NewGameTwoVoteCommand())
-	b.initCommand(handlerPack.NewDayVoteCommand())
+	b.initCommand(handlerPack.NewGameVoteCommand(b.Session))
+	b.initCommand(handlerPack.NewGameTwoVoteCommand(b.Session))
+	b.initCommand(handlerPack.NewDayVoteCommand(b.Session))
 
 	// finish game
-	b.initCommand(handlerPack.NewFinishGameCommand())
+	b.initCommand(handlerPack.NewFinishGameCommand(b.Session))
 
 	// Other
-	b.initCommand(handlerPack.NewYanLohCommand())
-	b.initCommand(handlerPack.NewAboutRolesCommand())
+	b.initCommand(handlerPack.NewYanLohCommand(b.Session))
+	b.initCommand(handlerPack.NewAboutRolesCommand(b.Session))
 
 }
 
-func (b *Bot) registerHandlers() {
+func (b *Bot) registerHandlers(ctx context.Context) {
 	log.Print("Register handlers")
 	for _, cmd := range b.Commands {
 		// To avoid closing the loop
@@ -178,20 +147,20 @@ func (b *Bot) registerHandlers() {
 		cmdName := newCmd.GetName()
 		log.Printf("Register handler, command name: %v", cmdName)
 		// Lock
-		newHandler := b.getSIHandler(newCmd, cmdName)
+		newHandler := b.getSIHandler(ctx, newCmd, cmdName)
 		b.Session.AddHandler(newHandler)
 	}
 }
 
 // getSIHandler Is bot command handler get Function.
 // All comments in function.
-func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
+func (b *Bot) getSIHandler(ctx context.Context, cmd handlerPack.Command, cmdName string) func(
 	s *discordgo.Session, i *discordgo.InteractionCreate) {
 	return func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("Recovered from panic: %v", r)
-				handlerPack.Response(s, i.Interaction, "Internal Server Error!")
+
 				return
 			}
 		}()
@@ -215,7 +184,7 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 		if !cmd.IsUsedForGame() {
 			// Just execute a Execute()
 			log.Printf("Execute %v command.", cmdName)
-			cmd.Execute(s, i.Interaction, nil, b.FMTer)
+			cmd.Execute(ctx, i.Interaction, nil)
 			return
 		}
 
@@ -225,16 +194,17 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 			log.Printf("Must be register_game: Execute %v command.", cmdName)
 
 			userRenameProvider := userPack.NewBotUserRenameProvider(s, executedGuildID)
-			gameConfig := botGamePack.GetNewGameConfig(userRenameProvider)
+			gameConfig := botGamePack.GetNewGameConfig(userRenameProvider, b.Databases.Storage)
 
 			b.Games[executedGuildID] = gamePack.GetNewGame(executedGuildID, gameConfig...)
-			content, isOk := handlerPack.ValidateCommandByGameState(s, executedCommandName, b.Games[executedGuildID], b.FMTer)
+			content, isOk := handlerPack.ValidateCommandByGameState(
+				s, executedCommandName, b.Games[executedGuildID], b.FMTer, b.Databases)
 			if !isOk {
 				handlerPack.Response(s, i.Interaction, content)
 				return
 			}
 			log.Printf("Registered new game by %v Guild ID", executedGuildID)
-			cmd.Execute(s, i.Interaction, b.Games[executedGuildID], b.FMTer)
+			cmd.Execute(ctx, i.Interaction, b.Games[executedGuildID])
 		}
 		// And is there a game on this server
 		_, containsGame := b.Games[executedGuildID]
@@ -248,13 +218,14 @@ func (b *Bot) getSIHandler(cmd handlerPack.Command, cmdName string) func(
 				return
 			}
 			// Validate Is correct command by game state
-			content, isOk := handlerPack.ValidateCommandByGameState(s, executedCommandName, currGame, b.FMTer)
+			content, isOk := handlerPack.ValidateCommandByGameState(
+				s, executedCommandName, currGame, b.FMTer, b.Databases)
 			if !isOk {
 				handlerPack.Response(s, i.Interaction, content)
 				return
 			}
 			// If ok, I call the Execute method of the command
-			cmd.Execute(s, i.Interaction, currGame, b.FMTer)
+			cmd.Execute(ctx, i.Interaction, currGame)
 			// If command is (finishGame), delete game from map
 			if executedCommandName == handlerPack.FinishGameCommandName {
 				b.Lock()
@@ -292,10 +263,10 @@ func (b *Bot) registerCommands() {
 	}
 }
 
-func (b *Bot) removeRegisteredCommands() { b.DeleteAllGloballyRegisteredCommands() }
+func (b *Bot) removeRegisteredCommands() { b.deleteAllGloballyRegisteredCommands() }
 
-// DeleteAllGloballyRegisteredCommands Delete all registered to bot functions. Globally Registered
-func (b *Bot) DeleteAllGloballyRegisteredCommands() {
+// deleteAllGloballyRegisteredCommands Delete all registered to bot functions. Globally Registered
+func (b *Bot) deleteAllGloballyRegisteredCommands() {
 	log.Println("Init Delete all globally registered commands.")
 	userId := b.Session.State.User.ID
 	globallyRegisteredCommands, err := b.Session.ApplicationCommands(userId, "")
@@ -312,7 +283,7 @@ func (b *Bot) DeleteAllGloballyRegisteredCommands() {
 	log.Println("All global commands deleted.")
 }
 
-func (b *Bot) DeleteHandlers() {
+func (b *Bot) deleteHandlers() {
 	err := b.Session.AddHandler(nil)
 	if err != nil { // (Code by ChatGPT <3, lol)
 		log.Println("Delete all handlers")
@@ -320,7 +291,7 @@ func (b *Bot) DeleteHandlers() {
 	}
 }
 
-func (b *Bot) FinishAllGames() {
+func (b *Bot) finishAllGames() {
 	for _, game := range b.Games {
 		ch := make(chan gamePack.Signal)
 		go game.FinishAnyway()

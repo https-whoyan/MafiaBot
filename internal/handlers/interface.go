@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	botFMTPack "github.com/https-whoyan/MafiaBot/internal/fmt"
+	"context"
 	coreGamePack "github.com/https-whoyan/MafiaCore/game"
 
 	"github.com/bwmarrin/discordgo"
@@ -11,7 +11,7 @@ type Command interface {
 	// Execute Would say it's a discord command handler.
 	// Uses session, interaction, and formatter.
 	// Changes the game.
-	Execute(s *discordgo.Session, i *discordgo.Interaction, g *coreGamePack.Game, f *botFMTPack.DiscordFMTer)
+	Execute(ctx context.Context, i *discordgo.Interaction, g *coreGamePack.Game)
 	// GetCmd All implementations of the command use ApplicationCommand under the hood.
 	// It is also necessary for the bot to remember the commands in order to delete them.
 	GetCmd() *discordgo.ApplicationCommand

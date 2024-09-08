@@ -1,9 +1,16 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"strings"
 
+	"github.com/https-whoyan/MafiaBot/pkg"
+	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
+	"github.com/https-whoyan/MafiaBot/pkg/repository/redis"
+
+	fmtErPack "github.com/https-whoyan/MafiaBot/internal/fmt"
 	coreGamePack "github.com/https-whoyan/MafiaCore/game"
 	coreRolesPack "github.com/https-whoyan/MafiaCore/roles"
 
@@ -17,16 +24,16 @@ import (
 // _________________________________
 
 const (
-	AddChannelRoleCommandName   = "add_channel_role"
-	AddMainChannelCommandName   = "add_main_channel"
+	addChannelRoleCommandName   = "add_channel_role"
+	addMainChannelCommandName   = "add_main_channel"
 	RegisterGameCommandName     = "register_game"
-	ChoiceGameConfigCommandName = "choose_game_config"
-	YanLohCommandName           = "yan_loh"
-	AboutRolesCommandName       = "about_roles"
-	StartGameCommandName        = "start_game"
-	VoteGameCommandName         = "vote"
-	TwoVoteGameCommandName      = "two_vote"
-	DayVoteGameCommandName      = "day_vote"
+	choiceGameConfigCommandName = "choose_game_config"
+	yanLohCommandName           = "yan_loh"
+	aboutRolesCommandName       = "about_roles"
+	startGameCommandName        = "start_game"
+	voteGameCommandName         = "vote"
+	twoVoteGameCommandName      = "two_vote"
+	dayVoteGameCommandName      = "day_vote"
 	FinishGameCommandName       = "finish_game"
 )
 
@@ -34,14 +41,50 @@ const (
 // Channels
 // _______________________
 
-// AddChannelRoleCommand command logic
-type AddChannelRoleCommand struct {
+type basicCmd struct {
+	s             *discordgo.Session
+	f             *fmtErPack.DiscordFMTer
 	cmd           *discordgo.ApplicationCommand
 	isUsedForGame bool
 	name          string
 }
 
-func NewAddChannelRoleCommand() *AddChannelRoleCommand {
+func newBasicCmd(s *discordgo.Session, cmd *discordgo.ApplicationCommand, name string, isUsedForGame bool) basicCmd {
+	return basicCmd{
+		s:             s,
+		f:             fmtErPack.DiscordFMTInstance,
+		cmd:           cmd,
+		name:          name,
+		isUsedForGame: isUsedForGame,
+	}
+}
+
+func (c basicCmd) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
+func (c basicCmd) GetName() string                       { return c.name }
+func (c basicCmd) IsUsedForGame() bool                   { return c.isUsedForGame }
+func (c basicCmd) Execute(_ context.Context, _ *discordgo.Interaction, _ *coreGamePack.Game) {
+	panic("implement me")
+}
+
+func (c basicCmd) response(i *discordgo.Interaction, content string) {
+	err := c.s.InteractionRespond(i, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: content,
+		},
+	})
+	if err != nil {
+		log.Print(err)
+	}
+}
+
+// addChannelRoleCommand command logic
+type addChannelRoleCommand struct {
+	basicCmd
+	storage mongo.Storage
+}
+
+func NewAddChannelRoleCommand(s *discordgo.Session, storage mongo.Storage) Command {
 	generateOption := func(roleName string) *discordgo.ApplicationCommandOption {
 		return &discordgo.ApplicationCommandOption{
 			Name:        roleName,
@@ -59,285 +102,263 @@ func NewAddChannelRoleCommand() *AddChannelRoleCommand {
 		return options
 	}
 
-	return &AddChannelRoleCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        AddChannelRoleCommandName,
-			Description: "Define a chat room where the interaction between the bot and the role will take place.",
-			Options:     generateOptions(),
-		},
-		isUsedForGame: false,
-		name:          AddChannelRoleCommandName,
+	return &addChannelRoleCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        addChannelRoleCommandName,
+				Description: "Define a chat room where the interaction between the bot and the role will take place.",
+				Options:     generateOptions(),
+			},
+			addChannelRoleCommandName,
+			false,
+		),
+		storage: storage,
 	}
 }
 
-func (c AddChannelRoleCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c AddChannelRoleCommand) GetName() string                       { return c.name }
-func (c AddChannelRoleCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
-
-// AddMainChannelCommand command logic
-type AddMainChannelCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
+// addMainChannelCommand command logic
+type addMainChannelCommand struct {
+	basicCmd
+	storage mongo.Storage
 }
 
-func NewAddMainChannelCommand() *AddMainChannelCommand {
-	return &AddMainChannelCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        AddMainChannelCommandName,
-			Description: "Define a chat room where the interaction between the bot and all game participants.",
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Name:        "chat_id",
-					Description: "Add main game chat.",
-					Required:    true,
-					Type:        discordgo.ApplicationCommandOptionString,
+func NewAddMainChannelCommand(s *discordgo.Session, storage mongo.Storage) Command {
+	return &addMainChannelCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        addMainChannelCommandName,
+				Description: "Define a chat room where the interaction between the bot and all game participants.",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Name:        "chat_id",
+						Description: "Add main game chat.",
+						Required:    true,
+						Type:        discordgo.ApplicationCommandOptionString,
+					},
 				},
 			},
-		},
-		isUsedForGame: false,
-		name:          AddMainChannelCommandName,
+			addMainChannelCommandName,
+			false,
+		),
+		storage: storage,
 	}
 }
-
-func (c AddMainChannelCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c AddMainChannelCommand) GetName() string                       { return c.name }
-func (c AddMainChannelCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
 // _____________________
 // Game
 // _____________________
 
-// RegisterGameCommand command logic
-type RegisterGameCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
+// registerGameCommand command logic
+type registerGameCommand struct {
+	basicCmd
+	db *pkg.Database
 }
 
-func NewRegisterGameCommand() *RegisterGameCommand {
-	return &RegisterGameCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        RegisterGameCommandName,
-			Description: "Register new Game",
-		},
-		isUsedForGame: true,
-		name:          RegisterGameCommandName,
+func NewRegisterGameCommand(s *discordgo.Session, db *pkg.Database) Command {
+	return &registerGameCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        RegisterGameCommandName,
+				Description: "Register new Game",
+			},
+			RegisterGameCommandName,
+			false,
+		),
+		db: db,
 	}
 }
 
-func (c RegisterGameCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c RegisterGameCommand) GetName() string                       { return c.name }
-func (c RegisterGameCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
-
-type FinishGameCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
+type finishGameCommand struct {
+	basicCmd
 }
 
-func NewFinishGameCommand() *FinishGameCommand {
-	return &FinishGameCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        FinishGameCommandName,
-			Description: "Ends the game early.",
-		},
-		isUsedForGame: true,
-		name:          FinishGameCommandName,
+func NewFinishGameCommand(s *discordgo.Session) Command {
+	return &finishGameCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        FinishGameCommandName,
+				Description: "Ends the game early.",
+			},
+			FinishGameCommandName,
+			true,
+		),
 	}
 }
 
-func (c FinishGameCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c FinishGameCommand) GetName() string                       { return c.name }
-func (c FinishGameCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
-
-// ChoiceGameConfigCommand command logic
-type ChoiceGameConfigCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
+// choiceGameConfigCommand command logic
+type choiceGameConfigCommand struct {
+	basicCmd
+	hasher redis.Hasher
 }
 
-func NewChoiceGameConfigCommand() *ChoiceGameConfigCommand {
-	return &ChoiceGameConfigCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        ChoiceGameConfigCommandName,
-			Description: "This output a list of game configs for voting.",
-		},
-		isUsedForGame: true,
-		name:          ChoiceGameConfigCommandName,
+func NewChoiceGameConfigCommand(s *discordgo.Session, hasher redis.Hasher) Command {
+	return &choiceGameConfigCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        choiceGameConfigCommandName,
+				Description: "This output a list of game configs for voting.",
+			},
+			choiceGameConfigCommandName,
+			true,
+		),
+		hasher: hasher,
 	}
 }
 
-func (c ChoiceGameConfigCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c ChoiceGameConfigCommand) GetName() string                       { return c.name }
-func (c ChoiceGameConfigCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
-
-type StartGameCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
+type startGameCommand struct {
+	basicCmd
+	hasher redis.Hasher
 }
 
-func NewStartGameCommand() *StartGameCommand {
-	return &StartGameCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        StartGameCommandName,
-			Description: "Init game after game config choosing",
-		},
-		isUsedForGame: true,
-		name:          StartGameCommandName,
+func NewStartGameCommand(s *discordgo.Session, hasher redis.Hasher) Command {
+	return &startGameCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        startGameCommandName,
+				Description: "Init game after game config choosing",
+			},
+			startGameCommandName,
+			true,
+		),
+		hasher: hasher,
 	}
 }
-
-func (c StartGameCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c StartGameCommand) GetName() string                       { return c.name }
-func (c StartGameCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
 // ______________
 // Voting
 // ______________
 
-type GameVoteCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
+type gameVoteCommand struct {
+	basicCmd
 }
 
-func NewGameVoteCommand() *GameVoteCommand {
+func NewGameVoteCommand(s *discordgo.Session) Command {
 	description := "The command used for voting. Put " + coreGamePack.EmptyVoteStr + " for empty vote."
-	return &GameVoteCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        VoteGameCommandName,
-			Description: description,
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "player_id",
-					Description: "Enter the player's game ID",
-					Required:    true,
+	return &gameVoteCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        voteGameCommandName,
+				Description: description,
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "player_id",
+						Description: "Enter the player's game ID",
+						Required:    true,
+					},
 				},
 			},
-		},
-		isUsedForGame: true,
-		name:          VoteGameCommandName,
+			voteGameCommandName,
+			true,
+		),
 	}
 }
 
-func (c GameVoteCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c GameVoteCommand) GetName() string                       { return c.name }
-func (c GameVoteCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
-
-type GameTwoVoteCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
+type gameTwoVoteCommand struct {
+	basicCmd
 }
 
-func NewGameTwoVoteCommand() *GameTwoVoteCommand {
+func NewGameTwoVoteCommand(s *discordgo.Session) Command {
 	description := "The command used for voting, but only for roles that use 2 voices at once."
-	return &GameTwoVoteCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        TwoVoteGameCommandName,
-			Description: description,
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "player_id_1",
-					Description: "Enter the player's game ID",
-					Required:    true,
-				},
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "player_id_2",
-					Description: "Enter the player's game ID",
-					Required:    true,
+	return &gameTwoVoteCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        twoVoteGameCommandName,
+				Description: description,
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "player_id_1",
+						Description: "Enter the player's game ID",
+						Required:    true,
+					},
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "player_id_2",
+						Description: "Enter the player's game ID",
+						Required:    true,
+					},
 				},
 			},
-		},
-		isUsedForGame: true,
-		name:          TwoVoteGameCommandName,
+			twoVoteGameCommandName,
+			true,
+		),
 	}
 }
 
-func (c GameTwoVoteCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c GameTwoVoteCommand) GetName() string                       { return c.name }
-func (c GameTwoVoteCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
-
-type DayVoteCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
+type dayVoteCommand struct {
+	basicCmd
 }
 
-func NewDayVoteCommand() *DayVoteCommand {
+func NewDayVoteCommand(s *discordgo.Session) Command {
 	description := "The command used for day voting, use " + coreGamePack.EmptyVoteStr + " for skip."
-	return &DayVoteCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        DayVoteGameCommandName,
-			Description: description,
-			Options: []*discordgo.ApplicationCommandOption{
-				{
-					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "kicked_player_id",
-					Description: "Enter the player's game ID",
-					Required:    true,
+	return &dayVoteCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        dayVoteGameCommandName,
+				Description: description,
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionString,
+						Name:        "kicked_player_id",
+						Description: "Enter the player's game ID",
+						Required:    true,
+					},
 				},
 			},
-		},
-		isUsedForGame: true,
-		name:          DayVoteGameCommandName,
+			dayVoteGameCommandName,
+			true,
+		),
 	}
 }
-
-func (c DayVoteCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c DayVoteCommand) GetName() string                       { return c.name }
-func (c DayVoteCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
 
 // ___________
 // Other
 // ___________
 
-// YanLohCommand command
-type YanLohCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
+// yanLohCommand command
+type yanLohCommand struct {
+	basicCmd
 }
 
-func NewYanLohCommand() *YanLohCommand {
-	return &YanLohCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        YanLohCommandName,
-			Description: "Call Yan with this command!",
-		},
-		isUsedForGame: false,
-		name:          YanLohCommandName,
+func NewYanLohCommand(s *discordgo.Session) Command {
+	return &yanLohCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        yanLohCommandName,
+				Description: "Call Yan with this command!",
+			},
+			yanLohCommandName,
+			false,
+		),
 	}
 }
 
-func (c YanLohCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c YanLohCommand) GetName() string                       { return c.name }
-func (c YanLohCommand) IsUsedForGame() bool                   { return c.isUsedForGame }
-
-// AboutRolesCommand command logic
-type AboutRolesCommand struct {
-	cmd           *discordgo.ApplicationCommand
-	isUsedForGame bool
-	name          string
+// aboutRolesCommand command logic
+type aboutRolesCommand struct {
+	basicCmd
 }
 
-func NewAboutRolesCommand() *AboutRolesCommand {
-	return &AboutRolesCommand{
-		cmd: &discordgo.ApplicationCommand{
-			Name:        AboutRolesCommandName,
-			Description: "Send description about roles",
-		},
-		isUsedForGame: false,
-		name:          AboutRolesCommandName,
+func NewAboutRolesCommand(s *discordgo.Session) Command {
+	return &aboutRolesCommand{
+		basicCmd: newBasicCmd(
+			s,
+			&discordgo.ApplicationCommand{
+				Name:        aboutRolesCommandName,
+				Description: "Send description about roles",
+			},
+			aboutRolesCommandName,
+			false,
+		),
 	}
 }
-
-func (c AboutRolesCommand) GetCmd() *discordgo.ApplicationCommand { return c.cmd }
-func (c AboutRolesCommand) GetName() string                       { return c.name }
-func (c AboutRolesCommand) IsUsedForGame() bool                   { return c.isUsedForGame }

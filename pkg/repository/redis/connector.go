@@ -4,46 +4,34 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/redis/go-redis/v9"
 	"log"
 	"os"
 	"strconv"
-	"sync"
-
-	"github.com/redis/go-redis/v9"
 )
 
-type RedisConfig struct {
+type HasherConfig struct {
 	Host     string
 	Port     string
 	Password string
 	DB       int
 }
 
-func LoadRedisConfig() (*RedisConfig, error) {
+func LoadHasherConfig() (*HasherConfig, error) {
 	host := os.Getenv("REDIS_HOST")
 	port := os.Getenv("REDIS_PORT")
 	db, err := strconv.Atoi(os.Getenv("REDIS_DB"))
 	if err != nil {
 		return nil, err
 	}
-	return &RedisConfig{
+	return &HasherConfig{
 		Host: host,
 		Port: port,
 		DB:   db,
 	}, nil
 }
 
-type RedisDB struct {
-	db *redis.Client
-}
-
-var (
-	redisOnce   sync.Once
-	currRedisDB *RedisDB
-)
-
-func InitRedis(cfg *RedisConfig) error {
-	// Create connection string
+func InitHasher(ctx context.Context, cfg *HasherConfig) (Hasher, error) {
 	connectionStr := fmt.Sprintf(
 		"%v:%v",
 		cfg.Host,
@@ -54,9 +42,6 @@ func InitRedis(cfg *RedisConfig) error {
 		Password: cfg.Password,
 		DB:       cfg.DB,
 	}
-
-	// Background context
-	ctx := context.Background()
 	// Create client
 	client := redis.NewClient(connectionOptions)
 
@@ -64,39 +49,17 @@ func InitRedis(cfg *RedisConfig) error {
 	status := client.Ping(ctx)
 	val, err := status.Result()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if val != "PONG" {
-		return errors.New(
+		return nil, errors.New(
 			fmt.Sprintf(
 				"excepted PONG, get %v", val,
 			),
 		)
 	}
 
-	redisOnce.Do(func() {
-		currRedisDB = &RedisDB{
-			db: client,
-		}
-	})
 	log.Printf("Run redis server at %v, db: %v", connectionStr, cfg.DB)
-
-	return nil
-}
-
-func GetCurrRedisDB() (*RedisDB, bool) {
-	if currRedisDB == nil {
-		return nil, false
-	}
-	return currRedisDB, true
-}
-
-func Disconnect() error {
-	if currRedisDB == nil {
-		return errors.New("redis DB isn't initialized")
-	}
-	err := currRedisDB.db.Close()
-	log.Println("Disconnect Redis")
-	return err
+	return &redisDB{client}, nil
 }

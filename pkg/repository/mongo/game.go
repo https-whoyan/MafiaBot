@@ -1,12 +1,13 @@
 package mongo
 
 import (
+	"context"
 	"github.com/https-whoyan/MafiaCore/game"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func (db *MongoDB) InitNewGame(g game.DeepCloneGame) error {
-	coll, err := db.getColl(DbName, GameStorageCollection)
+func (s *mongoDB) InitNewGame(ctx context.Context, g game.DeepCloneGame) error {
+	coll, err := s.getColl(dbName, gameStorageCollection)
 	if err != nil {
 		return err
 	}
@@ -14,7 +15,7 @@ func (db *MongoDB) InitNewGame(g game.DeepCloneGame) error {
 	return err
 }
 
-func (db *MongoDB) SaveNightLog(g game.DeepCloneGame, l game.NightLog) error {
+func (s *mongoDB) SaveNightLog(ctx context.Context, g game.DeepCloneGame, l game.NightLog) error {
 	filter := bson.M{
 		"guildID":   g.GuildID,
 		"startTime": g.TimeStart,
@@ -24,7 +25,7 @@ func (db *MongoDB) SaveNightLog(g game.DeepCloneGame, l game.NightLog) error {
 			"nightLogs", newMongoGameNight(l),
 		}},
 	}}
-	coll, err := db.getColl(DbName, GameStorageCollection)
+	coll, err := s.getColl(dbName, gameStorageCollection)
 	if err != nil {
 		return err
 	}
@@ -32,7 +33,7 @@ func (db *MongoDB) SaveNightLog(g game.DeepCloneGame, l game.NightLog) error {
 	return err
 }
 
-func (db *MongoDB) SaveDayLog(g game.DeepCloneGame, l game.DayLog) error {
+func (s *mongoDB) SaveDayLog(ctx context.Context, g game.DeepCloneGame, l game.DayLog) error {
 	filter := bson.M{
 		"guildID":   g.GuildID,
 		"startTime": g.TimeStart,
@@ -42,7 +43,7 @@ func (db *MongoDB) SaveDayLog(g game.DeepCloneGame, l game.DayLog) error {
 			"day_log", newMongoGameDay(l),
 		}},
 	}}
-	coll, err := db.getColl(DbName, GameStorageCollection)
+	coll, err := s.getColl(dbName, gameStorageCollection)
 	if err != nil {
 		return err
 	}
@@ -50,13 +51,13 @@ func (db *MongoDB) SaveDayLog(g game.DeepCloneGame, l game.DayLog) error {
 	return err
 }
 
-func (db *MongoDB) SaveFinishLog(g game.DeepCloneGame, l game.FinishLog) error {
+func (s *mongoDB) SaveFinishLog(ctx context.Context, g game.DeepCloneGame, l game.FinishLog) error {
 	filter := bson.M{
 		"guildID":   g.GuildID,
 		"startTime": g.TimeStart,
 	}
 	updatePush := getUpdateByByNightLog(l)
-	coll, err := db.getColl(DbName, GameStorageCollection)
+	coll, err := s.getColl(dbName, gameStorageCollection)
 	if err != nil {
 		return err
 	}

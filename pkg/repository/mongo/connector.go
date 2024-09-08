@@ -2,100 +2,57 @@ package mongo
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/https-whoyan/MafiaCore/game"
-	"log"
-	"os"
-	"sync"
-
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"log"
+	"os"
 )
 
 // ____________
 // Config
 // ____________
 
-type MongoDBConfig struct {
+type StorageConfig struct {
 	Host string
 	Port string
 }
 
-func LoadMongoDBConfig() (*MongoDBConfig, error) {
+func LoadMongoDBConfig() (*StorageConfig, error) {
 	host := os.Getenv("MONGODB_NAME")
 	port := os.Getenv("MONGODB_PORT")
-	return &MongoDBConfig{
+	return &StorageConfig{
 		Host: host,
 		Port: port,
 	}, nil
 }
 
 // ____________
-// MongoDB
+// mongoDB
 // ____________
 
-type MongoDB struct {
+type mongoDB struct {
 	db *mongo.Client
 }
 
-var (
-	mongoOnce   sync.Once
-	currMongoDB *MongoDB
-)
-
-func InitMongoDB(cfg *MongoDBConfig) error {
-	// Check is containing
-	if currMongoDB != nil {
-		return errors.New("mongoDB already exists")
-	}
-
-	// Create connection
-	ctx := context.TODO()
+func InitStorage(ctx context.Context, cfg *StorageConfig) (Storage, error) {
 	connectionStr := fmt.Sprintf("mongodb://%v:%v", cfg.Host, cfg.Port)
 	clientOptions := options.Client().ApplyURI(connectionStr)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Check is ok
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// Initial currDB singleton var
-	mongoOnce.Do(func() {
-		currMongoDB = &MongoDB{
-			db: client,
-		}
-	})
 	log.Printf("Run mongodb server at %v", connectionStr)
-
-	return err
+	return &mongoDB{client}, nil
 }
 
-// GetCurrMongoDB get connection
-func GetCurrMongoDB() (*MongoDB, bool) {
-	if currMongoDB == nil {
-		return nil, false
-	}
-	return currMongoDB, true
-}
-
-func GetCurrGameStorage() (game.Logger, bool) {
-	if currMongoDB == nil {
-		return nil, false
-	}
-	return currMongoDB, true
-}
-
-func DisconnectMongoDB() error {
-	if currMongoDB == nil {
-		return errors.New("mongoDB is not initialized")
-	}
-	err := currMongoDB.db.Disconnect(context.TODO())
-	log.Println("Disconnect MongoDB")
-	return err
+func (s *mongoDB) Close(ctx context.Context) error {
+	return s.db.Disconnect(ctx)
 }

@@ -2,7 +2,6 @@ package config
 
 import (
 	"log"
-	"os"
 	"sync"
 
 	"github.com/https-whoyan/MafiaBot/internal"
@@ -14,9 +13,9 @@ import (
 )
 
 type Config struct {
-	mongoConfig *mongo.MongoDBConfig
-	redisConfig *redis.RedisConfig
-	botConfig   *bot.BotConfig
+	MongoConfig *mongo.StorageConfig
+	RedisConfig *redis.HasherConfig
+	BotConfig   *bot.Config
 }
 
 var (
@@ -32,15 +31,15 @@ func LoadConfig() *Config {
 		if err != nil {
 			log.Fatal(err)
 		}
-		redisDBConfig, err := redis.LoadRedisConfig()
+		redisDBConfig, err := redis.LoadHasherConfig()
 		if err != nil {
 			log.Fatal(err)
 		}
 		botConfig := bot.LoadBotConfig()
 		ansConfig = &Config{
-			mongoConfig: mongoDBConfig,
-			redisConfig: redisDBConfig,
-			botConfig:   botConfig,
+			MongoConfig: mongoDBConfig,
+			RedisConfig: redisDBConfig,
+			BotConfig:   botConfig,
 		}
 	})
 	if ansConfig == nil {
@@ -53,39 +52,6 @@ func LoadConfig() *Config {
 func logAboutDiscordGo() {
 	log.Println("Discord-go version:", discordgo.VERSION)
 	log.Println("Discord-go API version:", discordgo.APIVersion)
-}
-
-func (c *Config) Run() {
-	err := mongo.InitMongoDB(c.mongoConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = redis.InitRedis(c.redisConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	logAboutDiscordGo()
-	bot.InitBot(c.botConfig)
-
-	defer func() {
-		err = redis.Disconnect()
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = mongo.DisconnectMongoDB()
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = bot.DisconnectBot()
-		if err != nil {
-			log.Fatal(err)
-		}
-		os.Clearenv()
-		os.Exit(1)
-	}()
-
-	bot.Run()
 }
 
 func loadDotEnv() {

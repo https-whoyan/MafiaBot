@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
@@ -10,20 +11,21 @@ import (
 )
 
 const (
-	DbName = "discord-go_mafia_bot"
+	dbName = "discord-go_mafia_bot"
 )
 
 const (
-	GuildChannelsCollection = "guild_channels"
-	GameStorageCollection   = "game_storage"
+	guildChannelsCollection = "guild_channels"
+	gameStorageCollection   = "game_storage"
 )
 
 var (
-	ctx = context.Background()
+	PermissionDeniedErr  = errors.New("permission denied")
+	NoUpdatedDocumentErr = errors.New("no updated documents")
 )
 
-func (db *MongoDB) getColl(dbName, collection string) (*mongo.Collection, error) {
-	coll := db.db.Database(dbName).Collection(collection)
+func (s *mongoDB) getColl(dbName, collection string) (*mongo.Collection, error) {
+	coll := s.db.Database(dbName).Collection(collection)
 	if coll == nil {
 		return nil, errors.New("empty mongo collection")
 	}
@@ -54,23 +56,23 @@ type GuildChannels struct {
 }
 
 func (g GuildChannels) searchChannelIIDByRole(role string) string {
-	for _, channel := range g.RoleChannels {
-		if channel.Role == role {
-			return channel.ChannelIID
-		}
+	ans, contains := lo.Find(g.RoleChannels, func(ch RoleChannel) bool {
+		return ch.Role == role
+	})
+	if !contains {
+		return ""
 	}
-
-	return ""
+	return ans.ChannelIID
 }
 
 func (g GuildChannels) searchRoleByChannelIID(chanelIID string) string {
-	for _, channel := range g.RoleChannels {
-		if channel.ChannelIID == chanelIID {
-			return channel.Role
-		}
+	ans, contains := lo.Find(g.RoleChannels, func(ch RoleChannel) bool {
+		return ch.ChannelIID == chanelIID
+	})
+	if !contains {
+		return ""
 	}
-
-	return ""
+	return ans.ChannelIID
 }
 
 func (g GuildChannels) getMainChannelIID() string {
@@ -84,8 +86,8 @@ func (g GuildChannels) getMainChannelIID() string {
 
 // ** Utils **
 
-func (db *MongoDB) IsFreeChannelIID(guildID string, ChannelID string) (bool, error) {
-	coll, err := db.getColl(DbName, GuildChannelsCollection)
+func (s *mongoDB) IsFreeChannelIID(ctx context.Context, guildID string, ChannelID string) (bool, error) {
+	coll, err := s.getColl(dbName, guildChannelsCollection)
 	if err != nil {
 		return false, err
 	}
@@ -94,8 +96,8 @@ func (db *MongoDB) IsFreeChannelIID(guildID string, ChannelID string) (bool, err
 		{"guildID", guildID},
 		{
 			"roleChannels", bson.M{
-			"$elemMatch": bson.M{"channelIID": ChannelID},
-		},
+				"$elemMatch": bson.M{"channelIID": ChannelID},
+			},
 		},
 	}
 	err = coll.FindOne(ctx, filterRoleChannels).Err()
@@ -120,8 +122,8 @@ func (db *MongoDB) IsFreeChannelIID(guildID string, ChannelID string) (bool, err
 }
 
 // Push if not exists information about GuildID
-func (db *MongoDB) pushIfNotExistsGuildChannels(guildID string) (isInserted bool, err error) {
-	coll, err := db.getColl(DbName, GuildChannelsCollection)
+func (s *mongoDB) pushIfNotExistsGuildChannels(ctx context.Context, guildID string) (isInserted bool, err error) {
+	coll, err := s.getColl(dbName, guildChannelsCollection)
 	if err != nil {
 		return false, err
 	}
@@ -152,8 +154,8 @@ func (db *MongoDB) pushIfNotExistsGuildChannels(guildID string) (isInserted bool
 // ChannelRole
 // ________________
 
-func (db *MongoDB) getEntryByGuildID(guildID string) (*GuildChannels, error) {
-	coll, err := db.getColl(DbName, GuildChannelsCollection)
+func (s *mongoDB) getEntryByGuildID(ctx context.Context, guildID string) (*GuildChannels, error) {
+	coll, err := s.getColl(dbName, guildChannelsCollection)
 	if err != nil {
 		return nil, err
 	}
@@ -168,8 +170,8 @@ func (db *MongoDB) getEntryByGuildID(guildID string) (*GuildChannels, error) {
 	return &result, nil
 }
 
-func (db *MongoDB) DeleteRoleChannel(guildID string, role string) (isDeleted bool, err error) {
-	coll, err := db.getColl(DbName, GuildChannelsCollection)
+func (s *mongoDB) DeleteRoleChannel(ctx context.Context, guildID string, role string) (isDeleted bool, err error) {
+	coll, err := s.getColl(dbName, guildChannelsCollection)
 	if err != nil {
 		return false, err
 	}
@@ -201,23 +203,26 @@ func (db *MongoDB) DeleteRoleChannel(guildID string, role string) (isDeleted boo
 
 }
 
-func (db *MongoDB) SetRoleChannel(guildID string, channelIID string, role string) error {
+func (s *mongoDB) SetRoleChannel(ctx context.Context, guildID string, channelIID string, role string) error {
 	role = strings.ToLower(role)
 	// If channelIID used in other role:
-	isFree, err := db.IsFreeChannelIID(guildID, channelIID)
-	if err != nil || !isFree {
-		return errors.New("permission denied")
+	isFree, err := s.IsFreeChannelIID(ctx, guildID, channelIID)
+	if err != nil {
+		return err
 	}
-	if _, err = db.pushIfNotExistsGuildChannels(guildID); err != nil {
+	if !isFree {
+		return PermissionDeniedErr
+	}
+	if _, err = s.pushIfNotExistsGuildChannels(ctx, guildID); err != nil {
 		return err
 	}
 
 	// Delete if contains
-	_, err = db.DeleteRoleChannel(guildID, role)
+	_, err = s.DeleteRoleChannel(ctx, guildID, role)
 	if err != nil {
 		return err
 	}
-	coll, err := db.getColl(DbName, GuildChannelsCollection)
+	coll, err := s.getColl(dbName, guildChannelsCollection)
 	if err != nil {
 		return err
 	}
@@ -242,8 +247,8 @@ func (db *MongoDB) SetRoleChannel(guildID string, channelIID string, role string
 	return err
 }
 
-func (db *MongoDB) GetRoleByChannelIID(guildID string, channelIID string) (string, error) {
-	coll, err := db.getColl(DbName, GuildChannelsCollection)
+func (s *mongoDB) GetRoleByChannelIID(ctx context.Context, guildID string, channelIID string) (string, error) {
+	coll, err := s.getColl(dbName, guildChannelsCollection)
 	if err != nil {
 		return "", err
 	}
@@ -264,8 +269,8 @@ func (db *MongoDB) GetRoleByChannelIID(guildID string, channelIID string) (strin
 	return role, nil
 }
 
-func (db *MongoDB) GetChannelIIDByRole(guildID string, role string) (string, error) {
-	entry, err := db.getEntryByGuildID(guildID)
+func (s *mongoDB) GetChannelIIDByRole(ctx context.Context, guildID string, role string) (string, error) {
+	entry, err := s.getEntryByGuildID(ctx, guildID)
 	if err != nil {
 		return "", err
 	}
@@ -280,18 +285,21 @@ func (db *MongoDB) GetChannelIIDByRole(guildID string, role string) (string, err
 
 // Not to need Delete, just push
 
-func (db *MongoDB) SetMainChannel(guildID string, channelIID string) error {
+func (s *mongoDB) SetMainChannel(ctx context.Context, guildID string, channelIID string) error {
 	// If channelIID used in other role:
-	isFree, err := db.IsFreeChannelIID(guildID, channelIID)
-	if err != nil || !isFree {
-		return errors.New("permission denied")
+	isFree, err := s.IsFreeChannelIID(ctx, guildID, channelIID)
+	if err != nil {
+		return err
+	}
+	if !isFree {
+		return PermissionDeniedErr
 	}
 
-	if _, err = db.pushIfNotExistsGuildChannels(guildID); err != nil {
+	if _, err = s.pushIfNotExistsGuildChannels(ctx, guildID); err != nil {
 		return err
 	}
 
-	coll, err := db.getColl(DbName, GuildChannelsCollection)
+	coll, err := s.getColl(dbName, guildChannelsCollection)
 	if err != nil {
 		return err
 	}
@@ -304,16 +312,19 @@ func (db *MongoDB) SetMainChannel(guildID string, channelIID string) error {
 	}}
 
 	result, err := coll.UpdateOne(ctx, filter, updateSet)
-	if err != nil || result.ModifiedCount == 0 {
-		return errors.New("no updated documents")
+	if err != nil {
+		return err
+	}
+	if result.ModifiedCount == 0 {
+		return NoUpdatedDocumentErr
 	}
 
 	log.Printf("set main channel %v GuildID: %v", channelIID, guildID)
-	return err
+	return nil
 }
 
-func (db *MongoDB) GetMainChannelIID(guildID string) (string, error) {
-	entry, err := db.getEntryByGuildID(guildID)
+func (s *mongoDB) GetMainChannelIID(ctx context.Context, guildID string) (string, error) {
+	entry, err := s.getEntryByGuildID(ctx, guildID)
 	if err != nil {
 		return "", err
 	}
