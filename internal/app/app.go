@@ -85,6 +85,6 @@ func (a *App) Run(ctx context.Context) error {
 	})
 	go hasherGracefulShutdown.listen(ctx)
 	go storageGracefulShutdown.listen(ctx)
-	go botGracefulShutdown.listen(ctx)
+	botGracefulShutdown.listen(ctx)
 	return nil
 }

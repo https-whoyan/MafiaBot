@@ -92,6 +92,7 @@ func (b *Bot) Open() error {
 		return err
 	}
 	b.loginAs()
+	b.registerCommands()
 	return nil
 }
 
