@@ -2,15 +2,16 @@ package app
 
 import (
 	"context"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
 	bot "github.com/https-whoyan/MafiaBot/internal"
 	"github.com/https-whoyan/MafiaBot/internal/app/config"
 	"github.com/https-whoyan/MafiaBot/pkg"
 	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 	"github.com/https-whoyan/MafiaBot/pkg/repository/redis"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 type gracefulShutdown[T any] struct {
@@ -83,6 +84,8 @@ func (a *App) Run(ctx context.Context) error {
 	botGracefulShutdown := newGracefulShutdown[*bot.Bot](a.Bot, func(ctx context.Context, bot *bot.Bot) error {
 		return bot.Close()
 	})
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	go hasherGracefulShutdown.listen(ctx)
 	go storageGracefulShutdown.listen(ctx)
 	botGracefulShutdown.listen(ctx)

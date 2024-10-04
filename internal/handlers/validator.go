@@ -4,6 +4,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/https-whoyan/MafiaBot/internal/fmt"
 	botGamePack "github.com/https-whoyan/MafiaBot/internal/game"
+	"github.com/https-whoyan/MafiaBot/internal/handlers/names"
 	userPack "github.com/https-whoyan/MafiaBot/internal/user"
 	"github.com/https-whoyan/MafiaBot/pkg"
 	"github.com/https-whoyan/MafiaCore/game"
@@ -20,7 +21,7 @@ func ValidateCommandByGameState(s *discordgo.Session,
 	content = gameIn + fmtEr.NL() + cantUse
 
 	switch commandName {
-	case RegisterGameCommandName:
+	case names.RegisterGameCommandName:
 		switch gameState {
 		case game.NonDefinedState:
 			return "", true
@@ -32,36 +33,36 @@ func ValidateCommandByGameState(s *discordgo.Session,
 		default:
 			break
 		}
-	case choiceGameConfigCommandName:
+	case names.ChoiceGameConfigCommandName:
 		switch gameState {
 		case game.RegisterState:
 			return "", true
 		default:
 			break
 		}
-	case startGameCommandName:
+	case names.StartGameCommandName:
 		switch gameState {
 		case game.InitState:
 			return "", true
 		default:
 			break
 		}
-	case voteGameCommandName:
+	case names.VoteGameCommandName:
 		if g.IsRunning() {
 			return "", true
 		}
-	case twoVoteGameCommandName:
+	case names.TwoVoteGameCommandName:
 		if g.IsRunning() {
 			return "", true
 		}
-	case dayVoteGameCommandName:
+	case names.DayVoteGameCommandName:
 		switch gameState {
 		case game.DayState:
 			return "", true
 		default:
 			return "", true
 		}
-	case FinishGameCommandName:
+	case names.FinishGameCommandName:
 		if g.IsRunning() {
 			return "", true
 		}

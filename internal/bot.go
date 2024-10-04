@@ -51,7 +51,6 @@ type Bot struct {
 	// To save DiscordGo.ApplicationCommand's for closing deleting.
 	registeredCommands []*discordgo.ApplicationCommand
 	// To format messages.
-	//
 	// Implement of FmtInterface.
 	FMTer *botFMTPack.DiscordFMTer
 	// Databases

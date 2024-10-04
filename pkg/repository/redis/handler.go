@@ -2,7 +2,9 @@ package redis
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"github.com/https-whoyan/MafiaCore/game"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"reflect"
@@ -18,7 +20,8 @@ type redisDB struct {
 
 const (
 	initialGameTB      = "initialGames"
-	configVotingGameTB = "configVotingGameTB"
+	configVotingGameTB = "configVotingGame"
+	indicatorGameTable = "indicatorGames"
 )
 
 const (
@@ -176,6 +179,42 @@ func (r *redisDB) GetChannelStorage(ctx context.Context, guildID string, storage
 		return "", err
 	}
 	return cmd.Result()
+}
+
+// _____________
+// Rename Game
+// _____________
+
+func (r *redisDB) SaveGameIndicator(ctx context.Context, indicator string, g game.DeepCloneGame) error {
+	pipe := r.db.TxPipeline()
+	raw, err := g.MarshalJSON()
+	if err != nil {
+		return err
+	}
+	pipe.HSet(ctx, indicatorGameTable, indicator, raw)
+	_, err = pipe.Exec(ctx)
+	return err
+}
+
+func (r *redisDB) GetGameByIndicator(ctx context.Context, indicator string) (out game.DeepCloneGame, err error) {
+	pipe := r.db.TxPipeline()
+	cmd := pipe.HGet(ctx, indicatorGameTable, indicator)
+	// Del HKey
+	pipe.HDel(ctx, indicatorGameTable, indicator)
+	_, err = pipe.Exec(ctx)
+	if err != nil {
+		return out, err
+	}
+	strRaw, err := cmd.Result()
+	if err != nil {
+		return out, err
+	}
+	var dst game.DeepCloneGame
+	err = json.Unmarshal([]byte(strRaw), &dst)
+	if err != nil {
+		return out, err
+	}
+	return dst, nil
 }
 
 // Close

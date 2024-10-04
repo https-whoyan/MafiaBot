@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"github.com/https-whoyan/MafiaBot/internal/handlers/names"
 	"log"
 	"strings"
 
@@ -22,20 +23,6 @@ import (
 // This contains all bot commands.
 //********************************
 // _________________________________
-
-const (
-	addChannelRoleCommandName   = "add_channel_role"
-	addMainChannelCommandName   = "add_main_channel"
-	RegisterGameCommandName     = "register_game"
-	choiceGameConfigCommandName = "choose_game_config"
-	yanLohCommandName           = "yan_loh"
-	aboutRolesCommandName       = "about_roles"
-	startGameCommandName        = "start_game"
-	voteGameCommandName         = "vote"
-	twoVoteGameCommandName      = "two_vote"
-	dayVoteGameCommandName      = "day_vote"
-	FinishGameCommandName       = "finish_game"
-)
 
 // _______________________
 // Channels
@@ -106,11 +93,11 @@ func NewAddChannelRoleCommand(s *discordgo.Session, storage mongo.Storage) Comma
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        addChannelRoleCommandName,
+				Name:        names.AddChannelRoleCommandName,
 				Description: "Define a chat room where the interaction between the bot and the role will take place.",
 				Options:     generateOptions(),
 			},
-			addChannelRoleCommandName,
+			names.AddChannelRoleCommandName,
 			false,
 		),
 		storage: storage,
@@ -128,7 +115,7 @@ func NewAddMainChannelCommand(s *discordgo.Session, storage mongo.Storage) Comma
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        addMainChannelCommandName,
+				Name:        names.AddMainChannelCommandName,
 				Description: "Define a chat room where the interaction between the bot and all game participants.",
 				Options: []*discordgo.ApplicationCommandOption{
 					{
@@ -139,7 +126,7 @@ func NewAddMainChannelCommand(s *discordgo.Session, storage mongo.Storage) Comma
 					},
 				},
 			},
-			addMainChannelCommandName,
+			names.AddMainChannelCommandName,
 			false,
 		),
 		storage: storage,
@@ -161,10 +148,10 @@ func NewRegisterGameCommand(s *discordgo.Session, db *pkg.Database) Command {
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        RegisterGameCommandName,
+				Name:        names.RegisterGameCommandName,
 				Description: "Register new Game",
 			},
-			RegisterGameCommandName,
+			names.RegisterGameCommandName,
 			false,
 		),
 		db: db,
@@ -180,10 +167,10 @@ func NewFinishGameCommand(s *discordgo.Session) Command {
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        FinishGameCommandName,
+				Name:        names.FinishGameCommandName,
 				Description: "Ends the game early.",
 			},
-			FinishGameCommandName,
+			names.FinishGameCommandName,
 			true,
 		),
 	}
@@ -200,10 +187,10 @@ func NewChoiceGameConfigCommand(s *discordgo.Session, hasher redis.Hasher) Comma
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        choiceGameConfigCommandName,
+				Name:        names.ChoiceGameConfigCommandName,
 				Description: "This output a list of game configs for voting.",
 			},
-			choiceGameConfigCommandName,
+			names.ChoiceGameConfigCommandName,
 			true,
 		),
 		hasher: hasher,
@@ -220,10 +207,10 @@ func NewStartGameCommand(s *discordgo.Session, hasher redis.Hasher) Command {
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        startGameCommandName,
+				Name:        names.StartGameCommandName,
 				Description: "Init game after game config choosing",
 			},
-			startGameCommandName,
+			names.StartGameCommandName,
 			true,
 		),
 		hasher: hasher,
@@ -244,7 +231,7 @@ func NewGameVoteCommand(s *discordgo.Session) Command {
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        voteGameCommandName,
+				Name:        names.VoteGameCommandName,
 				Description: description,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
@@ -255,7 +242,7 @@ func NewGameVoteCommand(s *discordgo.Session) Command {
 					},
 				},
 			},
-			voteGameCommandName,
+			names.VoteGameCommandName,
 			true,
 		),
 	}
@@ -271,7 +258,7 @@ func NewGameTwoVoteCommand(s *discordgo.Session) Command {
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        twoVoteGameCommandName,
+				Name:        names.TwoVoteGameCommandName,
 				Description: description,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
@@ -288,7 +275,7 @@ func NewGameTwoVoteCommand(s *discordgo.Session) Command {
 					},
 				},
 			},
-			twoVoteGameCommandName,
+			names.TwoVoteGameCommandName,
 			true,
 		),
 	}
@@ -304,7 +291,7 @@ func NewDayVoteCommand(s *discordgo.Session) Command {
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        dayVoteGameCommandName,
+				Name:        names.DayVoteGameCommandName,
 				Description: description,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
@@ -315,7 +302,7 @@ func NewDayVoteCommand(s *discordgo.Session) Command {
 					},
 				},
 			},
-			dayVoteGameCommandName,
+			names.DayVoteGameCommandName,
 			true,
 		),
 	}
@@ -335,10 +322,10 @@ func NewYanLohCommand(s *discordgo.Session) Command {
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        yanLohCommandName,
+				Name:        names.YanLohCommandName,
 				Description: "Call Yan with this command!",
 			},
-			yanLohCommandName,
+			names.YanLohCommandName,
 			false,
 		),
 	}
@@ -354,10 +341,10 @@ func NewAboutRolesCommand(s *discordgo.Session) Command {
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        aboutRolesCommandName,
+				Name:        names.AboutRolesCommandName,
 				Description: "Send description about roles",
 			},
-			aboutRolesCommandName,
+			names.AboutRolesCommandName,
 			false,
 		),
 	}

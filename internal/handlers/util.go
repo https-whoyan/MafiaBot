@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"github.com/https-whoyan/MafiaBot/internal/handlers/names"
 	"github.com/samber/lo"
 	"log"
 	"strings"
@@ -87,7 +88,7 @@ func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate, fMT
 // NoticeIsEmptyGame If game not exists
 func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate, fMTer *botFMT.DiscordFMTer) {
 	content := "You can't interact with the game because you haven't registered it" + fMTer.NL() +
-		fMTer.Bold("Write the /"+fMTer.Underline(RegisterGameCommandName)+" command") + " to start the game."
+		fMTer.Bold("Write the /"+fMTer.Underline(names.RegisterGameCommandName)+" command") + " to start the game."
 	Response(s, i.Interaction, content)
 }
 
@@ -209,7 +210,7 @@ func (c basicCmd) voteTypeValidator(i *discordgo.Interaction, g *coreGamePack.Ga
 	gameState := g.GetState()
 	votesCountNeed := getVotesCountRequired(g)
 	if gameState == coreGamePack.DayState {
-		if c.GetName() != dayVoteGameCommandName {
+		if c.GetName() != names.DayVoteGameCommandName {
 			c.response(i, invalidUsageOfCommand)
 			return false
 		}
@@ -220,12 +221,12 @@ func (c basicCmd) voteTypeValidator(i *discordgo.Interaction, g *coreGamePack.Ga
 		return false
 	}
 	switch c.GetName() {
-	case voteGameCommandName:
+	case names.VoteGameCommandName:
 		if votesCountNeed == 2 {
 			c.response(i, invalidUsageOfCommand)
 			return false
 		}
-	case twoVoteGameCommandName:
+	case names.TwoVoteGameCommandName:
 		if votesCountNeed == 1 {
 			c.response(i, invalidUsageOfCommand)
 			return false

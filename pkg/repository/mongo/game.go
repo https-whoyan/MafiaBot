@@ -64,3 +64,21 @@ func (s *mongoDB) SaveFinishLog(ctx context.Context, g game.DeepCloneGame, l gam
 	_, err = coll.UpdateOne(ctx, filter, updatePush)
 	return err
 }
+
+func (s *mongoDB) NameAGame(ctx context.Context, g game.DeepCloneGame, gameName string) error {
+	coll, err := s.getColl(dbName, gameStorageCollection)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{
+		"guildID":    g.GuildID,
+		"time_start": g.TimeStart,
+	}
+	update := bson.D{{
+		"$set", bson.D{{
+			"name", gameName,
+		}},
+	}}
+	_, err = coll.UpdateOne(ctx, filter, update)
+	return err
+}
