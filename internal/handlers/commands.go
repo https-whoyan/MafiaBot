@@ -3,15 +3,15 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"github.com/https-whoyan/MafiaBot/internal/handlers/names"
 	"log"
+	"os"
 	"strings"
+	"sync"
 
 	"github.com/https-whoyan/MafiaBot/pkg"
-	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
-	"github.com/https-whoyan/MafiaBot/pkg/repository/redis"
 
 	fmtErPack "github.com/https-whoyan/MafiaBot/internal/fmt"
+	namesPack "github.com/https-whoyan/MafiaBot/internal/handlers/names"
 	coreGamePack "github.com/https-whoyan/MafiaCore/game"
 	coreRolesPack "github.com/https-whoyan/MafiaCore/roles"
 
@@ -28,21 +28,47 @@ import (
 // Channels
 // _______________________
 
+var (
+	loadLoggersOnce  = &sync.Once{}
+	basicInfoLogger  = log.New(os.Stdout, "Info\t", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+	basicErrorLogger = log.New(os.Stdout, "Error\t", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+)
+
+func LoadLoggers(infoLogger, errLogger *log.Logger) {
+	loadLoggersOnce.Do(func() {
+		basicInfoLogger = infoLogger
+		basicErrorLogger = errLogger
+	})
+}
+
 type basicCmd struct {
 	s             *discordgo.Session
 	f             *fmtErPack.DiscordFMTer
 	cmd           *discordgo.ApplicationCommand
+	db            *pkg.Database
 	isUsedForGame bool
 	name          string
+	infoLogger    *log.Logger
+	errLogger     *log.Logger
 }
 
-func newBasicCmd(s *discordgo.Session, cmd *discordgo.ApplicationCommand, name string, isUsedForGame bool) basicCmd {
+func newBasicCmd(s *discordgo.Session, cmd *discordgo.ApplicationCommand, db *pkg.Database, name string, isUsedForGame bool) basicCmd {
 	return basicCmd{
 		s:             s,
 		f:             fmtErPack.DiscordFMTInstance,
 		cmd:           cmd,
 		name:          name,
 		isUsedForGame: isUsedForGame,
+		infoLogger: log.New(
+			basicInfoLogger.Writer(),
+			basicInfoLogger.Prefix()+"CommandName: "+name+"\t",
+			basicInfoLogger.Flags(),
+		),
+		errLogger: log.New(
+			basicErrorLogger.Writer(),
+			basicErrorLogger.Prefix()+"CommandName: "+name+"\t",
+			basicErrorLogger.Flags(),
+		),
 	}
 }
 
@@ -53,6 +79,25 @@ func (c basicCmd) Execute(_ context.Context, _ *discordgo.Interaction, _ *coreGa
 	panic("implement me")
 }
 
+func (c basicCmd) log(i *discordgo.Interaction, g *coreGamePack.Game) {
+	var (
+		gameState       = "nil"
+		gameNightVoting = "nil"
+	)
+	if g != nil {
+		gameState = g.GetState().String()
+		gameNightVoting = g.GetNightVoting().Name
+	}
+	message := fmt.Sprintf(
+		"Execute %v command in %v GuildID. GameState: %v, GameNightVoting: %v",
+		i.ApplicationCommandData().Name,
+		i.GuildID,
+		gameState,
+		gameNightVoting,
+	)
+	c.infoLogger.Println(message)
+}
+
 func (c basicCmd) response(i *discordgo.Interaction, content string) {
 	err := c.s.InteractionRespond(i, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -61,17 +106,16 @@ func (c basicCmd) response(i *discordgo.Interaction, content string) {
 		},
 	})
 	if err != nil {
-		log.Print(err)
+		c.errLogger.Print("Error send response: ", err)
 	}
 }
 
 // addChannelRoleCommand command logic
 type addChannelRoleCommand struct {
 	basicCmd
-	storage mongo.Storage
 }
 
-func NewAddChannelRoleCommand(s *discordgo.Session, storage mongo.Storage) Command {
+func NewAddChannelRoleCommand(s *discordgo.Session, db *pkg.Database) Command {
 	generateOption := func(roleName string) *discordgo.ApplicationCommandOption {
 		return &discordgo.ApplicationCommandOption{
 			Name:        roleName,
@@ -93,29 +137,28 @@ func NewAddChannelRoleCommand(s *discordgo.Session, storage mongo.Storage) Comma
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.AddChannelRoleCommandName,
+				Name:        namesPack.AddChannelRoleCommandName,
 				Description: "Define a chat room where the interaction between the bot and the role will take place.",
 				Options:     generateOptions(),
 			},
-			names.AddChannelRoleCommandName,
+			db,
+			namesPack.AddChannelRoleCommandName,
 			false,
 		),
-		storage: storage,
 	}
 }
 
 // addMainChannelCommand command logic
 type addMainChannelCommand struct {
 	basicCmd
-	storage mongo.Storage
 }
 
-func NewAddMainChannelCommand(s *discordgo.Session, storage mongo.Storage) Command {
+func NewAddMainChannelCommand(s *discordgo.Session, db *pkg.Database) Command {
 	return &addMainChannelCommand{
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.AddMainChannelCommandName,
+				Name:        namesPack.AddMainChannelCommandName,
 				Description: "Define a chat room where the interaction between the bot and all game participants.",
 				Options: []*discordgo.ApplicationCommandOption{
 					{
@@ -126,10 +169,10 @@ func NewAddMainChannelCommand(s *discordgo.Session, storage mongo.Storage) Comma
 					},
 				},
 			},
-			names.AddMainChannelCommandName,
+			db,
+			namesPack.AddMainChannelCommandName,
 			false,
 		),
-		storage: storage,
 	}
 }
 
@@ -140,7 +183,6 @@ func NewAddMainChannelCommand(s *discordgo.Session, storage mongo.Storage) Comma
 // registerGameCommand command logic
 type registerGameCommand struct {
 	basicCmd
-	db *pkg.Database
 }
 
 func NewRegisterGameCommand(s *discordgo.Session, db *pkg.Database) Command {
@@ -148,13 +190,13 @@ func NewRegisterGameCommand(s *discordgo.Session, db *pkg.Database) Command {
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.RegisterGameCommandName,
+				Name:        namesPack.RegisterGameCommandName,
 				Description: "Register new Game",
 			},
-			names.RegisterGameCommandName,
+			db,
+			namesPack.RegisterGameCommandName,
 			false,
 		),
-		db: db,
 	}
 }
 
@@ -162,15 +204,16 @@ type finishGameCommand struct {
 	basicCmd
 }
 
-func NewFinishGameCommand(s *discordgo.Session) Command {
+func NewFinishGameCommand(s *discordgo.Session, db *pkg.Database) Command {
 	return &finishGameCommand{
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.FinishGameCommandName,
+				Name:        namesPack.FinishGameCommandName,
 				Description: "Ends the game early.",
 			},
-			names.FinishGameCommandName,
+			db,
+			namesPack.FinishGameCommandName,
 			true,
 		),
 	}
@@ -179,41 +222,39 @@ func NewFinishGameCommand(s *discordgo.Session) Command {
 // choiceGameConfigCommand command logic
 type choiceGameConfigCommand struct {
 	basicCmd
-	hasher redis.Hasher
 }
 
-func NewChoiceGameConfigCommand(s *discordgo.Session, hasher redis.Hasher) Command {
+func NewChoiceGameConfigCommand(s *discordgo.Session, db *pkg.Database) Command {
 	return &choiceGameConfigCommand{
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.ChoiceGameConfigCommandName,
+				Name:        namesPack.ChoiceGameConfigCommandName,
 				Description: "This output a list of game configs for voting.",
 			},
-			names.ChoiceGameConfigCommandName,
+			db,
+			namesPack.ChoiceGameConfigCommandName,
 			true,
 		),
-		hasher: hasher,
 	}
 }
 
 type startGameCommand struct {
 	basicCmd
-	hasher redis.Hasher
 }
 
-func NewStartGameCommand(s *discordgo.Session, hasher redis.Hasher) Command {
+func NewStartGameCommand(s *discordgo.Session, db *pkg.Database) Command {
 	return &startGameCommand{
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.StartGameCommandName,
+				Name:        namesPack.StartGameCommandName,
 				Description: "Init game after game config choosing",
 			},
-			names.StartGameCommandName,
+			db,
+			namesPack.StartGameCommandName,
 			true,
 		),
-		hasher: hasher,
 	}
 }
 
@@ -225,13 +266,13 @@ type gameVoteCommand struct {
 	basicCmd
 }
 
-func NewGameVoteCommand(s *discordgo.Session) Command {
+func NewGameVoteCommand(s *discordgo.Session, db *pkg.Database) Command {
 	description := "The command used for voting. Put " + coreGamePack.EmptyVoteStr + " for empty vote."
 	return &gameVoteCommand{
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.VoteGameCommandName,
+				Name:        namesPack.VoteGameCommandName,
 				Description: description,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
@@ -242,7 +283,8 @@ func NewGameVoteCommand(s *discordgo.Session) Command {
 					},
 				},
 			},
-			names.VoteGameCommandName,
+			db,
+			namesPack.VoteGameCommandName,
 			true,
 		),
 	}
@@ -252,13 +294,13 @@ type gameTwoVoteCommand struct {
 	basicCmd
 }
 
-func NewGameTwoVoteCommand(s *discordgo.Session) Command {
+func NewGameTwoVoteCommand(s *discordgo.Session, db *pkg.Database) Command {
 	description := "The command used for voting, but only for roles that use 2 voices at once."
 	return &gameTwoVoteCommand{
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.TwoVoteGameCommandName,
+				Name:        namesPack.TwoVoteGameCommandName,
 				Description: description,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
@@ -275,7 +317,8 @@ func NewGameTwoVoteCommand(s *discordgo.Session) Command {
 					},
 				},
 			},
-			names.TwoVoteGameCommandName,
+			db,
+			namesPack.TwoVoteGameCommandName,
 			true,
 		),
 	}
@@ -285,13 +328,13 @@ type dayVoteCommand struct {
 	basicCmd
 }
 
-func NewDayVoteCommand(s *discordgo.Session) Command {
+func NewDayVoteCommand(s *discordgo.Session, db *pkg.Database) Command {
 	description := "The command used for day voting, use " + coreGamePack.EmptyVoteStr + " for skip."
 	return &dayVoteCommand{
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.DayVoteGameCommandName,
+				Name:        namesPack.DayVoteGameCommandName,
 				Description: description,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
@@ -302,7 +345,8 @@ func NewDayVoteCommand(s *discordgo.Session) Command {
 					},
 				},
 			},
-			names.DayVoteGameCommandName,
+			db,
+			namesPack.DayVoteGameCommandName,
 			true,
 		),
 	}
@@ -317,15 +361,16 @@ type yanLohCommand struct {
 	basicCmd
 }
 
-func NewYanLohCommand(s *discordgo.Session) Command {
+func NewYanLohCommand(s *discordgo.Session, db *pkg.Database) Command {
 	return &yanLohCommand{
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.YanLohCommandName,
+				Name:        namesPack.YanLohCommandName,
 				Description: "Call Yan with this command!",
 			},
-			names.YanLohCommandName,
+			db,
+			namesPack.YanLohCommandName,
 			false,
 		),
 	}
@@ -336,15 +381,16 @@ type aboutRolesCommand struct {
 	basicCmd
 }
 
-func NewAboutRolesCommand(s *discordgo.Session) Command {
+func NewAboutRolesCommand(s *discordgo.Session, db *pkg.Database) Command {
 	return &aboutRolesCommand{
 		basicCmd: newBasicCmd(
 			s,
 			&discordgo.ApplicationCommand{
-				Name:        names.AboutRolesCommandName,
+				Name:        namesPack.AboutRolesCommandName,
 				Description: "Send description about roles",
 			},
-			names.AboutRolesCommandName,
+			db,
+			namesPack.AboutRolesCommandName,
 			false,
 		),
 	}

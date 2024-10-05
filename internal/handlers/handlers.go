@@ -13,6 +13,7 @@ import (
 	botCnvPack "github.com/https-whoyan/MafiaBot/internal/converter"
 	botFMTPack "github.com/https-whoyan/MafiaBot/internal/fmt"
 	botGameCfgPack "github.com/https-whoyan/MafiaBot/internal/game"
+	namesPack "github.com/https-whoyan/MafiaBot/internal/handlers/names"
 	botMsgPack "github.com/https-whoyan/MafiaBot/internal/message"
 	botTimeConstsPack "github.com/https-whoyan/MafiaBot/internal/time"
 	coreConfigPack "github.com/https-whoyan/MafiaCore/config"
@@ -36,10 +37,11 @@ import (
 // __________________
 
 const (
-	InternalServerErrorMessage = "Internal Server error!"
+	internalServerErrorMessage = "Internal Server error!"
 )
 
 func (c addChannelRoleCommand) Execute(ctx context.Context, i *discordgo.Interaction, _ *coreGamePack.Game) {
+	c.log(i, nil)
 	if len(i.ApplicationCommandData().Options) == 0 {
 		content := "Must be option!"
 		c.response(i, content)
@@ -50,7 +52,7 @@ func (c addChannelRoleCommand) Execute(ctx context.Context, i *discordgo.Interac
 	roleName := i.ApplicationCommandData().Options[0].Name
 	requestedChatID := i.ApplicationCommandData().Options[0].Value.(string)
 
-	isFreeChatID, _ := c.storage.IsFreeChannelIID(ctx, i.GuildID, requestedChatID)
+	isFreeChatID, _ := c.db.Storage.IsFreeChannelIID(ctx, i.GuildID, requestedChatID)
 	if !isFreeChatID {
 		content := c.f.B("Provided channel is already used.") + c.f.NL() + "Please, provide another, available chatID."
 		c.response(i, content)
@@ -63,7 +65,7 @@ func (c addChannelRoleCommand) Execute(ctx context.Context, i *discordgo.Interac
 		return
 	}
 
-	err := c.storage.SetRoleChannel(ctx, i.GuildID, requestedChatID, roleName)
+	err := c.db.Storage.SetRoleChannel(ctx, i.GuildID, requestedChatID, roleName)
 	if err != nil {
 		content := "Internal Server Error!"
 		c.response(i, content)
@@ -83,6 +85,7 @@ func (c addChannelRoleCommand) Execute(ctx context.Context, i *discordgo.Interac
 }
 
 func (c addMainChannelCommand) Execute(ctx context.Context, i *discordgo.Interaction, _ *coreGamePack.Game) {
+	c.log(i, nil)
 	if len(i.ApplicationCommandData().Options) == 0 {
 		content := "Must be option!"
 		c.response(i, content)
@@ -91,7 +94,7 @@ func (c addMainChannelCommand) Execute(ctx context.Context, i *discordgo.Interac
 
 	// Get variables by options
 	newChatID := i.ApplicationCommandData().Options[0].Value.(string)
-	isFreeChatID, _ := c.storage.IsFreeChannelIID(ctx, i.GuildID, newChatID)
+	isFreeChatID, _ := c.db.Storage.IsFreeChannelIID(ctx, i.GuildID, newChatID)
 	if !isFreeChatID {
 		content := c.f.B("Provided channel is already used.") + c.f.NL() + "Please, provide another, available chatID."
 		c.response(i, content)
@@ -104,7 +107,7 @@ func (c addMainChannelCommand) Execute(ctx context.Context, i *discordgo.Interac
 		return
 	}
 
-	err := c.storage.SetMainChannel(ctx, i.GuildID, newChatID)
+	err := c.db.Storage.SetMainChannel(ctx, i.GuildID, newChatID)
 	if err != nil {
 		content := "Internal Server Error! Main Chat not add"
 		c.response(i, content)
@@ -137,7 +140,7 @@ func (c registerGameCommand) trySetChannels(ctx context.Context, i *discordgo.In
 	var content string
 	if len(emptyRoles) != 0 {
 		content += "You don't configure all channels for bot interaction. " +
-			"Please, use " + c.f.BU(addChannelRoleCommandName) + " to fix " + strings.Join(emptyRoles, ", ") +
+			"Please, use " + c.f.BU(namesPack.AddChannelRoleCommandName) + " to fix " + strings.Join(emptyRoles, ", ") +
 			" roles."
 	}
 
@@ -149,7 +152,7 @@ func (c registerGameCommand) trySetChannels(ctx context.Context, i *discordgo.In
 		content += c.f.B("You don't configure main channel for bot interaction.") + c.f.NL() +
 			c.f.I("All messages regarding the game will be sent there.") + c.f.NL() +
 			"To add a main chat channel for interaction, use the command " +
-			c.f.BU(addMainChannelCommandName)
+			c.f.BU(namesPack.AddMainChannelCommandName)
 	}
 	c.setMainChannel(ctx, i.GuildID, g)
 	if len(content) == 0 {
@@ -160,6 +163,7 @@ func (c registerGameCommand) trySetChannels(ctx context.Context, i *discordgo.In
 }
 
 func (c registerGameCommand) Execute(ctx context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
+	c.log(i, g)
 	// Validation
 	if !c.trySetChannels(ctx, i, g) {
 		return
@@ -197,10 +201,11 @@ func (c finishGameCommand) Execute(_ context.Context, i *discordgo.Interaction, 
 }
 
 func (c choiceGameConfigCommand) Execute(ctx context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
-	registrationMessageID, err := c.hasher.GetInitialGameMessageID(ctx, i.GuildID)
+	c.log(i, g)
+	registrationMessageID, err := c.db.Hasher.GetInitialGameMessageID(ctx, i.GuildID)
 	if (err != nil || registrationMessageID == "") && g.GetState() == coreGamePack.RegisterState {
 		messageContent := c.f.U("Registration Deadline passed!") + c.f.NL() + "Please, " +
-			c.f.B("use the /"+RegisterGameCommandName+" command") + " to register a new game."
+			c.f.B("use the /"+namesPack.RegisterGameCommandName+" command") + " to register a new game."
 		g.SetState(coreGamePack.NonDefinedState)
 		c.response(i, messageContent)
 		return
@@ -209,7 +214,7 @@ func (c choiceGameConfigCommand) Execute(ctx context.Context, i *discordgo.Inter
 	// If playersCount not in range [minAvailableCount, maxAvailableCount],
 	// Send message that it's impossible to choice config.
 	registrationStickerUnicode := botFMTPack.RegistrationPlayerSticker
-	initialMessageChannelIID, err := c.hasher.GetChannelStorage(ctx, i.GuildID, redis.SetInitialGameStorage)
+	initialMessageChannelIID, err := c.db.Hasher.GetChannelStorage(ctx, i.GuildID, redis.SetInitialGameStorage)
 	if err != nil || initialMessageChannelIID == "" {
 		content := "Internal Server Error!"
 		c.response(i, content)
@@ -268,7 +273,7 @@ func (c choiceGameConfigCommand) Execute(ctx context.Context, i *discordgo.Inter
 		mpMessages, _ := sendMessages(c.s, i.ChannelID, messageContent)
 		cfgMessages.AddNewMessage(index, mpMessages[messageContent].ID)
 	}
-	err = c.hasher.SetConfigGameVotingMessages(ctx, cfgMessages, botTimeConstsPack.VotingGameConfigDeadlineSeconds*time.Second)
+	err = c.db.Hasher.SetConfigGameVotingMessages(ctx, cfgMessages, botTimeConstsPack.VotingGameConfigDeadlineSeconds*time.Second)
 	if err != nil {
 		log.Println(err)
 	}
@@ -277,9 +282,10 @@ func (c choiceGameConfigCommand) Execute(ctx context.Context, i *discordgo.Inter
 }
 
 func (c startGameCommand) Execute(ctx context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
-	cfgMessages, err := c.hasher.GetConfigGameVotingMessageID(ctx, i.GuildID)
+	c.log(i, g)
+	cfgMessages, err := c.db.Hasher.GetConfigGameVotingMessageID(ctx, i.GuildID)
 	if err != nil {
-		c.response(i, InternalServerErrorMessage)
+		c.response(i, internalServerErrorMessage)
 		return
 	}
 
@@ -299,7 +305,7 @@ func (c startGameCommand) Execute(ctx context.Context, i *discordgo.Interaction,
 			func(u *discordgo.User) string { return u.ID })
 
 		if internalErr != nil {
-			c.response(i, InternalServerErrorMessage)
+			c.response(i, internalServerErrorMessage)
 			return
 		}
 		// Set It.
@@ -321,14 +327,20 @@ func (c startGameCommand) Execute(ctx context.Context, i *discordgo.Interaction,
 		return
 	}
 	for _, player := range g.GetActivePlayers() {
-		err = SendToUser(c.s, player.Tag, coreMessagePack.GetStartPlayerDefinition(player, c.f))
+		err = sendToUser(c.s, player.Tag, coreMessagePack.GetStartPlayerDefinition(player, c.f))
 		if err != nil {
 			log.Println(err)
 		}
 	}
 	log.Printf("Init Game in %v Guild", i.GuildID)
-	gameCh := g.Run(context.Background())
-	ProcessGameChan(g, c.f, gameCh)
+	errChannel, infoChannel := g.Run(ctx)
+	// Create new processor
+	processor := newGameProcessor(
+		g, c.db, c.s,
+		errChannel, infoChannel,
+		c.errLogger, c.infoLogger,
+	)
+	go processor.process(ctx)
 }
 
 // _______________
@@ -336,6 +348,7 @@ func (c startGameCommand) Execute(ctx context.Context, i *discordgo.Interaction,
 // _______________
 
 func (c gameVoteCommand) Execute(_ context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
+	c.log(i, g)
 	if ok := c.voteTypeValidator(i, g); !ok {
 		return
 	}
@@ -398,6 +411,7 @@ func (c gameVoteCommand) Execute(_ context.Context, i *discordgo.Interaction, g 
 }
 
 func (c gameTwoVoteCommand) Execute(_ context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
+	c.log(i, g)
 	if ok := c.voteTypeValidator(i, g); !ok {
 		return
 	}
@@ -456,7 +470,7 @@ func (c gameTwoVoteCommand) Execute(_ context.Context, i *discordgo.Interaction,
 }
 
 func (c dayVoteCommand) Execute(_ context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
-	g.SwitchState()
+	c.log(i, g)
 	if ok := c.voteTypeValidator(i, g); !ok {
 		return
 	}
@@ -512,6 +526,7 @@ func (c dayVoteCommand) Execute(_ context.Context, i *discordgo.Interaction, g *
 // _____________
 
 func (c yanLohCommand) Execute(_ context.Context, i *discordgo.Interaction, _ *coreGamePack.Game) {
+	c.log(i, nil)
 	messageContent := "Не, лол, что бы его же ботом его обзывать..."
 	c.response(i, messageContent)
 
@@ -532,7 +547,8 @@ func (c yanLohCommand) Execute(_ context.Context, i *discordgo.Interaction, _ *c
 	wg.Wait()
 }
 
-func (c aboutRolesCommand) Execute(context context.Context, i *discordgo.Interaction, _ *coreGamePack.Game) {
+func (c aboutRolesCommand) Execute(_ context.Context, i *discordgo.Interaction, _ *coreGamePack.Game) {
+	c.log(i, nil)
 	messageContent := c.f.Bold("Below information about all roles:") + c.f.NL()
 	c.response(i, messageContent)
 

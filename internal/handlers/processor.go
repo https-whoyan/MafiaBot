@@ -1,52 +1,103 @@
 package handlers
 
 import (
-	bot "github.com/https-whoyan/MafiaBot/internal"
-	"github.com/https-whoyan/MafiaBot/internal/fmt"
-	"github.com/https-whoyan/MafiaCore/game"
+	"context"
+	"fmt"
 	"log"
-	"time"
+
+	myFMTer "github.com/https-whoyan/MafiaBot/internal/fmt"
+	"github.com/https-whoyan/MafiaBot/internal/handlers/names"
+	myTime "github.com/https-whoyan/MafiaBot/internal/time"
+	"github.com/https-whoyan/MafiaBot/internal/util"
+	"github.com/https-whoyan/MafiaBot/pkg"
+	"github.com/https-whoyan/MafiaCore/game"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 type gameProcessor struct {
-	g  *game.Game
-	b  *bot.Bot
-	ch <-chan game.Signal
+	g          *game.Game
+	db         *pkg.Database
+	f          *myFMTer.DiscordFMTer
+	s          *discordgo.Session
+	errCh      <-chan game.ErrSignal
+	infoCh     <-chan game.InfoSignal
+	errLogger  *log.Logger
+	infoLogger *log.Logger
 }
 
-func newGameProcessor(g *game.Game, b *bot.Bot) *gameProcessor {
-
+func newGameProcessor(
+	g *game.Game, db *pkg.Database, s *discordgo.Session,
+	errCh <-chan game.ErrSignal, infoCh <-chan game.InfoSignal,
+	errLogger *log.Logger, infoLogger *log.Logger,
+) *gameProcessor {
+	return &gameProcessor{
+		g:      g,
+		db:     db,
+		f:      myFMTer.DiscordFMTInstance,
+		s:      s,
+		errCh:  errCh,
+		infoCh: infoCh,
+		errLogger: log.New(
+			errLogger.Writer(),
+			errLogger.Prefix()+"gameProcessor; GuildID "+g.GuildID(),
+			errLogger.Flags(),
+		),
+		infoLogger: log.New(
+			infoLogger.Writer(),
+			infoLogger.Prefix()+"gameProcessor; GuildID "+g.GuildID(),
+			infoLogger.Flags(),
+		),
+	}
 }
 
-// ProcessGameChan Used to process chan, and send addition info, about, what command need to send to the chat.
-func ProcessGameChan(g *game.Game, f *fmt.DiscordFMTer, signalChannel <-chan game.Signal) {
-	for signal := range signalChannel {
-		log.Println(signal)
-		switch signal.GetSignalType() {
-
-		case game.ErrorSignalType:
-			log.Println(signal.(game.ErrSignal).Err)
-
-		case game.SwitchStateSignalType:
-
-			switchSignal := signal.(game.SwitchStateSignal)
-			log.Println("Switch State", switchSignal.Value)
-
-			if switchSignal.SwitchSignalType == game.SwitchStateSwitchStateType {
-
-				currentGameState := switchSignal.Value.(game.SwitchStateValue).CurrentState
-				if currentGameState == game.DayState {
-					// Timing for game send messages. Then, send message about command.\
-					time.Sleep(time.Millisecond * 500)
-					var message string
-					message += "Use " + f.BU("/vote") + " command to leave a vote" + f.NL()
-					message = "To vote for skipping, " + f.B("use -1")
-
-					_, _ = g.GetMainChannel().Write([]byte(message))
+func (p *gameProcessor) process(ctx context.Context) {
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				break
+			case err := <-p.errCh:
+				p.errLogger.Printf("time: %v, error: %v", err.InitialTime, err.Err)
+			case info := <-p.infoCh:
+				p.infoLogger.Printf("got signal. time: %v, info: %v", info.InitialTime, info.InfoSignalType)
+				if info.InfoSignalType != game.FinishGameSignal {
+					return
 				}
-			} else {
-				log.Println(switchSignal.Value.(game.SwitchNightVoteRoleSwitchValue).CurrentVotedRole)
+				p.offerRenameGame(ctx)
+				return
 			}
 		}
+	}(ctx)
+}
+
+func (p *gameProcessor) formatMessage(temporaryId string) string {
+	return fmt.Sprintf("If you want to name a previous game, please and use " +
+		"the " + names.RenameGameCommandName + " command and specify the " +
+		p.f.Bl(temporaryId) + " identifier",
+	)
+}
+
+// offerRenameGame
+// This feature is needed to prompt users to reinitialize the game after completion
+// Temporary game index generated in this function.
+func (p *gameProcessor) offerRenameGame(ctx context.Context) {
+	nameOfGame := p.g.GetStartTime().Format(myTime.BotTimeFormat)
+	simplifyGame := game.DeepCloneGame{
+		GuildID:   p.g.GuildID(),
+		TimeStart: p.g.GetStartTime(),
+	}
+	_ = p.db.Storage.NameAGame(ctx, simplifyGame, nameOfGame)
+
+	temporaryId := util.ToStr(util.GetRandomNumber())
+	// Save to redis
+	err := p.db.Hasher.SaveGameIndicator(ctx, temporaryId, simplifyGame)
+	if err != nil {
+		p.errLogger.Printf("could not save game: %v", err)
+		return
+	}
+	_, err = sendMessages(p.s, p.g.GetMainChannel().GetServerID())
+	if err != nil {
+		p.errLogger.Printf("sendMessages: %v", err)
 	}
 }

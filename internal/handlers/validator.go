@@ -3,17 +3,17 @@ package handlers
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/https-whoyan/MafiaBot/internal/fmt"
-	botGamePack "github.com/https-whoyan/MafiaBot/internal/game"
 	"github.com/https-whoyan/MafiaBot/internal/handlers/names"
-	userPack "github.com/https-whoyan/MafiaBot/internal/user"
 	"github.com/https-whoyan/MafiaBot/pkg"
 	"github.com/https-whoyan/MafiaCore/game"
 )
 
 // ValidateCommandByGameState validate, is correct command name by current game State.
-func ValidateCommandByGameState(s *discordgo.Session,
-	commandName string, g *game.Game, fmtEr *fmt.DiscordFMTer, databases *pkg.Database) (
-	content string, isOk bool) {
+func ValidateCommandByGameState(
+	s *discordgo.Session, databases *pkg.Database,
+	g *game.Game,
+	commandName string, fmtEr *fmt.DiscordFMTer,
+) (content string, isOk bool) {
 	gameState := g.GetState()
 
 	gameIn := "Game " + g.GetState().String() + "."
@@ -26,9 +26,6 @@ func ValidateCommandByGameState(s *discordgo.Session,
 		case game.NonDefinedState:
 			return "", true
 		case game.FinishState:
-			userRenameProvider := userPack.NewBotUserRenameProvider(s, g.GuildID())
-			*g = *game.GetNewGame(g.GuildID(), botGamePack.GetNewGameConfig(
-				userRenameProvider, databases.Storage)...)
 			return "", true
 		default:
 			break

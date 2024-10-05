@@ -44,8 +44,10 @@ func (g gracefulShutdown[T]) listen(ctx context.Context) {
 }
 
 type App struct {
-	Bot       *bot.Bot
-	Databases *pkg.Database
+	Bot         *bot.Bot
+	InfoLogger  *log.Logger
+	ErrorLogger *log.Logger
+	Databases   *pkg.Database
 }
 
 func InitApp(ctx context.Context, cfg *config.Config) (*App, error) {
@@ -58,7 +60,10 @@ func InitApp(ctx context.Context, cfg *config.Config) (*App, error) {
 		return nil, err
 	}
 	databases := pkg.NewDatabase(mongoStorage, redisStorage)
-	discordBot, err := bot.InitBot(ctx, cfg.BotConfig, databases)
+	discordBot, err := bot.InitBot(
+		ctx,
+		cfg.BotConfig, databases, cfg.ErrorLogger, cfg.InfoLogger,
+	)
 	if err != nil {
 		return nil, err
 	}

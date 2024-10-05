@@ -3,18 +3,18 @@ package handlers
 import (
 	"context"
 	"errors"
-	"github.com/https-whoyan/MafiaBot/internal/handlers/names"
-	"github.com/samber/lo"
 	"log"
 	"strings"
 
 	botChannelPack "github.com/https-whoyan/MafiaBot/internal/channel"
 	botFMT "github.com/https-whoyan/MafiaBot/internal/fmt"
+	namesPack "github.com/https-whoyan/MafiaBot/internal/handlers/names"
 	coreChannelPack "github.com/https-whoyan/MafiaCore/channel"
 	coreGamePack "github.com/https-whoyan/MafiaCore/game"
 	coreRolePack "github.com/https-whoyan/MafiaCore/roles"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/samber/lo"
 )
 
 func isCorrectChatID(s *discordgo.Session, chatID string) bool {
@@ -40,8 +40,8 @@ func sendMessages(s *discordgo.Session, chatID string, content ...string) (map[s
 	return messages, nil
 }
 
-// SendToUser Send to userID a message
-func SendToUser(s *discordgo.Session, userID string, msg string) error {
+// sendToUser Send to userID a message
+func sendToUser(s *discordgo.Session, userID string, msg string) error {
 	// Create a channelCreate
 	channelCreate, err := s.UserChannelCreate(userID)
 	if err != nil {
@@ -57,7 +57,7 @@ func SendToUser(s *discordgo.Session, userID string, msg string) error {
 
 // Response
 
-func Response(s *discordgo.Session, i *discordgo.Interaction, msg string) {
+func Response(s *discordgo.Session, i *discordgo.Interaction, msg string, errLogger *log.Logger) {
 	err := s.InteractionRespond(i, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
@@ -65,7 +65,7 @@ func Response(s *discordgo.Session, i *discordgo.Interaction, msg string) {
 		},
 	})
 	if err != nil {
-		log.Println(err)
+		errLogger.Println(err)
 	}
 }
 
@@ -78,18 +78,20 @@ func IsPrivateMessage(i *discordgo.InteractionCreate) bool {
 	return i.GuildID == ""
 }
 
-func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate, fMTer *botFMT.DiscordFMTer) {
+func NoticePrivateChat(s *discordgo.Session, i *discordgo.InteractionCreate,
+	fMTer *botFMT.DiscordFMTer, errorLogger *log.Logger) {
 	content := fMTer.Bold("All commands are used on the server.") + fMTer.NL() +
 		"If you have difficulties in using the bot, " +
 		"please refer to the repository documentation: https://github.com/https-whoyan/MafiaBot"
-	Response(s, i.Interaction, content)
+	Response(s, i.Interaction, content, errorLogger)
 }
 
 // NoticeIsEmptyGame If game not exists
-func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate, fMTer *botFMT.DiscordFMTer) {
+func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate,
+	fMTer *botFMT.DiscordFMTer, errorLogger *log.Logger) {
 	content := "You can't interact with the game because you haven't registered it" + fMTer.NL() +
-		fMTer.Bold("Write the /"+fMTer.Underline(names.RegisterGameCommandName)+" command") + " to start the game."
-	Response(s, i.Interaction, content)
+		fMTer.Bold("Write the /"+fMTer.Underline(namesPack.RegisterGameCommandName)+" command") + " to start the game."
+	Response(s, i.Interaction, content, errorLogger)
 }
 
 // __________________
@@ -210,7 +212,7 @@ func (c basicCmd) voteTypeValidator(i *discordgo.Interaction, g *coreGamePack.Ga
 	gameState := g.GetState()
 	votesCountNeed := getVotesCountRequired(g)
 	if gameState == coreGamePack.DayState {
-		if c.GetName() != names.DayVoteGameCommandName {
+		if c.GetName() != namesPack.DayVoteGameCommandName {
 			c.response(i, invalidUsageOfCommand)
 			return false
 		}
@@ -221,12 +223,12 @@ func (c basicCmd) voteTypeValidator(i *discordgo.Interaction, g *coreGamePack.Ga
 		return false
 	}
 	switch c.GetName() {
-	case names.VoteGameCommandName:
+	case namesPack.VoteGameCommandName:
 		if votesCountNeed == 2 {
 			c.response(i, invalidUsageOfCommand)
 			return false
 		}
-	case names.TwoVoteGameCommandName:
+	case namesPack.TwoVoteGameCommandName:
 		if votesCountNeed == 1 {
 			c.response(i, invalidUsageOfCommand)
 			return false

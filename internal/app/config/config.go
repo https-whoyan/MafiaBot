@@ -16,6 +16,8 @@ type Config struct {
 	MongoConfig *mongo.StorageConfig
 	RedisConfig *redis.HasherConfig
 	BotConfig   *bot.Config
+	InfoLogger  *log.Logger
+	ErrorLogger *log.Logger
 }
 
 var (
@@ -23,10 +25,11 @@ var (
 )
 
 func LoadConfig() *Config {
+	log.Println("Load config...")
 	var ansConfig *Config
 	configOnce.Do(func() {
 		loadDotEnv()
-
+		infoLogger, errLogger := initLoggers()
 		mongoDBConfig, err := mongo.LoadMongoDBConfig()
 		if err != nil {
 			log.Fatal(err)
@@ -40,18 +43,20 @@ func LoadConfig() *Config {
 			MongoConfig: mongoDBConfig,
 			RedisConfig: redisDBConfig,
 			BotConfig:   botConfig,
+			InfoLogger:  infoLogger,
+			ErrorLogger: errLogger,
 		}
+		ansConfig.infoAboutDiscordGo()
 	})
 	if ansConfig == nil {
 		log.Fatal("Config was been loaded before!")
 	}
-	log.Println("Load config...")
 	return ansConfig
 }
 
-func logAboutDiscordGo() {
-	log.Println("Discord-go version:", discordgo.VERSION)
-	log.Println("Discord-go API version:", discordgo.APIVersion)
+func (c *Config) infoAboutDiscordGo() {
+	c.InfoLogger.Println("Discord-go version:", discordgo.VERSION)
+	c.InfoLogger.Println("Discord-go API version:", discordgo.APIVersion)
 }
 
 func loadDotEnv() {
