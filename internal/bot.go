@@ -207,6 +207,7 @@ func (b *Bot) getSIHandler(ctx context.Context, cmd handlerPack.Command, cmdName
 			b.Games[i.GuildID] = newGame
 			b.Unlock()
 			cmd.Execute(ctx, i.Interaction, newGame)
+			return
 		}
 		// Validate the stage
 		content, ok := handlerPack.ValidateCommandByGameState(
@@ -265,7 +266,7 @@ func (b *Bot) deleteHandlers() {
 
 func (b *Bot) finishAllGames() {
 	for _, runningGame := range b.Games {
-		b.InfoLogger.Printf("Finish game %v", runningGame.GuildID)
+		b.InfoLogger.Printf("Finish game %v", runningGame.GuildID())
 		runningGame.FinishAnyway()
 	}
 }

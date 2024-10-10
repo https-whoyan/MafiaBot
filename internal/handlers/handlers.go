@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -130,7 +129,7 @@ func (c addMainChannelCommand) Execute(ctx context.Context, i *discordgo.Interac
 // _______________
 
 func (c registerGameCommand) trySetChannels(ctx context.Context, i *discordgo.Interaction, g *coreGamePack.Game) (correct bool) {
-	emptyRoles, err := c.setRolesChannels(ctx, i.GuildID, g)
+	emptyRoles, err := c.setRolesChannels(ctx, i.GuildID, g, c.s, c.f)
 	if err != nil {
 		content := "Internal Server Error"
 		c.response(i, content)
@@ -275,7 +274,7 @@ func (c choiceGameConfigCommand) Execute(ctx context.Context, i *discordgo.Inter
 	}
 	err = c.db.Hasher.SetConfigGameVotingMessages(ctx, cfgMessages, botTimeConstsPack.VotingGameConfigDeadlineSeconds*time.Second)
 	if err != nil {
-		log.Println(err)
+		c.errLogger.Println(err)
 	}
 
 	return
@@ -322,17 +321,17 @@ func (c startGameCommand) Execute(ctx context.Context, i *discordgo.Interaction,
 	err = g.Init(winnerConfig)
 	if err != nil {
 		_, _ = sendMessages(c.s, i.ChannelID, c.f.IU("Can't start game, internal server error!"))
-		log.Println(err)
+		c.errLogger.Println(err)
 		g.SetState(coreGamePack.RegisterState)
 		return
 	}
 	for _, player := range g.GetActivePlayers() {
 		err = sendToUser(c.s, player.Tag, coreMessagePack.GetStartPlayerDefinition(player, c.f))
 		if err != nil {
-			log.Println(err)
+			c.errLogger.Println(err)
 		}
 	}
-	log.Printf("Init Game in %v Guild", i.GuildID)
+	c.infoLogger.Printf("Init Game in %v Guild", i.GuildID)
 	errChannel, infoChannel := g.Run(ctx)
 	// Create new processor
 	processor := newGameProcessor(
@@ -541,7 +540,7 @@ func (c yanLohCommand) Execute(_ context.Context, i *discordgo.Interaction, _ *c
 
 		err := c.s.GuildMemberMove(sessId, kickedUserID, nil)
 		if err != nil {
-			log.Printf("failed kick user, err: %v", err)
+			c.errLogger.Printf("failed kick user, err: %v", err)
 		}
 	}(guildID, i.Member.User.ID)
 	wg.Wait()
@@ -555,7 +554,7 @@ func (c aboutRolesCommand) Execute(_ context.Context, i *discordgo.Interaction, 
 	sendMessage := func(s *discordgo.Session, i *discordgo.Interaction, message string) {
 		_, err := s.ChannelMessageSend(i.ChannelID, message)
 		if err != nil {
-			log.Print(err)
+			c.errLogger.Print(err)
 		}
 	}
 

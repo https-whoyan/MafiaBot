@@ -99,7 +99,12 @@ func NoticeIsEmptyGame(s *discordgo.Session, i *discordgo.InteractionCreate,
 // ___________________
 
 // SetRolesChannels to game.
-func (c registerGameCommand) setRolesChannels(ctx context.Context, guildID string, g *coreGamePack.Game) ([]string, error) {
+func (c registerGameCommand) setRolesChannels(
+	ctx context.Context,
+	guildID string, g *coreGamePack.Game,
+	s *discordgo.Session,
+	f *botFMT.DiscordFMTer,
+) ([]string, error) {
 	if len(g.GetRoleChannels()) == len(coreRolePack.GetAllNightInteractionRolesNames()) {
 		if g.GetMainChannel() != nil {
 			// Set it before
@@ -108,7 +113,6 @@ func (c registerGameCommand) setRolesChannels(ctx context.Context, guildID strin
 	}
 	// Get night interaction roles names
 	allRolesNames := coreRolePack.GetAllNightInteractionRolesNames()
-	// Get curr mongoDB struct
 	// emptyRolesMp: save not contains channel roles
 	emptyRolesMp := make(map[string]bool)
 	// mappedRoles: save contains channels roles
@@ -117,6 +121,11 @@ func (c registerGameCommand) setRolesChannels(ctx context.Context, guildID strin
 	addNewChannelIID := func(roleName, channelName string) {
 		channelIID, err := c.db.Storage.GetChannelIIDByRole(ctx, guildID, channelName)
 		if channelIID == "" {
+			emptyRolesMp[channelName] = true
+			return
+		}
+		existsInGuild := checkExistsChannelInDiscord(s, f, channelIID)
+		if !existsInGuild {
 			emptyRolesMp[channelName] = true
 			return
 		}
@@ -190,6 +199,23 @@ func getInfoAboutVote(g *coreGamePack.Game, f *botFMT.DiscordFMTer, vote1 string
 		message += f.Bl(vote1) + f.B("  :") + f.Bl(nick1)
 	}
 	return message
+}
+
+func checkExistsChannelInDiscord(s *discordgo.Session, f *botFMT.DiscordFMTer, channelID string) bool {
+	messages, err := sendMessages(
+		s, channelID,
+		"Bot exists channel test message..."+f.NL()+f.I("Ignore it...."),
+	)
+	if err != nil {
+		return false
+	}
+	var messageID string
+	for _, message := range messages {
+		messageID = message.ID
+		break
+	}
+	_ = s.ChannelMessageDelete(channelID, messageID)
+	return true
 }
 
 // Vote Command validators

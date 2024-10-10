@@ -15,6 +15,7 @@ type HasherConfig struct {
 	Port     string
 	Password string
 	DB       int
+	Logger   *log.Logger
 }
 
 func LoadHasherConfig() (*HasherConfig, error) {
@@ -29,6 +30,10 @@ func LoadHasherConfig() (*HasherConfig, error) {
 		Port: port,
 		DB:   db,
 	}, nil
+}
+
+func (c *HasherConfig) SetLogger(logger *log.Logger) {
+	c.Logger = logger
 }
 
 func InitHasher(ctx context.Context, cfg *HasherConfig) (Hasher, error) {
@@ -60,6 +65,9 @@ func InitHasher(ctx context.Context, cfg *HasherConfig) (Hasher, error) {
 		)
 	}
 
-	log.Printf("Run redis server at %v, db: %v", connectionStr, cfg.DB)
-	return &redisDB{client}, nil
+	cfg.Logger.Printf("Run redis server at %v, db: %v", connectionStr, cfg.DB)
+	return &redisDB{
+		db: client,
+		lg: cfg.Logger,
+	}, nil
 }

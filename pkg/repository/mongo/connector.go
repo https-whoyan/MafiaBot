@@ -14,8 +14,9 @@ import (
 // ____________
 
 type StorageConfig struct {
-	Host string
-	Port string
+	Host   string
+	Port   string
+	Logger *log.Logger
 }
 
 func LoadMongoDBConfig() (*StorageConfig, error) {
@@ -27,12 +28,17 @@ func LoadMongoDBConfig() (*StorageConfig, error) {
 	}, nil
 }
 
+func (c *StorageConfig) SetLogger(logger *log.Logger) {
+	c.Logger = logger
+}
+
 // ____________
 // mongoDB
 // ____________
 
 type mongoDB struct {
 	db *mongo.Client
+	lg *log.Logger
 }
 
 func InitStorage(ctx context.Context, cfg *StorageConfig) (Storage, error) {
@@ -49,8 +55,13 @@ func InitStorage(ctx context.Context, cfg *StorageConfig) (Storage, error) {
 		return nil, err
 	}
 
-	log.Printf("Run mongodb server at %v", connectionStr)
-	return &mongoDB{client}, nil
+	out := &mongoDB{
+		db: client,
+		lg: cfg.Logger,
+	}
+
+	out.lg.Printf("Run mongodb server at %v", connectionStr)
+	return out, nil
 }
 
 func (s *mongoDB) Close(ctx context.Context) error {

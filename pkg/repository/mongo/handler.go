@@ -6,7 +6,6 @@ import (
 	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"log"
 	"strings"
 )
 
@@ -146,7 +145,7 @@ func (s *mongoDB) pushIfNotExistsGuildChannels(ctx context.Context, guildID stri
 	}
 
 	_, err = coll.InsertOne(ctx, newGuildInfo)
-	log.Println("Inserted new GuildChannels, guildID:", guildID)
+	s.lg.Println("Inserted new GuildChannels, guildID:", guildID)
 	return true, err
 }
 
@@ -195,7 +194,7 @@ func (s *mongoDB) DeleteRoleChannel(ctx context.Context, guildID string, role st
 		return false, err
 	}
 
-	log.Printf(
+	s.lg.Printf(
 		"Delete role %v ChannelIID in %v GuildID.",
 		role,
 		guildID)
@@ -243,7 +242,7 @@ func (s *mongoDB) SetRoleChannel(ctx context.Context, guildID string, channelIID
 
 	_, err = coll.UpdateOne(ctx, filter, updatePush)
 
-	log.Printf("add define for %v channel: guild: %v, role: %v", channelIID, guildID, role)
+	s.lg.Printf("add define for %v channel: guild: %v, role: %v", channelIID, guildID, role)
 	return err
 }
 
@@ -319,7 +318,7 @@ func (s *mongoDB) SetMainChannel(ctx context.Context, guildID string, channelIID
 		return NoUpdatedDocumentErr
 	}
 
-	log.Printf("set main channel %v GuildID: %v", channelIID, guildID)
+	s.lg.Printf("set main channel %v GuildID: %v", channelIID, guildID)
 	return nil
 }
 

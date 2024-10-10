@@ -52,13 +52,17 @@ type basicCmd struct {
 	errLogger     *log.Logger
 }
 
-func newBasicCmd(s *discordgo.Session, cmd *discordgo.ApplicationCommand, db *pkg.Database, name string, isUsedForGame bool) basicCmd {
+func newBasicCmd(
+	s *discordgo.Session, cmd *discordgo.ApplicationCommand, db *pkg.Database,
+	name string, isUsedForGame bool,
+) basicCmd {
 	return basicCmd{
 		s:             s,
 		f:             fmtErPack.DiscordFMTInstance,
 		cmd:           cmd,
 		name:          name,
 		isUsedForGame: isUsedForGame,
+		db:            db,
 		infoLogger: log.New(
 			basicInfoLogger.Writer(),
 			basicInfoLogger.Prefix()+"CommandName: "+name+"\t",
@@ -195,7 +199,7 @@ func NewRegisterGameCommand(s *discordgo.Session, db *pkg.Database) Command {
 			},
 			db,
 			namesPack.RegisterGameCommandName,
-			false,
+			true,
 		),
 	}
 }

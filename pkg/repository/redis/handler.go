@@ -16,6 +16,7 @@ import (
 
 type redisDB struct {
 	db *redis.Client
+	lg *log.Logger
 }
 
 const (
@@ -220,6 +221,6 @@ func (r *redisDB) GetGameByIndicator(ctx context.Context, indicator string) (out
 // Close
 
 func (r *redisDB) Close(_ context.Context) error {
-	log.Println("Disconnect Redis")
+	r.lg.Println("Disconnect Redis")
 	return r.db.Close()
 }
