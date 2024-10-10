@@ -39,6 +39,9 @@ func LoadConfig() *Config {
 			log.Fatal(err)
 		}
 		botConfig := bot.LoadBotConfig()
+
+		mongoDBConfig.SetLogger(infoLogger)
+		redisDBConfig.SetLogger(infoLogger)
 		ansConfig = &Config{
 			MongoConfig: mongoDBConfig,
 			RedisConfig: redisDBConfig,
