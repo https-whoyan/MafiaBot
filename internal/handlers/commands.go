@@ -65,12 +65,12 @@ func newBasicCmd(
 		db:            db,
 		infoLogger: log.New(
 			basicInfoLogger.Writer(),
-			basicInfoLogger.Prefix()+"CommandName: "+name+"\t",
+			basicInfoLogger.Prefix()+"CommandName: "+name+"  ",
 			basicInfoLogger.Flags(),
 		),
 		errLogger: log.New(
 			basicErrorLogger.Writer(),
-			basicErrorLogger.Prefix()+"CommandName: "+name+"\t",
+			basicErrorLogger.Prefix()+"CommandName: "+name+"  ",
 			basicErrorLogger.Flags(),
 		),
 	}
@@ -83,22 +83,33 @@ func (c basicCmd) Execute(_ context.Context, _ *discordgo.Interaction, _ *coreGa
 	panic("implement me")
 }
 
-func (c basicCmd) log(i *discordgo.Interaction, g *coreGamePack.Game) {
-	var (
-		gameState       = "nil"
-		gameNightVoting = "nil"
-	)
-	if g != nil {
-		gameState = g.GetState().String()
-		gameNightVoting = g.GetNightVoting().Name
+func (c basicCmd) Log(i *discordgo.Interaction, g *coreGamePack.Game) {
+	var message string
+	if c.isUsedForGame {
+		var (
+			gameState       = "nil"
+			gameNightVoting = "nil"
+		)
+		if g != nil {
+			gameState = g.GetState().String()
+			if g.GetNightVoting() != nil {
+				gameNightVoting = g.GetNightVoting().Name
+			}
+		}
+		message = fmt.Sprintf(
+			"Execute %v command in %v GuildID. GameState: %v, GameNightVoting: %v",
+			i.ApplicationCommandData().Name,
+			i.GuildID,
+			gameState,
+			gameNightVoting,
+		)
+	} else {
+		message = fmt.Sprintf(
+			"Execute %v command in %v GuildID.",
+			i.ApplicationCommandData().Name,
+			i.GuildID,
+		)
 	}
-	message := fmt.Sprintf(
-		"Execute %v command in %v GuildID. GameState: %v, GameNightVoting: %v",
-		i.ApplicationCommandData().Name,
-		i.GuildID,
-		gameState,
-		gameNightVoting,
-	)
 	c.infoLogger.Println(message)
 }
 

@@ -202,7 +202,7 @@ func (b *Bot) getSIHandler(ctx context.Context, cmd handlerPack.Command, cmdName
 				b.ErrLogger,
 				b.InfoLogger,
 			)
-			newGame := gamePack.GetNewGame(i.GuildID, gameOptions...)
+			newGame := gamePack.GetNewGame(ctx, i.GuildID, gameOptions...)
 			b.Lock()
 			b.Games[i.GuildID] = newGame
 			b.Unlock()
@@ -258,7 +258,7 @@ func (b *Bot) deleteAllGloballyRegisteredCommands() {
 
 func (b *Bot) deleteHandlers() {
 	err := b.Session.AddHandler(nil)
-	if err != nil { // (Code by ChatGPT <3, lol)
+	if err != nil {
 		b.InfoLogger.Println("Delete all handlers")
 		return
 	}

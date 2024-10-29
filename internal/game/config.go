@@ -1,7 +1,6 @@
 package game
 
 import (
-	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 	"log"
 	"math/rand"
 	"sort"
@@ -9,25 +8,21 @@ import (
 	botFMT "github.com/https-whoyan/MafiaBot/internal/fmt"
 	coreUserPack "github.com/https-whoyan/MafiaBot/internal/user"
 
-	coreGamePack "github.com/https-whoyan/MafiaCore/game"
-)
+	"github.com/https-whoyan/MafiaBot/pkg/repository/mongo"
 
-var (
-	FMTer           = botFMT.DiscordFMTInstance // Same once struct
-	ConstRenameMode = coreGamePack.RenameInGuildMode
-	VotePing        = 1
+	coreGamePack "github.com/https-whoyan/MafiaCore/game"
 )
 
 func GetNewGameConfig(
 	renameProvider *coreUserPack.BotUserRenameProvider, storage mongo.Storage,
 	errLogger *log.Logger, infoLogger *log.Logger,
-) []coreGamePack.GameOption {
-	options := []coreGamePack.GameOption{
-		coreGamePack.FMTerOpt(FMTer),
-		coreGamePack.RenameModeOpt(ConstRenameMode),
+) []coreGamePack.Option {
+	options := []coreGamePack.Option{
+		coreGamePack.FMTerOpt(botFMT.DiscordFMTInstance),
+		coreGamePack.RenameModeOpt(coreGamePack.RenameInGuildMode),
 		coreGamePack.RenamePrOpt(renameProvider),
-		coreGamePack.VotePingOpt(VotePing),
-		coreGamePack.GameLoggerOpt(storage),
+		coreGamePack.VotePingOpt(1),
+		coreGamePack.StorageOpt(storage),
 		coreGamePack.ErrLoggerOpt(errLogger),
 		coreGamePack.InfoLoggerOpt(infoLogger),
 	}
@@ -43,10 +38,10 @@ type ConfigMessages struct {
 	PlayersCount int `redis:"playersCount"`
 	GuildID      string
 	ConfigsCount int              `redis:"configsCount"`
-	Messages     []*ConfigMessage `redis:"messages"`
+	Messages     []*configMessage `redis:"messages"`
 }
 
-type ConfigMessage struct {
+type configMessage struct {
 	ConfigIndex    int    `redis:"configIndex"`
 	MessageID      string `redis:"messageID"`
 	ReactionsCount int
@@ -57,15 +52,15 @@ func NewConfigMessages(guildID string, peoplesCount int, configsCount int) *Conf
 		PlayersCount: peoplesCount,
 		GuildID:      guildID,
 		ConfigsCount: configsCount,
-		Messages:     make([]*ConfigMessage, 0),
+		Messages:     make([]*configMessage, 0),
 	}
 }
 
 // Setters
 
-func (c *ConfigMessage) SetReactionCount(reactionsCount int) { c.ReactionsCount = reactionsCount }
+func (c *configMessage) SetReactionCount(reactionsCount int) { c.ReactionsCount = reactionsCount }
 func (c *ConfigMessages) AddNewMessage(configIndex int, messageID string) {
-	c.Messages = append(c.Messages, &ConfigMessage{
+	c.Messages = append(c.Messages, &configMessage{
 		ConfigIndex: configIndex,
 		MessageID:   messageID,
 	})

@@ -40,7 +40,6 @@ const (
 )
 
 func (c addChannelRoleCommand) Execute(ctx context.Context, i *discordgo.Interaction, _ *coreGamePack.Game) {
-	c.log(i, nil)
 	if len(i.ApplicationCommandData().Options) == 0 {
 		content := "Must be option!"
 		c.response(i, content)
@@ -84,7 +83,6 @@ func (c addChannelRoleCommand) Execute(ctx context.Context, i *discordgo.Interac
 }
 
 func (c addMainChannelCommand) Execute(ctx context.Context, i *discordgo.Interaction, _ *coreGamePack.Game) {
-	c.log(i, nil)
 	if len(i.ApplicationCommandData().Options) == 0 {
 		content := "Must be option!"
 		c.response(i, content)
@@ -162,7 +160,6 @@ func (c registerGameCommand) trySetChannels(ctx context.Context, i *discordgo.In
 }
 
 func (c registerGameCommand) Execute(ctx context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
-	c.log(i, g)
 	// Validation
 	if !c.trySetChannels(ctx, i, g) {
 		return
@@ -200,7 +197,6 @@ func (c finishGameCommand) Execute(_ context.Context, i *discordgo.Interaction, 
 }
 
 func (c choiceGameConfigCommand) Execute(ctx context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
-	c.log(i, g)
 	registrationMessageID, err := c.db.Hasher.GetInitialGameMessageID(ctx, i.GuildID)
 	if (err != nil || registrationMessageID == "") && g.GetState() == coreGamePack.RegisterState {
 		messageContent := c.f.U("Registration Deadline passed!") + c.f.NL() + "Please, " +
@@ -240,8 +236,11 @@ func (c choiceGameConfigCommand) Execute(ctx context.Context, i *discordgo.Inter
 	// set empty players to game (to safe it.)
 	startBotPlayers, _ := botMsgPack.GetUsersByEmojiID(
 		c.s, i.ChannelID, registrationMessageID, botFMTPack.RegistrationPlayerSticker)
-	startGamePlayers := botCnvPack.DiscordUsersToEmptyPlayers(c.s, i.GuildID,
+	startGamePlayers, err := botCnvPack.DiscordUsersToEmptyPlayers(c.s, i.GuildID,
 		startBotPlayers, false)
+	if err != nil {
+		c.response(i, fmt.Sprintf("Error discovering players: %v", err))
+	}
 	g.SetStartPlayers(startGamePlayers)
 
 	// And spectators.
@@ -251,7 +250,10 @@ func (c choiceGameConfigCommand) Execute(ctx context.Context, i *discordgo.Inter
 	// We need no duplicates in active and spectators.
 	// Then, I get unique Spectators, which not include in active players.
 	uniqueBotSpectators, _ := botCnvPack.SetDiff(botSpectators, startBotPlayers)
-	spectators := botCnvPack.DiscordUsersToEmptyPlayers(c.s, i.GuildID, uniqueBotSpectators, true)
+	spectators, err := botCnvPack.DiscordUsersToEmptyPlayers(c.s, i.GuildID, uniqueBotSpectators, true)
+	if err != nil {
+		c.response(i, fmt.Sprintf("Error discovering spectators: %v", err))
+	}
 	g.SetSpectators(spectators)
 
 	content := "Below is a list of available game configurations. " + c.f.NL() +
@@ -272,7 +274,11 @@ func (c choiceGameConfigCommand) Execute(ctx context.Context, i *discordgo.Inter
 		mpMessages, _ := sendMessages(c.s, i.ChannelID, messageContent)
 		cfgMessages.AddNewMessage(index, mpMessages[messageContent].ID)
 	}
-	err = c.db.Hasher.SetConfigGameVotingMessages(ctx, cfgMessages, botTimeConstsPack.VotingGameConfigDeadlineSeconds*time.Second)
+	err = c.db.Hasher.SetConfigGameVotingMessages(
+		ctx,
+		cfgMessages,
+		botTimeConstsPack.VotingGameConfigDeadlineSeconds*time.Second,
+	)
 	if err != nil {
 		c.errLogger.Println(err)
 	}
@@ -281,7 +287,6 @@ func (c choiceGameConfigCommand) Execute(ctx context.Context, i *discordgo.Inter
 }
 
 func (c startGameCommand) Execute(ctx context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
-	c.log(i, g)
 	cfgMessages, err := c.db.Hasher.GetConfigGameVotingMessageID(ctx, i.GuildID)
 	if err != nil {
 		c.response(i, internalServerErrorMessage)
@@ -347,7 +352,6 @@ func (c startGameCommand) Execute(ctx context.Context, i *discordgo.Interaction,
 // _______________
 
 func (c gameVoteCommand) Execute(_ context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
-	c.log(i, g)
 	if ok := c.voteTypeValidator(i, g); !ok {
 		return
 	}
@@ -410,7 +414,6 @@ func (c gameVoteCommand) Execute(_ context.Context, i *discordgo.Interaction, g 
 }
 
 func (c gameTwoVoteCommand) Execute(_ context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
-	c.log(i, g)
 	if ok := c.voteTypeValidator(i, g); !ok {
 		return
 	}
@@ -469,7 +472,6 @@ func (c gameTwoVoteCommand) Execute(_ context.Context, i *discordgo.Interaction,
 }
 
 func (c dayVoteCommand) Execute(_ context.Context, i *discordgo.Interaction, g *coreGamePack.Game) {
-	c.log(i, g)
 	if ok := c.voteTypeValidator(i, g); !ok {
 		return
 	}
@@ -525,7 +527,6 @@ func (c dayVoteCommand) Execute(_ context.Context, i *discordgo.Interaction, g *
 // _____________
 
 func (c yanLohCommand) Execute(_ context.Context, i *discordgo.Interaction, _ *coreGamePack.Game) {
-	c.log(i, nil)
 	messageContent := "Не, лол, что бы его же ботом его обзывать..."
 	c.response(i, messageContent)
 
@@ -547,7 +548,6 @@ func (c yanLohCommand) Execute(_ context.Context, i *discordgo.Interaction, _ *c
 }
 
 func (c aboutRolesCommand) Execute(_ context.Context, i *discordgo.Interaction, _ *coreGamePack.Game) {
-	c.log(i, nil)
 	messageContent := c.f.Bold("Below information about all roles:") + c.f.NL()
 	c.response(i, messageContent)
 

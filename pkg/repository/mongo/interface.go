@@ -6,7 +6,7 @@ import (
 )
 
 type Storage interface {
-	coreGamePack.Logger
+	coreGamePack.Storage
 
 	IsFreeChannelIID(ctx context.Context, guildID string, ChannelID string) (bool, error)
 

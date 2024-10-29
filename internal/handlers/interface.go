@@ -26,4 +26,5 @@ type Command interface {
 	//In case a command changes the game, I check if the game is in bot.Games and if not, I say there is no game, please create one.
 	//If the command is not used for a game, I execute it.
 	IsUsedForGame() bool
+	Log(i *discordgo.Interaction, g *coreGamePack.Game)
 }

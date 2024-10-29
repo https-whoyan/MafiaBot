@@ -27,7 +27,7 @@ func SafeGetUserUsernameInGuild(s *discordgo.Session, guildID string, user *disc
 }
 
 func DiscordUsersToEmptyPlayers(s *discordgo.Session, guildID string,
-	users []*discordgo.User, isSpectators bool) *corePlayerPack.NonPlayingPlayers {
+	users []*discordgo.User, isSpectators bool) (*corePlayerPack.NonPlayingPlayers, error) {
 	// First realization
 	var (
 		tags            []string
@@ -42,13 +42,4 @@ func DiscordUsersToEmptyPlayers(s *discordgo.Session, guildID string,
 	}
 
 	return corePlayerPack.GenerateNonPlayingPLayers(tags, usernames, serverUsernames)
-
-	//Second Realization
-	/*
-		getTagAndUsernameFunc := func(u any, index int) (string, string, string) {
-			iUser := u.([]*discordgo.User)[index]
-			return iUser.ID, SafeGetUserUsernameInGuild(s, guildID, iUser), iUser.ID
-		}
-		return corePlayerPack.GenerateEmptyPlayersByFunc(users, getTagAndUsernameFunc, len(users), isSpectators)
-	*/
 }
